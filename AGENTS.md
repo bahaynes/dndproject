@@ -58,6 +58,8 @@ To ensure consistency, reliability, and readability, please follow these rules w
   ```bash
   podman-compose up --build
   ```
+* Use `./podman-compose.yml` for all compose configuration, do not create a redundant `docker-compose.yml` file.
+
 
 ---
 

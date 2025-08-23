@@ -5,34 +5,33 @@ set -e
 # DnD Westmarches Hub - Prod Build Script
 # ===============================
 
-# Set default mode
-MODE=prod
-
 echo "✅ Starting production build..."
 
 # 1. Build frontend
-echo "📦 Building frontend..."
-cd frontend
-pnpm install
-pnpm build
-cd ..
+echo "📦 Building frontend in 'frontend/' directory..."
+# Run build commands in a subshell to avoid changing the current directory
+(cd frontend && pnpm install && pnpm build)
 
-# 2. Copy frontend build to backend
-echo "📂 Copying frontend build to backend/static/_app..."
-mkdir -p backend/static
-cp -r frontend/build backend/static/_app
+# NOTE: The production frontend assets are built into `frontend/build`.
+# The `frontend/Containerfile.prod` then copies these assets into the
+# final Caddy image. The backend does not need to serve them.
 
-# 3. Ensure CF_API_TOKEN is set
+# 2. Ensure CF_API_TOKEN is set for Caddy's automatic HTTPS
 if [ -z "$CF_API_TOKEN" ]; then
-    echo "⚠️ CF_API_TOKEN is not set. Please export it before running this script."
+    echo "⚠️  Error: CF_API_TOKEN environment variable is not set."
+    echo "   Please set it to your Cloudflare API token to continue."
+    echo "   export CF_API_TOKEN=\"your_token_here\""
     exit 1
 fi
 
-# 4. Bring up production containers
+# 3. Bring up production containers using podman-compose
 echo "🚀 Starting production containers..."
-podman-compose down || true
+# Stop any previous instances
+podman-compose down --remove-orphans || true
+# Build and run in detached mode
 MODE=prod podman-compose up --build -d
 
+echo ""
 echo "🎉 Production deployment complete!"
-echo "Frontend: http://localhost:8080 (or your domain)"
-echo "Backend API: http://localhost:8080/api"
+echo "Access your app at the domain configured in frontend/Caddyfile (e.g., https://bahaynes.com)"
+echo "If running locally, it may be mapped to http://localhost:8080 and https://localhost:8443"

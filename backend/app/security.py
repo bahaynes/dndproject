@@ -21,6 +21,8 @@ def get_password_hash(password):
 
 
 # JWT Handling
+# Fallback to a default secret key if not found in the environment,
+# but print a warning in a real application.
 SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_that_should_be_in_env_file")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))

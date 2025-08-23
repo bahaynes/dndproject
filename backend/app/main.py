@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -9,18 +9,10 @@ from jose import JWTError, jwt
 from . import crud, models, schemas, security
 from .database import SessionLocal, engine
 
-# Create all tables
-# This is handled by alembic in the run script now
-# models.Base.metadata.create_all(bind=engine)
-
 app = FastAPI(
-    title="DnD Westmarches Hub API",
-    # The /api prefix is handled by the reverse proxy (Caddy) in prod,
-    # but we add it here to make dev and prod routing consistent.
-    openapi_prefix="/api"
+    title="DnD Westmarches Hub API"
 )
 
-# CORS for dev frontend
 # In development, the SvelteKit app runs on a different port (5173)
 # and needs to be allowed to talk to the backend API (8000).
 # In production, Caddy serves both and this is not needed.
@@ -42,7 +34,7 @@ def get_db():
         db.close()
 
 # --- Auth ---
-# The tokenUrl should match the full path to the login endpoint
+# The tokenUrl is relative to the router's prefix
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
@@ -65,12 +57,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     return user
 
 async def get_current_active_user(current_user: schemas.User = Depends(get_current_user)):
-    # In a real app, you might check for things like `current_user.disabled`
     return current_user
 
-
 # --- API Endpoints ---
-api_router = FastAPI()
+# Create a router to prefix all API calls with /api
+api_router = APIRouter()
 
 @api_router.post("/token", response_model=schemas.Token, tags=["Authentication"])
 async def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):

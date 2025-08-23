@@ -3,6 +3,11 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+import os
+import sys
+
+# Add the app directory to the path to allow for absolute imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from app.main import app, get_db
 from app.database import Base
@@ -16,8 +21,13 @@ engine = create_engine(
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Create tables once for the whole test session
-Base.metadata.create_all(bind=engine)
+
+@pytest.fixture(scope="session", autouse=True)
+def create_test_database():
+    Base.metadata.create_all(bind=engine)
+    yield
+    Base.metadata.drop_all(bind=engine)
+
 
 def override_get_db():
     db = TestingSessionLocal()
@@ -26,14 +36,19 @@ def override_get_db():
     finally:
         db.close()
 
+
 app.dependency_overrides[get_db] = override_get_db
 
+
 @pytest.fixture(scope="function")
-def client():
-    client = TestClient(app)
-    yield client
-    # Clean up data after each test
-    with engine.connect() as connection:
-        for table in reversed(Base.metadata.sorted_tables):
-            connection.execute(table.delete())
-        connection.commit()
+def client(create_test_database):
+    # Before each test, clear the data from tables
+    db = TestingSessionLocal()
+    for table in reversed(Base.metadata.sorted_tables):
+        db.execute(table.delete())
+    db.commit()
+    db.close()
+
+    # Create a client with the base URL to match the /api prefix
+    with TestClient(app, base_url="http://testserver/api") as c:
+        yield c

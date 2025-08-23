@@ -1,20 +1,24 @@
 {
-    # Global options block
-    # Enables automatic HTTPS using Cloudflare DNS challenge
-    acme_dns cloudflare {env.CF_API_TOKEN}
+    email admin@bahaynes.com
+    acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
 }
 
-# Replace example.com with your domain
-bahaynes.com {
-    root * /usr/share/caddy
+:80 {
+    redir https://{host}{uri}
+}
+
+:443 {
     encode gzip
+    root * /srv
     file_server
+    try_files {path} /index.html
 
-    # Proxy /api requests to backend
-    reverse_proxy /api/* backend:8000
-}
+    # Proxy API requests
+    handle_path /api/* {
+        reverse_proxy backend:8000
+    }
 
-# Optional: redirect HTTP to HTTPS
-http://bahaynes.com {
-    redir https://bahaynes.com{uri} permanent
+    tls {
+        dns cloudflare
+    }
 }

@@ -11,7 +11,7 @@ class User(Base):
     username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    role = Column(String, default="player", nullable=False)  # Roles: 'player', 'admin'
+    role = Column(String, default="player", nullable=False)
     is_active = Column(Boolean, default=True)
 
     characters = relationship("Character", back_populates="owner")
