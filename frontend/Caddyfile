@@ -1,0 +1,24 @@
+{
+    email admin@bahaynes.com
+    acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+}
+
+:80 {
+    redir https://{host}{uri}
+}
+
+:443 {
+    encode gzip
+    root * /srv
+    file_server
+    try_files {path} /index.html
+
+    # Proxy API requests
+    handle_path /api/* {
+        reverse_proxy backend:8000
+    }
+
+    tls {
+        dns cloudflare
+    }
+}
