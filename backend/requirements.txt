@@ -25,3 +25,14 @@ uvicorn==0.35.0
 uvloop==0.21.0
 watchfiles==1.1.0
 websockets==15.0.1
+
+# Added for authentication and database
+alembic==1.13.2
+greenlet==3.0.3
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+python-multipart==0.0.9
+SQLAlchemy==2.0.34
+tenacity==8.5.0
+psycopg2-binary==2.9.9
+email-validator==2.2.0
