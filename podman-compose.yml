@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Containerfile.${MODE:-dev}
+    ports:
+      - "5173:5173"    # dev hot reload
+      - "8080:80"      # prod HTTP
+      - "8443:443"     # prod HTTPS
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=/api
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Containerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./app.db
+      - MODE=${MODE:-dev}
+    command: >
+      sh -c "alembic upgrade head && if [ '$${MODE}' = 'prod' ];
+             then gunicorn -k uvicorn.workers.UvicornWorker app.main:app -b 0.0.0.0:8000;
+             else uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload;
+             fi"

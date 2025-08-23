@@ -11,7 +11,7 @@
 		if (browser) {
 			if ($auth.isAuthenticated && !$auth.user) {
 				try {
-					const response = await fetch('http://localhost:8000/users/me/', {
+					const response = await fetch('/api/users/me/', {
 						headers: {
 							'Authorization': `Bearer ${$auth.token}`
 						}
@@ -48,7 +48,7 @@
 				{#if $auth.user}
 					<span class="px-4">Welcome, {$auth.user.username}</span>
 				{/if}
-				<button on:click={handleLogout} class="px-4 hover:underline">Logout</button>
+				<button onclick={handleLogout} class="px-4 hover:underline">Logout</button>
 			{:else}
 				<a href="/login" class="px-4 hover:underline">Login</a>
 				<a href="/register" class="px-4 hover:underline">Register</a>

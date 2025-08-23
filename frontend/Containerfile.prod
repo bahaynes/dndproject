@@ -1,0 +1,31 @@
+# Prod container: build SvelteKit and serve static files
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Copy package files and install dependencies
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm install
+
+# Copy rest of the source
+COPY . .
+
+# Build the production frontend
+RUN pnpm build
+
+# Second stage: minimal image to serve static files via Caddy
+FROM caddy:2.8.2-alpine
+
+# Copy Caddyfile
+COPY Caddyfile /etc/caddy/Caddyfile
+
+# Copy built frontend from previous stage
+COPY --from=build /app/build /usr/share/caddy
+
+# Expose standard HTTP and HTTPS ports
+EXPOSE 80 443
+
+# Caddy runs automatically (no CMD needed)

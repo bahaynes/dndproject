@@ -1,0 +1,20 @@
+{
+    # Global options block
+    # Enables automatic HTTPS using Cloudflare DNS challenge
+    acme_dns cloudflare {env.CF_API_TOKEN}
+}
+
+# Replace example.com with your domain
+bahaynes.com {
+    root * /usr/share/caddy
+    encode gzip
+    file_server
+
+    # Proxy /api requests to backend
+    reverse_proxy /api/* backend:8000
+}
+
+# Optional: redirect HTTP to HTTPS
+http://bahaynes.com {
+    redir https://bahaynes.com{uri} permanent
+}

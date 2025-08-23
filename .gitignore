@@ -54,6 +54,7 @@ coverage.xml
 /frontend/.svelte-kit
 /frontend/build
 /frontend/dist
+/node_modules
 
 # General
 .DS_Store
@@ -65,10 +66,14 @@ coverage.xml
 # DB files
 *.db
 *.sqlite3
+*.db-journal
 
 # Log files
 *.log
 
 # Build artifacts
 /static
-run_app.sh.log
+
+# IDE files
+.vscode/
+.idea/
