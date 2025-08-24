@@ -5,16 +5,20 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from . import crud, models, schemas, security
-from .database import SessionLocal, engine
+from .database import get_db, init_db
 
-app = FastAPI(
-    title="DnD Westmarches Hub API"
-)
+app = FastAPI(title="DnD Westmarches Hub API")
 
-# In development, the SvelteKit app runs on a different port (5173)
-# and needs to be allowed to talk to the backend API (8000).
+@app.on_event("startup")
+def on_startup():
+    """Initialize the database when the application starts."""
+    init_db()
+
+# In development, the SvelteKit app runs on a different port and needs CORS.
 # In production, Caddy serves both and this is not needed.
 if os.environ.get("MODE", "dev") == "dev":
     app.add_middleware(
@@ -25,17 +29,8 @@ if os.environ.get("MODE", "dev") == "dev":
         allow_headers=["*"],
     )
 
-# --- Database Dependency ---
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 # --- Auth ---
-# The tokenUrl is relative to the router's prefix
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/token")
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -60,7 +55,6 @@ async def get_current_active_user(current_user: schemas.User = Depends(get_curre
     return current_user
 
 # --- API Endpoints ---
-# Create a router to prefix all API calls with /api
 api_router = APIRouter()
 
 @api_router.post("/token", response_model=schemas.Token, tags=["Authentication"])
@@ -91,3 +85,20 @@ async def read_users_me(current_user: schemas.User = Depends(get_current_active_
 
 # Mount the API router under /api
 app.include_router(api_router, prefix="/api")
+
+# --- Static Files for Production ---
+# This block will only run when MODE=prod, so it won't crash pytest
+if os.environ.get("MODE") == "prod":
+    # This path assumes the 'static' dir is at the root of the project,
+    # which is where the build script places the frontend build.
+    static_dir = Path(__file__).parent.parent.parent / "static"
+
+    app.mount("/_app", StaticFiles(directory=static_dir / "_app"), name="static_assets")
+
+    # This catch-all route serves the SvelteKit SPA's entry point.
+    @app.get("/{full_path:path}", response_class=FileResponse)
+    async def serve_spa_entrypoint(full_path: str):
+        index_path = static_dir / "index.html"
+        if not index_path.exists():
+            raise HTTPException(status_code=404, detail="SPA entry point not found. Did you build the frontend?")
+        return FileResponse(index_path)

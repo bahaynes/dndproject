@@ -6,11 +6,13 @@ from sqlalchemy.pool import StaticPool
 import os
 import sys
 
-# Add the app directory to the path to allow for absolute imports
+# Add the project's root `backend` directory to the Python path
+# This ensures that `app.xxx` imports work correctly
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from app.main import app, get_db
-from app.database import Base
+from app.database import Base, get_db
+from app.main import app
+from app.models import *  # noqa
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
@@ -22,33 +24,44 @@ engine = create_engine(
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-@pytest.fixture(scope="session", autouse=True)
-def create_test_database():
+@pytest.fixture(scope="function")
+def db_session():
+    """
+    Fixture to create a new database session for each test function.
+    Creates all tables, yields a session, then drops all tables.
+    """
+    # Create all tables in the in-memory database
     Base.metadata.create_all(bind=engine)
-    yield
-    Base.metadata.drop_all(bind=engine)
-
-
-def override_get_db():
     db = TestingSessionLocal()
     try:
         yield db
     finally:
         db.close()
-
-
-app.dependency_overrides[get_db] = override_get_db
+        # Drop all tables after the test is done
+        Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture(scope="function")
-def client(create_test_database):
-    # Before each test, clear the data from tables
-    db = TestingSessionLocal()
-    for table in reversed(Base.metadata.sorted_tables):
-        db.execute(table.delete())
-    db.commit()
-    db.close()
+def client(db_session):
+    """
+    Fixture to create a TestClient that uses the test database session.
+    """
+    def override_get_db():
+        """
+        This inner function is the dependency override.
+        It yields the session provided by the `db_session` fixture.
+        """
+        try:
+            yield db_session
+        finally:
+            # The session's lifecycle is managed by the `db_session` fixture.
+            pass
 
-    # Create a client with the base URL to match the /api prefix
-    with TestClient(app, base_url="http://testserver/api") as c:
-        yield c
+    # Apply the dependency override for the duration of this client's life.
+    app.dependency_overrides[get_db] = override_get_db
+
+    # Yield the TestClient to the test function.
+    yield TestClient(app)
+
+    # Clean up the override after the test is done to ensure no leakage.
+    app.dependency_overrides.clear()
