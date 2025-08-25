@@ -1,10 +1,10 @@
 # --- Host (AI/Jules) targets ---
 
 migrate-host:
-	python backend/run_alembic.py upgrade head
+	backend/venv/bin/python backend/run_alembic.py upgrade head
 
 revision-host:
-	python backend/run_alembic.py revision --autogenerate -m "$(m)"
+	backend/venv/bin/python backend/run_alembic.py revision --autogenerate -m "$(m)"
 
 # --- Container (your) targets ---
 

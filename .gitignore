@@ -73,3 +73,6 @@ coverage.xml
 # Build artifacts
 /static
 run_app.sh.log
+
+# Virtualenv
+/backend/venv/
