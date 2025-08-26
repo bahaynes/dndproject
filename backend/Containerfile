@@ -14,5 +14,11 @@ RUN pip install --no-cache-dir -r requirements.txt gunicorn uvicorn
 # Copy the app
 COPY . .
 
+# Make sure Python can find the app module
+ENV PYTHONPATH=/app
+
 # Expose backend port
 EXPOSE 8000
+
+# Default command
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
