@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { auth } from '$lib/stores/auth';
+    import { auth } from '$lib/auth';
 </script>
 
 <div class="container mx-auto p-8 text-center">
