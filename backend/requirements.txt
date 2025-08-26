@@ -36,3 +36,4 @@ SQLAlchemy==2.0.34
 tenacity==8.5.0
 psycopg2-binary==2.9.9
 email-validator==2.2.0
+pytest-cov

@@ -14,8 +14,9 @@ def test_create_user_success(client):
     assert "id" in data
     assert "hashed_password" not in data
     # Check if the default character was created
-    assert len(data["characters"]) == 1
-    assert data["characters"][0]["name"] == "testuser's Character"
+    assert "character" in data
+    assert data["character"] is not None
+    assert data["character"]["name"] == "testuser's Character"
 
 
 def test_create_user_duplicate_username(client):
@@ -106,3 +107,51 @@ def test_read_users_me_invalid_token(client):
     )
     assert response.status_code == 401
     assert response.json() == {"detail": "Could not validate credentials"}
+
+
+def test_read_character_success(client):
+    # Create a user, which also creates a character
+    user_response = client.post(
+        "/users/",
+        json={"username": "char_owner", "email": "char@example.com", "password": "password123"},
+    )
+    assert user_response.status_code == 200
+    user_data = user_response.json()
+    character_id = user_data["character"]["id"]
+
+    # Read the character
+    char_response = client.get(f"/api/characters/{character_id}")
+    assert char_response.status_code == 200
+    char_data = char_response.json()
+    assert char_data["id"] == character_id
+    assert char_data["name"] == "char_owner's Character"
+
+
+def test_update_character_success(client):
+    # Create a user and get token
+    client.post(
+        "/users/",
+        json={"username": "update_char_owner", "email": "update_char@example.com", "password": "password123"},
+    )
+    login_response = client.post(
+        "/token",
+        data={"username": "update_char_owner", "password": "password123"},
+    )
+    token = login_response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Get character ID from the /users/me endpoint
+    me_response = client.get("/users/me/", headers=headers)
+    character_id = me_response.json()["character"]["id"]
+
+    # Update the character
+    update_data = {"name": "Updated Name", "description": "Updated Description"}
+    update_response = client.put(
+        f"/api/characters/{character_id}",
+        headers=headers,
+        json=update_data,
+    )
+    assert update_response.status_code == 200
+    updated_char_data = update_response.json()
+    assert updated_char_data["name"] == "Updated Name"
+    assert updated_char_data["description"] == "Updated Description"
