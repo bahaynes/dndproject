@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { auth } from '$lib/stores/auth';
+    import { auth } from '$lib/auth';
     import { goto } from '$app/navigation';
 
     let username = '';

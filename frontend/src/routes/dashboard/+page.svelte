@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { auth, type User } from '$lib/stores/auth';
+    import { auth, type User } from '$lib/auth';
     import { onMount } from 'svelte';
 
     let user: User | null = null;

@@ -1,5 +1,5 @@
 import { browser } from '$app/environment';
-import { auth } from '$lib/stores/auth';
+import { auth } from '$lib/auth';
 import { get } from 'svelte/store';
 import { redirect } from '@sveltejs/kit';
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import { auth } from '$lib/stores/auth';
+	import { auth } from '$lib/auth';
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';

@@ -52,13 +52,13 @@ To ensure consistency, reliability, and readability, please follow these rules w
 
 ## Containerization
 
-* The project is containerized with **Podman** (compatible with Docker).
+* The project is containerized and best run with **Docker Compose**. While `podman-compose` may work in some environments, it has known incompatibilities with certain kernel security features (`seccomp`).
 * Always ensure that the project builds and runs via:
-
   ```bash
-  podman-compose up --build
+  sudo docker compose up --build
   ```
-* Use `./podman-compose.yml` for all compose configuration, do not create a redundant `docker-compose.yml` file.
+* Use `docker-compose.yml` for all compose configuration.
+* The base images in the `Containerfile`s point to the Amazon ECR Public mirror to avoid Docker Hub rate-limiting issues.
 
 
 ---
