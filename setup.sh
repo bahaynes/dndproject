@@ -8,7 +8,7 @@ echo "This script will configure both Podman (rootless) and Docker."
 echo "📦 Installing system dependencies..."
 sudo apt-get update -y
 # Install all tools: podman for rootless, docker as a fallback
-sudo apt-get install -y podman podman-compose uidmap docker.io docker-compose
+sudo apt-get install -y podman podman-compose uidmap
 
 # --- Docker Setup ---
 echo "🐳 Configuring Docker..."
