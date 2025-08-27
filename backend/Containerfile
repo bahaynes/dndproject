@@ -13,13 +13,19 @@ RUN pip install --no-cache-dir -r requirements.txt gunicorn uvicorn
 
 # Copy the app
 <<<<<<< HEAD
+<<<<<<< HEAD
 COPY backend/ .
 =======
+=======
+>>>>>>> origin/main
 COPY alembic.ini .
 COPY backend/ .
 
 # Make sure Python can find the app module
 ENV PYTHONPATH=/app
+<<<<<<< HEAD
+>>>>>>> origin/main
+=======
 >>>>>>> origin/main
 
 # Expose backend port

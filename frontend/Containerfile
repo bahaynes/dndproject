@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Stage 1: Build Caddy with Cloudflare plugin
 FROM public.ecr.aws/docker/library/caddy:2-builder AS caddy_builder
 RUN xcaddy build \
@@ -29,6 +30,8 @@ WORKDIR /srv
 COPY --from=build /app/build /srv
 COPY frontend/Caddyfile /etc/caddy/Caddyfile
 =======
+=======
+>>>>>>> origin/main
 # Stage 1: Build & Test (Node environment)
 FROM node:20-alpine AS builder
 WORKDIR /app
@@ -59,6 +62,9 @@ COPY --from=builder /app/build /srv
 # Copy Caddy config
 COPY frontend/Caddyfile /etc/caddy/Caddyfile
 
+<<<<<<< HEAD
+>>>>>>> origin/main
+=======
 >>>>>>> origin/main
 EXPOSE 80 443
 CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
