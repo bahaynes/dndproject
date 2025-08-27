@@ -17,7 +17,11 @@ services:
   backend:
     build:
       context: .
+<<<<<<< HEAD
       dockerfile: backend/Containerfile
+=======
+      dockerfile: ./backend/Containerfile
+>>>>>>> 2021aa48142f2fd37e4cd82ec5e48b5b8e7499f3
     ports:
       - "8000:8000"
     environment:
