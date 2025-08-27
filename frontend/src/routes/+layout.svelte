@@ -48,7 +48,7 @@
 				{#if $auth.user}
 					<span class="px-4">Welcome, {$auth.user.username}</span>
 				{/if}
-				<button on:click={handleLogout} class="px-4 hover:underline">Logout</button>
+				<button onclick={handleLogout} class="px-4 hover:underline">Logout</button>
 			{:else}
 				<a href="/login" class="px-4 hover:underline">Login</a>
 				<a href="/register" class="px-4 hover:underline">Register</a>
