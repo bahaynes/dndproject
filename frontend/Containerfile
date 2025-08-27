@@ -1,5 +1,5 @@
 # Stage 1: Build SvelteKit
-FROM node:20-alpine AS build
+FROM node:20-alpine AS frontend-build
 
 WORKDIR /app
 RUN npm install -g pnpm
@@ -9,12 +9,12 @@ COPY . .
 RUN pnpm build
 
 # Stage 2: Serve with Caddy
-FROM caddy:2-alpine
+FROM caddy:2-alpine AS frontend-runtime
 
 WORKDIR /srv
-COPY --from=build /app/build /srv
-COPY Caddyfile /etc/caddy/Caddyfile
+# Copy the static build from the frontend-build stage
+COPY --from=frontend-build /app/build /srv
+COPY frontend/Caddyfile /etc/caddy/Caddyfile
 
 EXPOSE 80 443
-
 CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
