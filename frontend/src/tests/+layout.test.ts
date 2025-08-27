@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/svelte';
 import Layout from '../routes/+layout.svelte';
-import { auth } from '../lib/auth';
+import { auth } from '$lib/auth';
 import { writable } from 'svelte/store';
 
 describe('+layout.svelte', () => {
