@@ -1,19 +1,31 @@
-# Stage 1: Build SvelteKit
-FROM node:20-alpine AS frontend-build
-
+# Stage 1: Build & Test (Node environment)
+FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Install pnpm
 RUN npm install -g pnpm
 COPY frontend/package.json frontend/pnpm-lock.yaml* ./
 RUN pnpm install
 COPY frontend/ .
 RUN pnpm build
 
-# Stage 2: Serve with Caddy
-FROM caddy:2-alpine AS frontend-runtime
+# Copy the rest of the frontend code
+COPY frontend/ .
 
+# Stage 1a: Optional test stage
+FROM builder AS test
+# Run frontend tests inside the container
+# Exits with error code if tests fail
+CMD ["pnpm", "test", "--", "--watch=false"]
+
+# Stage 2: Production image (Caddy only)
+FROM caddy:2-alpine AS production
 WORKDIR /srv
-# Copy the static build from the frontend-build stage
-COPY --from=frontend-build /app/build /srv
+
+# Copy built static files from builder
+COPY --from=builder /app/build /srv
+
+# Copy Caddy config
 COPY frontend/Caddyfile /etc/caddy/Caddyfile
 
 EXPOSE 80 443
