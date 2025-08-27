@@ -24,7 +24,7 @@ jobs:
               -t frontend-test:${GITHUB_SHA} \
               --target test \
               . && \
-              docker run --rm ghcr.io/bahaynes/frontend-test:${GITHUB_SHA}
+              docker run --rm frontend-test:${GITHUB_SHA}
 
     env:
       REGISTRY: ghcr.io
