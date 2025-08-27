@@ -76,3 +76,6 @@ run_app.sh.log
 
 # Virtualenv
 /backend/venv/
+
+# Temporary verification files
+jules-scratch/
