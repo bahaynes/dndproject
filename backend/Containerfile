@@ -8,11 +8,11 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python deps
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt gunicorn uvicorn
 
 # Copy the app
-COPY . .
+COPY backend/ .
 
 # Expose backend port
 EXPOSE 8000
