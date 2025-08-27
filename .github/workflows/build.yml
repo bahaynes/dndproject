@@ -20,8 +20,11 @@ jobs:
             dockerfile: frontend/Containerfile
             image: ghcr.io/bahaynes/dndproject-frontend
             test_cmd: |
-              docker run --rm -v $PWD:/app -w /app ghcr.io/bahaynes/dndproject-frontend:${GITHUB_SHA} \
-                sh -c "npm install && npm test -- --watch=false"
+              docker build -f frontend/Containerfile \
+              -t frontend-test:${GITHUB_SHA} \
+              --target test \
+              . && \
+              docker run --rm ghcr.io/bahaynes/frontend-test:${GITHUB_SHA}
 
     env:
       REGISTRY: ghcr.io
