@@ -1,31 +1,3 @@
-<<<<<<< HEAD
-// src/lib/auth.ts
-import { writable, type Writable } from 'svelte/store';
-
-export interface User {
-  username: string;
-  email?: string;
-  // add more fields as needed
-}
-
-export interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
-}
-
-export const auth: Writable<AuthState> = writable({
-  user: null,
-  isAuthenticated: false,
-});
-
-export function login(user: User) {
-  auth.set({ user, isAuthenticated: true });
-}
-
-export function logout() {
-  auth.set({ user: null, isAuthenticated: false });
-}
-=======
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
 
@@ -69,4 +41,3 @@ function createAuth() {
 }
 
 export const auth = createAuth();
->>>>>>> 884d13a (Apply patch /tmp/170dc8d2-848f-4b7e-a0f9-dfd2dc51ac30.patch)

@@ -24,7 +24,11 @@ jobs:
               -t frontend-test:${GITHUB_SHA} \
               --target test \
               . && \
+<<<<<<< HEAD
+              docker run --rm frontend-test:${GITHUB_SHA}
+=======
               docker run --rm ghcr.io/bahaynes/frontend-test:${GITHUB_SHA}
+>>>>>>> 884d13a (Apply patch /tmp/170dc8d2-848f-4b7e-a0f9-dfd2dc51ac30.patch)
 
     env:
       REGISTRY: ghcr.io
