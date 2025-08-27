@@ -17,7 +17,7 @@ sudo apt-get update -y && apt-get install -y \
     libatk-bridge2.0-0 libepoxy0 libatspi2.0-0 \
     xdg-utils libgbm-dev lsb-release --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
-
+    
 # --- Docker Setup ---
 echo "🐳 Configuring Docker..."
 # Add current user to the 'docker' group to avoid using sudo with docker

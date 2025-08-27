@@ -66,7 +66,7 @@ jobs:
         run: |
           # Push SHA-tagged image
           docker push ${{ matrix.image }}:${GITHUB_SHA}
-
+          
           # Tag as latest and push
           docker tag ${{ matrix.image }}:${GITHUB_SHA} ${{ matrix.image }}:latest
           docker push ${{ matrix.image }}:latest
