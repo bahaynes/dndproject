@@ -101,3 +101,47 @@ To ensure consistency, reliability, and readability, please follow these rules w
 * Stick to the defined stack: **SvelteKit + TailwindCSS (frontend), FastAPI (backend), SQLite/Postgres (DB)**.
 * Do not replace technologies (e.g., don’t suggest React/Next.js, Flask, or Django).
 * Always ensure code compiles and tests succeed before committing.
+
+---
+
+## AI Contributor Environment
+
+This section contains guidelines specifically for AI contributors working in the provided cloud environment.
+
+### Environment Limitations
+The development environment has certain restrictions on `git` commands. Specifically, `git pull` and `git merge` are not available. This means that resolving merge conflicts in the standard way is not possible.
+
+### Merge Conflict Resolution
+If you encounter a merge conflict, the recommended procedure is as follows:
+1.  **Do not try to resolve the conflict directly.**
+2.  **Reset your work**: Use the `reset_all()` tool to revert all your changes and start from a clean slate. This will bring your environment in sync with the `main` branch.
+3.  **Re-implement your changes**: Carefully re-apply your changes on top of the clean branch.
+4.  **Submit a new pull request**: Submit your work on a new branch. This new branch should not have any merge conflicts.
+
+### Avoiding Merge Conflicts
+To minimize the chances of merge conflicts, please follow these best practices:
+-   **Work in small, incremental steps**: Make small, focused commits.
+-   **Keep branches short-lived**: Submit your work as soon as it's ready.
+-   **Stay informed about changes in `main`**: While you cannot `pull` directly, be aware that the `main` branch might change. If you are working on a long-running task, it's a good idea to periodically check the `main` branch for changes, and if necessary, reset your work and re-apply your changes on top of the latest `main`.
+
+---
+
+## AI Contributor Environment
+
+This section contains guidelines specifically for AI contributors working in the provided cloud environment.
+
+### Environment Limitations
+The development environment has certain restrictions on `git` commands. Specifically, `git pull` and `git merge` are not available. This means that resolving merge conflicts in the standard way is not possible.
+
+### Merge Conflict Resolution
+If you encounter a merge conflict, the recommended procedure is as follows:
+1.  **Do not try to resolve the conflict directly.**
+2.  **Reset your work**: Use the `reset_all()` tool to revert all your changes and start from a clean slate. This will bring your environment in sync with the `main` branch.
+3.  **Re-implement your changes**: Carefully re-apply your changes on top of the clean branch.
+4.  **Submit a new pull request**: Submit your work on a new branch. This new branch should not have any merge conflicts.
+
+### Avoiding Merge Conflicts
+To minimize the chances of merge conflicts, please follow these best practices:
+-   **Work in small, incremental steps**: Make small, focused commits.
+-   **Keep branches short-lived**: Submit your work as soon as it's ready.
+-   **Stay informed about changes in `main`**: While you cannot `pull` directly, be aware that the `main` branch might change. If you are working on a long-running task, it's a good idea to periodically check the `main` branch for changes, and if necessary, reset your work and re-apply your changes on top of the latest `main`.
