@@ -39,11 +39,4 @@ if ! grep -q "^$(whoami):" /etc/subgid; then
   echo "$(whoami):100000:65536" | sudo tee -a /etc/subgid
 fi
 
-# --- Final Instructions ---
-echo ""
-echo "✅ Environment setup complete!"
-echo ""
-echo "Usage recommendation:"
-echo "1. Try running the application with 'podman-compose up --build'."
-echo "2. If you encounter errors (especially 'seccomp' or permission issues), try using Docker instead: 'sudo docker compose up --build'."
-echo "   (Note: 'sudo' might be needed if the 'docker' group change hasn't taken effect yet)."
+git clean -fdx
