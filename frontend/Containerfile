@@ -29,17 +29,23 @@ WORKDIR /app
 
 # Install deps (use the same package files from repo)
 COPY frontend/package.json frontend/pnpm-lock.yaml* ./
+
 RUN pnpm install --frozen-lockfile
 
-# Copy source for tests
-COPY frontend/ .
+# Create directories for Vitest reports and .svelte-kit tsconfig stub
+RUN mkdir -p reports \
+    && mkdir -p .svelte-kit
 
-# Ensure the reports directory exists for JUnit reporter (vitest -> reports/junit.xml)
-RUN mkdir -p reports
+# Optional: create empty base tsconfig so Vitest + SvelteKit don't fail
+RUN echo '{ "extends": "./.svelte-kit/tsconfig.json" }' > tsconfig.json || true
 
 # If you run Playwright tests, ensure browsers + OS deps are available.
 # Keep this line if your test suite needs Playwright; remove/comment if not.
 RUN npx playwright install --with-deps chromium
+
+# Copy source for tests
+COPY frontend/ .
+
 
 # CI-friendly test command (this image is intended to be built with --target test)
 CMD ["pnpm", "run", "test:ci"]

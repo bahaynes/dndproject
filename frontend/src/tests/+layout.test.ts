@@ -1,19 +1,27 @@
 import { render, screen } from '@testing-library/svelte';
 import Layout from '../routes/+layout.svelte';
 import { auth } from '$lib/auth';
-import { writable } from 'svelte/store';
+import { beforeEach, test, expect } from 'vitest';
 
-describe('+layout.svelte', () => {
-    it('renders a logout button when authenticated', () => {
-        // Mock the auth store
-        const mockAuth = {
-            ...auth,
-            ...writable({ isAuthenticated: true, user: { username: 'testuser' } })
-        };
-
-        render(Layout, { props: { auth: mockAuth } });
-
-        const logoutButton = screen.getByText('Logout');
-        expect(logoutButton).toBeInTheDocument();
-    });
+beforeEach(() => {
+  // Replace the value of the existing auth store
+  auth.set({
+    isAuthenticated: true,
+    user: { username: 'testuser' },
+    token: 'fake-token'
+  });
 });
+
+test('renders Logout button and welcome text when authenticated', async () => {
+  render(Layout);
+
+  // Dashboard link
+  expect(screen.getByText('Dashboard')).toBeInTheDocument();
+
+  // Welcome text
+  expect(screen.getByText('Welcome, testuser')).toBeInTheDocument();
+
+  // Logout button
+  expect(screen.getByText('Logout')).toBeInTheDocument();
+});
+
