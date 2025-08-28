@@ -18,8 +18,18 @@ FROM builder AS test
 # Exits with error code if tests fail
 CMD ["pnpm", "test", "--", "--watch=false"]
 
+FROM caddy:2-builder-alpine AS caddy-builder
+
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    xcaddy build \
+    --with github.com/caddy-dns/cloudflare
+
 # Stage 2: Production image (Caddy only)
 FROM caddy:2-alpine AS production
+
+COPY --from=caddy-builder /usr/bin/caddy /usr/bin/caddy
+
 WORKDIR /srv
 
 # Copy built static files from builder
@@ -29,4 +39,5 @@ COPY --from=builder /app/build /srv
 COPY frontend/Caddyfile /etc/caddy/Caddyfile
 
 EXPOSE 80 443
+
 CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]

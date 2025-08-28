@@ -3,11 +3,11 @@
     acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
 }
 
-:80 {
+http://dndproject.bahaynes.com {
     redir https://{host}{uri}
 }
 
-:443 {
+https://dndproject.bahaynes.com {
     encode gzip
     root * /srv
     file_server
@@ -18,7 +18,4 @@
         reverse_proxy backend:8000
     }
 
-    tls {
-        dns cloudflare
-    }
 }

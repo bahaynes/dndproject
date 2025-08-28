@@ -1,16 +1,17 @@
 services:
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Containerfile.${MODE:-dev}
+      context: .
+      dockerfile: ./frontend/Containerfile
     ports:
       - "5173:5173"    # dev
-      - "8080:80"      # prod
-      - "8443:443"     # prod
+      - "9080:80"      # prod
+      - "9443:443"     # prod
     depends_on:
       - backend
     environment:
       - VITE_API_URL=/api
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
 
   backend:
     build:
