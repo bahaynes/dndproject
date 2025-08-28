@@ -1,43 +1,72 @@
-# Stage 1: Build & Test (Node environment)
+# syntax required for BuildKit features used in the caddy-builder stage
+# (keeps --mount cache directives working)
+# syntax=docker/dockerfile:1.4
+
+# ---- Stage 1: Build (Node environment) ----
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install pnpm
+# Install pnpm (alpine-friendly small image for building)
 RUN npm install -g pnpm
+
+# Copy only package metadata first to leverage docker layer caching
 COPY frontend/package.json frontend/pnpm-lock.yaml* ./
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
+
+# Copy source and build
 COPY frontend/ .
 RUN pnpm build
 
-# Copy the rest of the frontend code
+# ---- Stage 1a: Test stage (CI) ----
+# Use a Debian-based image for better compatibility with Playwright / browsers
+FROM node:20-bookworm AS test
+
+ENV CI=1
+# Ensure pnpm is available via Corepack
+RUN corepack enable
+
+WORKDIR /app
+
+# Install deps (use the same package files from repo)
+COPY frontend/package.json frontend/pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile
+
+# Copy source for tests
 COPY frontend/ .
 
-# Stage 1a: Optional test stage
-FROM builder AS test
-# Run frontend tests inside the container
-# Exits with error code if tests fail
-CMD ["pnpm", "test", "--", "--watch=false"]
+# Ensure the reports directory exists for JUnit reporter (vitest -> reports/junit.xml)
+RUN mkdir -p reports
 
+# If you run Playwright tests, ensure browsers + OS deps are available.
+# Keep this line if your test suite needs Playwright; remove/comment if not.
+RUN npx playwright install --with-deps chromium
+
+# CI-friendly test command (this image is intended to be built with --target test)
+CMD ["pnpm", "run", "test:ci"]
+
+# ---- Caddy builder (to compile xcaddy with extras like cloudflare DNS) ----
 FROM caddy:2-builder-alpine AS caddy-builder
 
+# Use Docker BuildKit cache mounts to speed up builds (requires BuildKit)
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     xcaddy build \
     --with github.com/caddy-dns/cloudflare
 
-# Stage 2: Production image (Caddy only)
+# ---- Stage 2: Production image (Caddy serves static files) ----
 FROM caddy:2-alpine AS production
 
 COPY --from=caddy-builder /usr/bin/caddy /usr/bin/caddy
 
 WORKDIR /srv
 
-# Copy built static files from builder
+# Copy built static files from the builder stage
 COPY --from=builder /app/build /srv
 
-# Copy Caddy config
+# Copy Caddy config shipped with frontend
 COPY frontend/Caddyfile /etc/caddy/Caddyfile
 
 EXPOSE 80 443
 
 CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+

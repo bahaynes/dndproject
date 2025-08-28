@@ -13,6 +13,8 @@ export default defineConfig({
 	test: {
 		include: ['src/**/*.{test,spec}.{js,ts}'],
 		globals: true,
+		reporters: process.env.CI ? ['default', 'junit'] : ['default'],
+		outputFile: process.env.CI ? 'reports/junit.xml' : undefined,
 		environment: 'jsdom',
 		setupFiles: './src/setupTests.ts',
 	},

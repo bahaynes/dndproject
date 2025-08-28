@@ -18,7 +18,7 @@ jobs:
             test_cmd: "docker run --rm ghcr.io/bahaynes/dndproject-backend:${GITHUB_SHA} pytest"
           - service: frontend
             dockerfile: frontend/Containerfile
-            image: ghcr.io/bahaynes/dndproject-frontend
+            image: ghcr.io/${{ github.repository }}-frontend
             test_cmd: |
               docker build -f frontend/Containerfile \
               -t frontend-test:${GITHUB_SHA} \
@@ -28,8 +28,8 @@ jobs:
 
     env:
       REGISTRY: ghcr.io
-      OWNER: bahaynes
-      REPO: dndproject
+      OWNER: ${{ github.repository_owner }}
+      REPO: ${{ github.event.repository.name }}
 
     steps:
       - name: Checkout repository
@@ -60,6 +60,13 @@ jobs:
 
       - name: Run tests
         run: ${{ matrix.test_cmd }}
+
+      - name: Upload Vitest report
+        if: ${{ matrix.service == 'frontend' && always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-report
+          path: frontend/reports/junit.xml
 
       - name: Push image
         if: github.ref == 'refs/heads/main'
