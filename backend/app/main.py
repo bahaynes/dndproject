@@ -69,6 +69,10 @@ async def get_current_active_admin_user(current_user: schemas.User = Depends(get
         raise HTTPException(status_code=403, detail="Not authorized: Admin access required")
     return current_user
 
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+
 @app.post("/token", response_model=schemas.Token, tags=["Authentication"])
 async def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
     user = crud.get_user_by_username(db, username=form_data.username)

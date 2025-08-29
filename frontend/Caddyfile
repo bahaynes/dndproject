@@ -1,21 +1,10 @@
-{
-    email admin@bahaynes.com
-    acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
-}
-
-http://dndproject.bahaynes.com {
-    redir https://{host}{uri}
-}
-
-https://dndproject.bahaynes.com {
+:5173 {
     encode gzip
     root * /srv
     file_server
     try_files {path} /index.html
 
-    # Proxy API requests
     handle_path /api/* {
         reverse_proxy backend:8000
     }
-
 }
