@@ -13,6 +13,7 @@
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
 		"test": "vitest",
+		"test:all": "bash ../run_tests.sh",
 		"test:ci": "vitest --run --reporter=dot --coverage=false --passWithNoTests",
 		"test:coverage": "vitest run --coverage"
 	},
