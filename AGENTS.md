@@ -50,32 +50,35 @@ To ensure consistency, reliability, and readability, please follow these rules w
 
 ---
 
-## Containerization
+## Setup & Testing
 
-* The project is containerized and best run with **Docker Compose**. While `podman-compose` may work in some environments, it has known incompatibilities with certain kernel security features (`seccomp`).
-* Always ensure that the project builds and runs via:
+This project is configured for a non-containerized development environment.
+
+### Full Workflow
+Use these scripts for a complete setup and test run.
+
+* **Setup**: Run the setup script to install all dependencies.
   ```bash
-  sudo docker compose up --build
+  ./setup_dev.sh
   ```
-* Use `docker-compose.yml` for all compose configuration.
-* The base images in the `Containerfile`s point to the Amazon ECR Public mirror to avoid Docker Hub rate-limiting issues.
+* **Testing**: Run the unified test script to execute the entire test suite.
+  ```bash
+  ./run_tests.sh
+  ```
 
-
----
-
-## Testing
+### Individual Tests
+You can also run tests for each part of the application individually.
 
 * **Frontend tests**: Use **Vitest** for SvelteKit components.
-
   ```bash
-  pnpm test
+  cd frontend && pnpm test
   ```
 * **Backend tests**: Use **pytest** for FastAPI routes and logic.
-
   ```bash
-  pytest
+  cd backend && pytest
   ```
-* All tests must pass before merging or committing.
+
+All tests must pass before merging or committing.
 
 ---
 
