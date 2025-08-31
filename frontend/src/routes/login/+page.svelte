@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { auth } from '$lib/auth';
+    import { login } from '$lib/auth';
     import { goto } from '$app/navigation';
 
     let username = '';
@@ -9,7 +9,8 @@
     async function handleSubmit() {
         error = null;
         try {
-            const response = await fetch('/api/token', {
+            // 1. Get the access token
+            const tokenResponse = await fetch('/api/token', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -20,14 +21,39 @@
                 }),
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                auth.login(data.access_token);
-                await goto('/dashboard');
-            } else {
-                const errorData = await response.json();
+            if (!tokenResponse.ok) {
+                const errorData = await tokenResponse.json();
                 error = errorData.detail || 'Failed to login';
+                return;
             }
+
+            const tokenData = await tokenResponse.json();
+            const accessToken = tokenData.access_token;
+
+            // 2. Use the token to get user info
+            const userResponse = await fetch('/api/users/me/', {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
+
+            if (!userResponse.ok) {
+                error = 'Failed to fetch user details after login.';
+                return;
+            }
+
+            const userData = await userResponse.json();
+
+            // 3. Update the auth state
+            login(userData);
+
+            // 4. Store the token for future sessions (e.g., in localStorage)
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('accessToken', accessToken);
+            }
+
+            await goto('/dashboard');
+
         } catch (e) {
             error = 'An unexpected error occurred.';
             console.error(e);
