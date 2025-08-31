@@ -12,7 +12,7 @@ from . import crud, models, schemas, security
 from .database import SessionLocal, engine, Base
 
 # Create tables
-models.Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
