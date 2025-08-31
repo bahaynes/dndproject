@@ -28,7 +28,7 @@ services:
     command: >
       sh -c "if [ '$${MODE}' = 'prod' ];
             then gunicorn -k uvicorn.workers.UvicornWorker app.main:app -b 0.0.0.0:8000;
-            else uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload;
+            else uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload --log-level debug;
             fi"
 
 volumes:
