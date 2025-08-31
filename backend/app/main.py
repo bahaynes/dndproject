@@ -88,10 +88,10 @@ async def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user_by_email = crud.get_user_by_email(db, email=user.email)
     if db_user_by_email:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="This email is already registered. If you have an account, please sign in instead.")
     db_user_by_username = crud.get_user_by_username(db, username=user.username)
     if db_user_by_username:
-        raise HTTPException(status_code=400, detail="Username already registered")
+        raise HTTPException(status_code=400, detail="This username is already in use. Please choose another one.")
     return crud.create_user(db=db, user=user)
 
 @app.get("/users/me/", response_model=schemas.User, tags=["Users"])
