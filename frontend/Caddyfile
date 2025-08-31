@@ -11,13 +11,14 @@ https://dndproject.bahaynes.com {
         dns cloudflare {env.CLOUDFLARE_API_TOKEN}
     }
     encode gzip
-    root * /srv
-    file_server
-    try_files {path} /index.html
 
-    # Proxy API requests
+    # Proxy API requests FIRST to avoid conflict with file_server
     handle_path /api/* {
         reverse_proxy backend:8000
     }
 
+    # Serve the SvelteKit frontend
+    root * /srv
+    file_server
+    try_files {path} /index.html
 }
