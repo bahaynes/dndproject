@@ -9,7 +9,10 @@ import os
 import json
 
 from . import crud, models, schemas, security
-from .database import SessionLocal, engine
+from .database import SessionLocal, engine, Base
+
+# Create tables
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
