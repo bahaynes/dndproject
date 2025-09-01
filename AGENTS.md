@@ -12,6 +12,21 @@ To ensure consistency, reliability, and readability, please follow these rules w
 
 ---
 
+## Development Environment
+For a better development experience with hot-reloading, use the `docker-compose.dev.yml` file.
+
+To start the development environment:
+```bash
+sudo docker compose -f docker-compose.dev.yml up --build
+```
+
+To run tests, execute the test command inside the running backend container:
+```bash
+sudo docker compose -f docker-compose.dev.yml exec backend pytest
+```
+
+---
+
 ## Frontend (SvelteKit + TailwindCSS)
 - The frontend is built with **SvelteKit** and styled with **TailwindCSS**.
 - State management should use **Svelte stores** (not Redux, Zustand, etc.).
