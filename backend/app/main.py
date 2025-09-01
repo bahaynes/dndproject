@@ -9,7 +9,10 @@ import os
 import json
 
 from . import crud, models, schemas, security
-from .database import SessionLocal, engine
+from .database import SessionLocal, engine, Base
+
+# Create tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -81,15 +84,28 @@ async def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth
     access_token = security.create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.post("/users/", response_model=schemas.User, tags=["Users"])
+@app.post("/users/", response_model=schemas.UserCreateResponse, tags=["Users"])
 def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user_by_email = crud.get_user_by_email(db, email=user.email)
     if db_user_by_email:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise HTTPException(status_code=400, detail="This email is already registered. If you have an account, please sign in instead.")
     db_user_by_username = crud.get_user_by_username(db, username=user.username)
     if db_user_by_username:
-        raise HTTPException(status_code=400, detail="Username already registered")
-    return crud.create_user(db=db, user=user)
+        raise HTTPException(status_code=400, detail="This username is already in use. Please choose another one.")
+
+    new_user = crud.create_user(db=db, user=user)
+    access_token = security.create_access_token(data={"sub": new_user.username})
+
+    return {
+        "id": new_user.id,
+        "username": new_user.username,
+        "email": new_user.email,
+        "is_active": new_user.is_active,
+        "role": new_user.role,
+        "character": new_user.character,
+        "access_token": access_token,
+        "token_type": "bearer",
+    }
 
 @app.get("/users/me/", response_model=schemas.User, tags=["Users"])
 async def read_users_me(current_user: schemas.User = Depends(get_current_active_user)):

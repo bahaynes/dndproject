@@ -153,6 +153,11 @@ class User(UserBase):
         from_attributes = True
 
 
+class UserCreateResponse(User):
+    access_token: str
+    token_type: str = "bearer"
+
+
 # Token Schemas
 class Token(BaseModel):
     access_token: str

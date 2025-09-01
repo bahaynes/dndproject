@@ -1,6 +1,5 @@
 {
     email admin@bahaynes.com
-    acme_dns cloudflare {env.CLOUDFLARE_API_TOKEN}
 }
 
 http://dndproject.bahaynes.com {
@@ -8,14 +7,22 @@ http://dndproject.bahaynes.com {
 }
 
 https://dndproject.bahaynes.com {
+    tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
     encode gzip
-    root * /srv
-    file_server
-    try_files {path} /index.html
 
-    # Proxy API requests
-    handle_path /api/* {
+    # API requests
+    @api path /api/*
+    handle @api {
+        uri strip_prefix /api
         reverse_proxy backend:8000
     }
 
+    # All other requests (frontend)
+    handle {
+        root * /srv
+        try_files {path} /index.html
+        file_server
+    }
 }

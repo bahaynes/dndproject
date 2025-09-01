@@ -1,5 +1,6 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
+    import { login } from '$lib/auth';
 
     let username = '';
     let email = '';
@@ -18,7 +19,7 @@
         }
 
         try {
-            const response = await fetch('http://localhost:8000/users/', {
+            const response = await fetch('/api/users/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -31,10 +32,27 @@
             });
 
             if (response.ok) {
-                successMessage = "Registration successful! Redirecting to login...";
+                successMessage = "Registration successful! Logging you in...";
+                const data = await response.json();
+
+                const user = {
+                    id: data.id,
+                    username: data.username,
+                    email: data.email,
+                    is_active: data.is_active,
+                    role: data.role,
+                    character: data.character
+                };
+
+                login(user);
+
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('accessToken', data.access_token);
+                }
+
                 setTimeout(() => {
-                    goto('/login');
-                }, 2000);
+                    goto('/dashboard');
+                }, 1500);
             } else {
                 const errorData = await response.json();
                 error = errorData.detail || 'Failed to register';

@@ -71,11 +71,11 @@ You can also run tests for each part of the application individually.
 
 * **Frontend tests**: Use **Vitest** for SvelteKit components.
   ```bash
-  cd frontend && pnpm test
+  pnpm --prefix ./frontend test
   ```
 * **Backend tests**: Use **pytest** for FastAPI routes and logic.
   ```bash
-  cd backend && pytest
+  pytest backend/
   ```
 
 All tests must pass before merging or committing.
@@ -104,3 +104,10 @@ All tests must pass before merging or committing.
 * Stick to the defined stack: **SvelteKit + TailwindCSS (frontend), FastAPI (backend), SQLite/Postgres (DB)**.
 * Do not replace technologies (e.g., don’t suggest React/Next.js, Flask, or Django).
 * Always ensure code compiles and tests succeed before committing.
+
+---
+
+## AI Contributor Environment Notes
+
+* **Working Directory:** The root of the repository is located at `/app`. All shell commands should be executed from this directory or use absolute paths.
+* **Running Scripts:** When running scripts inside subdirectories (like `frontend` or `backend`), prefer using commands that don't require changing the directory. For example, instead of `cd frontend && pnpm test`, use `pnpm --prefix ./frontend test`. This is more robust. If you must `cd`, be sure to `cd` back to `/app` or use absolute paths in subsequent commands.
