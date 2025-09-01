@@ -31,7 +31,7 @@ def test_create_user_duplicate_username(client):
         json={"username": "testuser", "email": "test2@example.com", "password": "password123"},
     )
     assert response.status_code == 400
-    assert response.json() == {"detail": "Username already registered"}
+    assert response.json() == {"detail": "This username is already in use. Please choose another one."}
 
 def test_create_user_duplicate_email(client):
     # Create the first user
@@ -45,7 +45,7 @@ def test_create_user_duplicate_email(client):
         json={"username": "testuser2", "email": "test@example.com", "password": "password123"},
     )
     assert response.status_code == 400
-    assert response.json() == {"detail": "Email already registered"}
+    assert response.json() == {"detail": "This email is already registered. If you have an account, please sign in instead."}
 
 
 def test_login_for_access_token(client):
