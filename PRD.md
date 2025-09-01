@@ -64,12 +64,20 @@ Initial scope: **1 GM and 5–10 players per deployment**.
 * **Markdown Support** – allow markdown in mission descriptions, notes, and reports.
 * **Search & Filters** – mission board and store item search.
 * **Dark Mode** toggle.
+* **Mobile Responsiveness** – ensure full functionality on mobile devices.
 
 ### 4.5. Real-time Updates
 
 * **Server-Sent Events (SSE)** for lightweight live updates (mission board, session signup, item store).
 * **Clarification**: Real-time covers *list refresh and status changes*, not simultaneous editing.
 * Future: optional WebSockets for richer collaboration (chat, shared editing).
+
+### 4.6. Quality of Life Features
+
+* **Audit Logs** – simple activity history for admins (missions created, rewards distributed).
+* **Error & Health Monitoring** – optional integration with Sentry, Prometheus, or similar.
+* **Accessibility** – ensure screen reader compatibility, color contrast, and keyboard navigation.
+* **Test Data Seeder** – ability to populate with sample characters/missions for demo/testing.
 
 ## 5. Technical Requirements
 
@@ -102,6 +110,7 @@ Core models:
 * `GameSessionPlayer` – player signups per session
 * `Note` (stretch) – player or shared campaign notes
 * `Tag` (stretch) – tags applied to missions, items, or sessions
+* `AuditLog` (stretch) – system events for tracking GM/admin actions
 
 ### 5.3. Deployment
 
@@ -110,6 +119,8 @@ Core models:
 * Default config: one container runs FastAPI backend + serves static SvelteKit frontend.
 * Optional: separate containers (frontend, backend, database) for advanced setups.
 * Offline operation supported (SQLite + local auth), though not required.
+* Deployment ready for minimal cloud hosting (Fly.io, Railway, or bare VPS).
+* CI/CD pipeline (GitHub Actions) for linting, testing, and build.
 
 ## 6. Future Enhancements
 
@@ -119,3 +130,6 @@ Core models:
 * **Advanced Real-time** – WebSocket support for richer collaboration.
 * **Performance Monitoring** – especially for Postgres deployments.
 * **Multi-Tenancy** – support multiple campaigns/worlds from one deployment.
+* **Offline-first PWA** – add service worker for caching and mobile play.
+* **Plugin System** – allow optional modules (house rules, custom sheets).
+
