@@ -7,11 +7,16 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 import json
+import shutil
 
 from . import crud, models, schemas, security
 from .database import SessionLocal, engine
 
 app = FastAPI()
+
+# Mount static files
+os.makedirs("backend/static/character_images", exist_ok=True)
+app.mount("/static", StaticFiles(directory="backend/static"), name="static")
 
 # CORS Middleware
 origins = [
@@ -106,7 +111,7 @@ def read_character(character_id: int, db: Session = Depends(get_db)):
 @app.put("/api/characters/{character_id}", response_model=schemas.Character, tags=["Characters"])
 def update_character(
     character_id: int,
-    character: schemas.CharacterCreate,
+    character: schemas.CharacterUpdate,
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_active_user),
 ):
@@ -117,6 +122,32 @@ def update_character(
     if db_character.owner_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to update this character")
     return crud.update_character(db=db, character_id=character_id, character=character)
+
+
+@app.post("/api/characters/{character_id}/image", response_model=schemas.Character, tags=["Characters"])
+async def upload_character_image(
+    character_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_active_user),
+):
+    db_character = crud.get_character(db, character_id=character_id)
+    if db_character is None:
+        raise HTTPException(status_code=404, detail="Character not found")
+    if db_character.owner_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized to update this character")
+
+    # Generate a unique filename to avoid overwrites
+    file_extension = os.path.splitext(file.filename)[1]
+    unique_filename = f"{character_id}_{os.urandom(8).hex()}{file_extension}"
+    file_path = f"backend/static/character_images/{unique_filename}"
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    image_url = f"/static/character_images/{unique_filename}"
+    return crud.update_character_image_url(db=db, character_id=character_id, image_url=image_url)
+
 
 # --- Item Endpoints ---
 @app.post("/api/items/", response_model=schemas.Item, tags=["Items"], dependencies=[Depends(get_current_active_admin_user)])

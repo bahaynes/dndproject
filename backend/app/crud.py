@@ -52,12 +52,21 @@ def get_character(db: Session, character_id: int):
     return db.query(models.Character).filter(models.Character.id == character_id).first()
 
 
-def update_character(db: Session, character_id: int, character: schemas.CharacterCreate):
+def update_character(db: Session, character_id: int, character: schemas.CharacterUpdate):
     db_character = get_character(db, character_id)
     if db_character:
         update_data = character.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(db_character, key, value)
+        db.commit()
+        db.refresh(db_character)
+    return db_character
+
+
+def update_character_image_url(db: Session, character_id: int, image_url: str):
+    db_character = get_character(db, character_id)
+    if db_character:
+        db_character.image_url = image_url
         db.commit()
         db.refresh(db_character)
     return db_character

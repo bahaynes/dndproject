@@ -120,6 +120,18 @@ class CharacterCreate(CharacterBase):
     pass
 
 
+class CharacterUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+class CharacterUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+
+
 class Character(CharacterBase):
     id: int
     owner_id: int
