@@ -1,37 +1,43 @@
 <script lang="ts">
   import '../app.css';
-  import { auth } from '$lib/auth';
+  import { auth, login, logout } from '$lib/auth'; // Corrected import
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
 
-  // Fetch user profile on mount if authenticated but no user data
   onMount(async () => {
     if (browser) {
+      const token = localStorage.getItem('accessToken');
       const currentAuth = get(auth);
-      if (currentAuth.isAuthenticated && !currentAuth.user) {
+
+      if (token && !currentAuth.isAuthenticated) {
         try {
-          const response = await fetch('http://localhost:8000/users/me/', {
-            headers: { Authorization: `Bearer ${currentAuth.token}` }
+          // Corrected URL
+          const response = await fetch('/api/users/me/', {
+            headers: { Authorization: `Bearer ${token}` }
           });
           if (response.ok) {
             const user = await response.json();
-            auth.setUser(user);
+            login(user); // Corrected function call
           } else {
-            auth.logout();
+            // Token is invalid, so log out
+            handleLogout();
           }
         } catch (e) {
           console.error('Failed to fetch user profile', e);
-          auth.logout();
+          handleLogout();
         }
       }
     }
   });
 
   function handleLogout() {
-    auth.logout();
-    if (browser) goto('/login');
+    logout(); // Corrected function call
+    if (browser) {
+      localStorage.removeItem('accessToken');
+      goto('/login');
+    }
   }
 </script>
 
@@ -56,4 +62,3 @@
 <main>
   <slot />
 </main>
-
