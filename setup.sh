@@ -1,42 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "🔧 Setting up container development environment..."
-echo "This script will configure both Podman (rootless) and Docker."
+echo "--- Building Development Environment Images ---"
+sudo docker compose -f docker-compose.dev.yml build
 
-# --- Package Installation ---
-echo "📦 Installing system dependencies..."
-# Install all tools: podman for rootless, docker as a fallback, and playwright dependencies
-sudo apt-get update -y && apt-get install -y \
-    podman podman-compose uidmap \
-    wget curl ca-certificates \
-    fonts-liberation libnss3 libx11-xcb1 libxcomposite1 libxcursor1 \
-    libxdamage1 libxrandr2 libxi6 libatk1.0-0 libcups2 libdbus-1-3 \
-    libdrm2 libgbm1 libasound2 libpangocairo-1.0-0 libxshmfence1 \
-    libwayland-client0 libwayland-server0 libgles2 \
-    libatk-bridge2.0-0 libepoxy0 libatspi2.0-0 \
-    xdg-utils libgbm-dev lsb-release --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/*
-    
-# --- Docker Setup ---
-echo "🐳 Configuring Docker..."
-# Add current user to the 'docker' group to avoid using sudo with docker
-if ! getent group docker | grep -q "\b$(whoami)\b"; then
-  echo "Adding $(whoami) to the 'docker' group. You may need to start a new shell for this to take effect."
-  sudo usermod -aG docker $(whoami)
-fi
-
-# --- Podman (Rootless) Setup ---
-echo "🐙 Configuring rootless Podman..."
-# Configure subuid/subgid ranges, essential for rootless containers
-if ! grep -q "^$(whoami):" /etc/subuid; then
-  echo "⚙️ Adding subuid range for $(whoami)"
-  echo "$(whoami):100000:65536" | sudo tee -a /etc/subuid
-fi
-
-if ! grep -q "^$(whoami):" /etc/subgid; then
-  echo "⚙️ Adding subgid range for $(whoami)"
-  echo "$(whoami):100000:65536" | sudo tee -a /etc/subgid
-fi
-
-git clean -fdx
+echo "--- Build Complete ---"
+echo "You can now start the environment with ./run_dev.sh"

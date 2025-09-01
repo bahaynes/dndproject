@@ -4,41 +4,45 @@ This is a full-stack application with a FastAPI backend and a Svelte frontend.
 
 ## Development Environment Setup
 
-### With Docker (Recommended)
+This project uses a container-based development environment powered by Docker and managed by a set of helper scripts. This is the recommended way to work on the project.
 
-Please refer to the `docker-compose.yml` and the `Containerfile`s in the `frontend` and `backend` directories.
+**1. Initial Setup**
 
-### Without Docker
-
-A streamlined development environment is available for those who prefer not to use Docker.
-
-**1. Setup**
-
-Run the setup script to install all the necessary dependencies for both the frontend and the backend.
+First, build the development images. This command only needs to be run once, or whenever you change the dependencies in the `Containerfile.dev` files.
 
 ```bash
-./setup_dev.sh
+/app/setup.sh
 ```
 
-**2. Running Tests**
+**2. Running the Development Environment**
 
-To run the entire test suite for both frontend and backend, use the following command:
+To start the frontend and backend services, run:
 
 ```bash
-./run_tests.sh
+/app/run_dev.sh
 ```
 
-You can also run tests for the frontend or backend individually:
+This will start the services in the background. The backend will be available at `http://localhost:8000` and the frontend at `http://localhost:5173`.
 
-- **Frontend:** `cd frontend && pnpm test`
-- **Backend:** `cd backend && pytest`
+**3. Running Tests**
 
-**3. Running the Application**
-
-To run the application, you can use the `run_app.sh` script:
+To run the test suite, use the `run_tests_dev.sh` script.
 
 ```bash
-./run_app.sh
+# Run all tests
+/app/run_tests_dev.sh
+
+# Run only frontend tests
+/app/run_tests_dev.sh --frontend
+
+# Run only backend tests
+/app/run_tests_dev.sh --backend
 ```
 
-This will build the frontend, apply database migrations, and start the backend server.
+**4. Stopping the Development Environment**
+
+To stop all running services, run:
+
+```bash
+/app/stop_dev.sh
+```

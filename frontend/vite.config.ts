@@ -10,6 +10,15 @@ export default defineConfig({
 		sveltekit(),
         svelteTesting(),
 	],
+	server: {
+		proxy: {
+			'/api': {
+				target: 'http://backend:8000',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api/, ''),
+			}
+		}
+	},
 	test: {
 		include: ['src/**/*.{test,spec}.{js,ts}'],
 		globals: true,
