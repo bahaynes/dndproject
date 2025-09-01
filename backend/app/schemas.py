@@ -19,11 +19,6 @@ class CharacterStats(CharacterStatsBase):
         from_attributes = True
 
 
-class UserCreateResponse(User):
-    access_token: str
-    token_type: str = "bearer"
-
-
 # Item Schemas
 class ItemBase(BaseModel):
     name: str
@@ -156,6 +151,11 @@ class User(UserBase):
 
     class Config:
         from_attributes = True
+
+
+class UserCreateResponse(User):
+    access_token: str
+    token_type: str = "bearer"
 
 
 # Token Schemas
