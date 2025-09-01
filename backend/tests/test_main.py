@@ -1,4 +1,5 @@
 import pytest
+from io import BytesIO
 
 # --- Test Cases ---
 
@@ -48,23 +49,11 @@ def test_create_user_duplicate_email(client):
     assert response.json() == {"detail": "Email already registered"}
 
 
-def test_login_for_access_token(client):
-    # First, create a user to log in with
-    client.post(
-        "/users/",
-        json={"username": "loginuser", "email": "login@example.com", "password": "password123"},
-    )
-
-    # Now, attempt to log in
-    response = client.post(
-        "/token",
-        data={"username": "loginuser", "password": "password123"},
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert "access_token" in data
-    assert data["token_type"] == "bearer"
-
+def test_login_for_access_token(client, get_auth_headers):
+    # The fixture will create a user "testuser"
+    headers = get_auth_headers()
+    assert "Authorization" in headers
+    assert headers["Authorization"].startswith("Bearer ")
 
 def test_login_incorrect_password(client):
     client.post(
@@ -79,23 +68,14 @@ def test_login_incorrect_password(client):
     assert response.json() == {"detail": "Incorrect username or password"}
 
 
-def test_read_users_me_success(client):
-    client.post(
-        "/users/",
-        json={"username": "me_user", "email": "me@example.com", "password": "password123"},
-    )
-    login_response = client.post(
-        "/token",
-        data={"username": "me_user", "password": "password123"},
-    )
-    token = login_response.json()["access_token"]
-
-    me_response = client.get(
+def test_read_users_me_success(client, get_auth_headers):
+    headers = get_auth_headers("me_user")
+    response = client.get(
         "/users/me/",
-        headers={"Authorization": f"Bearer {token}"},
+        headers=headers,
     )
-    assert me_response.status_code == 200
-    data = me_response.json()
+    assert response.status_code == 200
+    data = response.json()
     assert data["username"] == "me_user"
     assert data["email"] == "me@example.com"
 
@@ -109,42 +89,25 @@ def test_read_users_me_invalid_token(client):
     assert response.json() == {"detail": "Could not validate credentials"}
 
 
-def test_read_character_success(client):
-    # Create a user, which also creates a character
-    user_response = client.post(
-        "/users/",
-        json={"username": "char_owner", "email": "char@example.com", "password": "password123"},
-    )
-    assert user_response.status_code == 200
-    user_data = user_response.json()
-    character_id = user_data["character"]["id"]
+def test_read_character_success(client, get_auth_headers):
+    headers = get_auth_headers("char_owner")
+    me_response = client.get("/users/me/", headers=headers)
+    character_id = me_response.json()["character"]["id"]
 
     # Read the character
-    char_response = client.get(f"/api/characters/{character_id}")
+    char_response = client.get(f"/api/characters/{character_id}", headers=headers)
     assert char_response.status_code == 200
     char_data = char_response.json()
     assert char_data["id"] == character_id
     assert char_data["name"] == "char_owner's Character"
 
 
-def test_update_character_success(client):
-    # Create a user and get token
-    client.post(
-        "/users/",
-        json={"username": "update_char_owner", "email": "update_char@example.com", "password": "password123"},
-    )
-    login_response = client.post(
-        "/token",
-        data={"username": "update_char_owner", "password": "password123"},
-    )
-    token = login_response.json()["access_token"]
-    headers = {"Authorization": f"Bearer {token}"}
+def test_update_character_success(client, get_auth_headers):
+    headers = get_auth_headers("update_char_owner")
 
-    # Get character ID from the /users/me endpoint
     me_response = client.get("/users/me/", headers=headers)
     character_id = me_response.json()["character"]["id"]
 
-    # Update the character
     update_data = {"name": "Updated Name", "description": "Updated Description"}
     update_response = client.put(
         f"/api/characters/{character_id}",
@@ -155,3 +118,50 @@ def test_update_character_success(client):
     updated_char_data = update_response.json()
     assert updated_char_data["name"] == "Updated Name"
     assert updated_char_data["description"] == "Updated Description"
+
+
+def test_update_character_partial(client, get_auth_headers):
+    headers = get_auth_headers("partial_update_user")
+
+    me_response = client.get("/users/me/", headers=headers)
+    character_id = me_response.json()["character"]["id"]
+    original_name = me_response.json()["character"]["name"]
+
+    update_data = {"description": "A new partial description"}
+    update_response = client.put(
+        f"/api/characters/{character_id}",
+        headers=headers,
+        json=update_data,
+    )
+    assert update_response.status_code == 200
+    updated_char_data = update_response.json()
+    assert updated_char_data["name"] == original_name
+    assert updated_char_data["description"] == "A new partial description"
+
+
+def test_upload_character_image(client, get_auth_headers):
+    headers = get_auth_headers("image_upload_user")
+
+    me_response = client.get("/users/me/", headers=headers)
+    character_id = me_response.json()["character"]["id"]
+
+    # Create a dummy image file
+    image_data = BytesIO(b"this is a test image")
+    files = {"file": ("test_image.png", image_data, "image/png")}
+
+    upload_response = client.post(
+        f"/api/characters/{character_id}/image",
+        headers=headers,
+        files=files,
+    )
+    assert upload_response.status_code == 200
+    data = upload_response.json()
+    assert "image_url" in data
+    assert data["image_url"].startswith(f"/static/character_images/{character_id}_")
+    assert data["image_url"].endswith(".png")
+
+    # Verify the image URL was updated by fetching the character again
+    char_response = client.get(f"/api/characters/{character_id}", headers=headers)
+    assert char_response.status_code == 200
+    char_data = char_response.json()
+    assert char_data["image_url"] == data["image_url"]

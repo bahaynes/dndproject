@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { auth } from '$lib/auth';
+    import { login } from '$lib/auth';
     import { goto } from '$app/navigation';
 
     let username = '';
@@ -9,7 +9,8 @@
     async function handleSubmit() {
         error = null;
         try {
-            const response = await fetch('http://localhost:8000/token', {
+            // 1. Get the auth token
+            const tokenResponse = await fetch('http://localhost:8000/token', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -20,14 +21,33 @@
                 }),
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                auth.login(data.access_token);
-                await goto('/dashboard');
-            } else {
-                const errorData = await response.json();
+            if (!tokenResponse.ok) {
+                const errorData = await tokenResponse.json();
                 error = errorData.detail || 'Failed to login';
+                return;
             }
+
+            const tokenData = await tokenResponse.json();
+            const token = tokenData.access_token;
+
+            // 2. Use the token to fetch the user profile
+            const userResponse = await fetch('http://localhost:8000/users/me/', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!userResponse.ok) {
+                error = 'Failed to fetch user profile.';
+                return;
+            }
+
+            const userData = await userResponse.json();
+
+            // 3. Update the auth store and redirect
+            login(userData, token);
+            await goto('/dashboard');
+
         } catch (e) {
             error = 'An unexpected error occurred.';
             console.error(e);

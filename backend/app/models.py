@@ -14,7 +14,7 @@ class User(Base):
     role = Column(String, default="player", nullable=False)  # Roles: 'player', 'admin'
     is_active = Column(Boolean, default=True)
 
-    character = relationship("Character", back_populates="owner", uselist=False)
+    characters = relationship("Character", back_populates="owner")
 
 
 class Character(Base):
@@ -24,9 +24,10 @@ class Character(Base):
     name = Column(String, index=True, nullable=False)
     description = Column(String, nullable=True)
     image_url = Column(String, nullable=True)
+    is_active = Column(Boolean, default=False, nullable=False)
 
-    owner_id = Column(Integer, ForeignKey("users.id"), unique=True)
-    owner = relationship("User", back_populates="character")
+    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner = relationship("User", back_populates="characters")
 
     stats = relationship("CharacterStats", back_populates="character", uselist=False, cascade="all, delete-orphan")
     inventory = relationship("InventoryItem", back_populates="character", cascade="all, delete-orphan")

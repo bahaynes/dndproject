@@ -37,3 +37,26 @@ def client():
         for table in reversed(Base.metadata.sorted_tables):
             connection.execute(table.delete())
         connection.commit()
+
+
+@pytest.fixture(scope="function")
+def get_auth_headers(client):
+    def _get_auth_headers(username="testuser"):
+        email = f"{username}@example.com"
+        password = "password123"
+
+        # Create user
+        client.post(
+            "/users/",
+            json={"username": username, "email": email, "password": password},
+        )
+
+        # Log in to get token
+        login_response = client.post(
+            "/token",
+            data={"username": username, "password": password},
+        )
+        token = login_response.json()["access_token"]
+        return {"Authorization": f"Bearer {token}"}
+
+    return _get_auth_headers

@@ -1,36 +1,19 @@
 <script lang="ts">
   import '../app.css';
-  import { auth } from '$lib/auth';
+  import { auth, login, logout, initializeAuth } from '$lib/auth';
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
 
-  // Fetch user profile on mount if authenticated but no user data
-  onMount(async () => {
-    if (browser) {
-      const currentAuth = get(auth);
-      if (currentAuth.isAuthenticated && !currentAuth.user) {
-        try {
-          const response = await fetch('http://localhost:8000/users/me/', {
-            headers: { Authorization: `Bearer ${currentAuth.token}` }
-          });
-          if (response.ok) {
-            const user = await response.json();
-            auth.setUser(user);
-          } else {
-            auth.logout();
-          }
-        } catch (e) {
-          console.error('Failed to fetch user profile', e);
-          auth.logout();
-        }
+  onMount(() => {
+      if (browser) {
+          initializeAuth();
       }
-    }
   });
 
   function handleLogout() {
-    auth.logout();
+    logout();
     if (browser) goto('/login');
   }
 </script>
@@ -41,6 +24,7 @@
     <div>
       {#if $auth.isAuthenticated}
         <a href="/dashboard" class="px-4 hover:underline">Dashboard</a>
+        <a href="/character" class="px-4 hover:underline">Character</a>
         {#if $auth.user}
           <span class="px-4">Welcome, {$auth.user.username}</span>
         {/if}
@@ -56,4 +40,3 @@
 <main>
   <slot />
 </main>
-
