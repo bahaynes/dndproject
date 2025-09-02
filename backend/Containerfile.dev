@@ -16,6 +16,9 @@ COPY backend/requirements.txt .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Add /usr/local/bin to the PATH
+ENV PATH="/usr/local/bin:${PATH}"
+
 # Expose the port for the backend server
 EXPOSE 8000
 

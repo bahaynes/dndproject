@@ -30,7 +30,9 @@ fi
 
 if [ "$RUN_BACKEND" = true ]; then
     echo "--- Running Backend Tests ---"
-    sudo docker compose -f docker-compose.dev.yml run --rm tests
+    # We run pytest on the backend service itself.
+    # `run` will start a new container based on the backend service image.
+    sudo docker compose -f docker-compose.dev.yml run --rm backend pytest tests/
 fi
 
 echo "--- Test Run Complete ---"
