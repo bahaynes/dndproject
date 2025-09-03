@@ -1,0 +1,46 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Containerfile.dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - /app/backend:/app
+      - /app/alembic.ini:/app/alembic.ini
+      - backend_data:/data
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      DATABASE_URL: "sqlite:////data/app.db"
+      PYTHONPATH: "/app"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Containerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - /app/frontend:/app
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      VITE_API_URL: "/api"
+    networks:
+      - app-network
+
+volumes:
+  backend_data:
+
+networks:
+  app-network:

@@ -31,6 +31,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/api/v1/health", tags=["Health"])
+async def health_check():
+    return {"status": "ok"}
+
 # API routes
 def get_db():
     db = SessionLocal()

@@ -10,6 +10,19 @@ export default defineConfig({
 		sveltekit(),
         svelteTesting(),
 	],
+	server: {
+		host: true,
+		proxy: {
+			'/api': {
+				target: 'http://backend:8000',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/api/, ''),
+			}
+		},
+		allowedHosts: [
+			'dndproject.bahaynes.com',
+		]
+	},
 	test: {
 		include: ['src/**/*.{test,spec}.{js,ts}'],
 		globals: true,
