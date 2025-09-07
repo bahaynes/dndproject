@@ -227,6 +227,14 @@ def add_character_to_game_session(db: Session, session: models.GameSession, char
     return session
 
 
+def delete_game_session(db: Session, session_id: int):
+    db_session = get_game_session(db, session_id)
+    if db_session:
+        db.delete(db_session)
+        db.commit()
+    return db_session
+
+
 # Data Import/Export CRUD
 def export_game_data(db: Session) -> schemas.GameDataExport:
     users = db.query(models.User).all()

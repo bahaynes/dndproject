@@ -264,6 +264,13 @@ def update_game_session(session_id: int, session_update: schemas.GameSessionCrea
         raise HTTPException(status_code=404, detail="Game session not found")
     return crud.update_game_session(db, session=session, session_update=session_update)
 
+@app.delete("/api/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Game Sessions"], dependencies=[Depends(get_current_active_admin_user)])
+def delete_game_session(session_id: int, db: Session = Depends(get_db)):
+    db_session = crud.delete_game_session(db, session_id=session_id)
+    if db_session is None:
+        raise HTTPException(status_code=404, detail="Game session not found")
+    return {"ok": True}
+
 @app.post("/api/sessions/{session_id}/signup", response_model=schemas.GameSession, tags=["Game Sessions"])
 def signup_for_session(
     session_id: int,

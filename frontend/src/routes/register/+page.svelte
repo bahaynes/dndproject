@@ -1,6 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { login } from '$lib/auth';
+    import { browser } from '$app/environment';
 
     let username = '';
     let email = '';
@@ -10,6 +11,7 @@
     let successMessage: string | null = null;
 
     async function handleSubmit() {
+        if (!browser) return;
         error = null;
         successMessage = null;
 
@@ -19,7 +21,7 @@
         }
 
         try {
-            const response = await fetch('/api/users/', {
+            const response = await fetch('/users/', { // Corrected endpoint from main.py
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -35,20 +37,8 @@
                 successMessage = "Registration successful! Logging you in...";
                 const data = await response.json();
 
-                const user = {
-                    id: data.id,
-                    username: data.username,
-                    email: data.email,
-                    is_active: data.is_active,
-                    role: data.role,
-                    character: data.character
-                };
-
-                login(user);
-
-                if (typeof window !== 'undefined') {
-                    localStorage.setItem('accessToken', data.access_token);
-                }
+                // Use the new login function from auth.ts
+                await login(data.access_token);
 
                 setTimeout(() => {
                     goto('/dashboard');
@@ -102,7 +92,7 @@
                            required>
                 </div>
                 {#if error}
-                    <p class="text-red-500 text-xs mt-2">{error}</p>
+                    <p class="text-red-500 text-xs mt-2" data-testid="error-message">{error}</p>
                 {/if}
                 {#if successMessage}
                     <p class="text-green-500 text-xs mt-2">{successMessage}</p>

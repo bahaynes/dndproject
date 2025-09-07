@@ -1,43 +1,20 @@
 <script lang="ts">
   import '../app.css';
-  import { auth, login, logout } from '$lib/auth'; // Corrected import
+  import { auth, initializeAuth, logout } from '$lib/auth';
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
-  import { get } from 'svelte/store';
 
   onMount(async () => {
     if (browser) {
-      const token = localStorage.getItem('accessToken');
-      const currentAuth = get(auth);
-
-      if (token && !currentAuth.isAuthenticated) {
-        try {
-          // Corrected URL
-          const response = await fetch('/api/users/me/', {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (response.ok) {
-            const user = await response.json();
-            login(user); // Corrected function call
-          } else {
-            // Token is invalid, so log out
-            handleLogout();
-          }
-        } catch (e) {
-          console.error('Failed to fetch user profile', e);
-          handleLogout();
-        }
-      }
+      // Initialize authentication state when the component mounts
+      await initializeAuth();
     }
   });
 
   function handleLogout() {
-    logout(); // Corrected function call
-    if (browser) {
-      localStorage.removeItem('accessToken');
-      goto('/login');
-    }
+    logout();
+    goto('/login');
   }
 </script>
 
@@ -47,6 +24,7 @@
     <div>
       {#if $auth.isAuthenticated}
         <a href="/dashboard" class="px-4 hover:underline">Dashboard</a>
+        <a href="/sessions" class="px-4 hover:underline">Sessions</a>
         {#if $auth.user}
           <span class="px-4">Welcome, {$auth.user.username}</span>
         {/if}
@@ -59,6 +37,6 @@
   </nav>
 </header>
 
-<main>
+<main class="p-4">
   <slot />
 </main>

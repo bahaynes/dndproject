@@ -1,16 +1,18 @@
 <script lang="ts">
     import { login } from '$lib/auth';
     import { goto } from '$app/navigation';
+    import { page } from '$app/stores';
+    import { browser } from '$app/environment';
 
     let username = '';
     let password = '';
     let error: string | null = null;
 
     async function handleSubmit() {
+        if (!browser) return;
         error = null;
         try {
-            // 1. Get the access token
-            const tokenResponse = await fetch('/api/token', {
+            const response = await fetch('/token', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -21,38 +23,19 @@
                 }),
             });
 
-            if (!tokenResponse.ok) {
-                const errorData = await tokenResponse.json();
+            if (!response.ok) {
+                const errorData = await response.json();
                 error = errorData.detail || 'Failed to login';
                 return;
             }
 
-            const tokenData = await tokenResponse.json();
+            const tokenData = await response.json();
             const accessToken = tokenData.access_token;
 
-            // 2. Use the token to get user info
-            const userResponse = await fetch('/api/users/me/', {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            });
+            await login(accessToken);
 
-            if (!userResponse.ok) {
-                error = 'Failed to fetch user details after login.';
-                return;
-            }
-
-            const userData = await userResponse.json();
-
-            // 3. Update the auth state
-            login(userData);
-
-            // 4. Store the token for future sessions (e.g., in localStorage)
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('accessToken', accessToken);
-            }
-
-            await goto('/dashboard');
+            const redirectTo = $page.url.searchParams.get('redirectTo') || '/dashboard';
+            await goto(redirectTo);
 
         } catch (e) {
             error = 'An unexpected error occurred.';
