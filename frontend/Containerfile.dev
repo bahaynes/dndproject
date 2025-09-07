@@ -2,7 +2,7 @@
 FROM node:20-alpine
 
 # Set the working directory
-WORKDIR /app
+WORKDIR /app/frontend
 
 # Install pnpm for package management
 RUN npm install -g pnpm
