@@ -178,7 +178,41 @@ class GameDataExport(BaseModel):
     game_sessions: List[GameSession]
 
 
+# Schemas for avoiding circular dependencies
+class CharacterInMission(CharacterBase):
+    id: int
+    owner_id: int
+
+    class Config:
+        from_attributes = True
+
+class MissionWithPlayers(MissionBase):
+    id: int
+    players: list[CharacterInMission] = []
+    rewards: list[MissionReward] = []
+
+    class Config:
+        from_attributes = True
+
+
+class CharacterInGameSession(CharacterBase):
+    id: int
+    owner_id: int
+
+    class Config:
+        from_attributes = True
+
+class GameSessionWithPlayers(GameSessionBase):
+    id: int
+    players: list[CharacterInGameSession] = []
+
+    class Config:
+        from_attributes = True
+
+
 # Resolve forward references for circular dependencies
 Mission.model_rebuild()
 GameSession.model_rebuild()
 Character.model_rebuild()
+MissionWithPlayers.model_rebuild()
+GameSessionWithPlayers.model_rebuild()
