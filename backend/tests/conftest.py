@@ -29,11 +29,17 @@ def override_get_db():
 app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture(scope="function")
-def client():
+def db_session():
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = TestingSessionLocal(bind=connection)
+    yield session
+    session.close()
+    transaction.rollback()
+    connection.close()
+
+@pytest.fixture(scope="function")
+def client(db_session):
+    app.dependency_overrides[get_db] = lambda: db_session
     client = TestClient(app)
     yield client
-    # Clean up data after each test
-    with engine.connect() as connection:
-        for table in reversed(Base.metadata.sorted_tables):
-            connection.execute(table.delete())
-        connection.commit()
