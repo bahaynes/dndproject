@@ -337,7 +337,16 @@ def test_game_session_endpoints(client):
     assert len(res.json()["players"]) == 0
 
     # Update session
-    res = client.put(f"/api/sessions/{session_id}", json={"name": "New Session Name", "description": "New description", "status": "Closed", "session_date": datetime.now().isoformat()}, headers=admin_headers)
+    update_data = {
+        "name": "New Session Name",
+        "description": "New description",
+        "status": "Completed",
+        "session_date": datetime.now().isoformat(),
+        "after_action_report": "The session was a success!"
+    }
+    res = client.put(f"/api/sessions/{session_id}", json=update_data, headers=admin_headers)
     assert res.status_code == 200
-    assert res.json()["name"] == "New Session Name"
-    assert res.json()["status"] == "Closed"
+    data = res.json()
+    assert data["name"] == "New Session Name"
+    assert data["status"] == "Completed"
+    assert data["after_action_report"] == "The session was a success!"
