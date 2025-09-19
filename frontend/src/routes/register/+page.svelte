@@ -34,7 +34,6 @@
             if (response.ok) {
                 successMessage = "Registration successful! Logging you in...";
                 const data = await response.json();
-
                 const user = {
                     id: data.id,
                     username: data.username,
