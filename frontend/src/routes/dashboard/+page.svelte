@@ -20,6 +20,7 @@
             <h2 class="text-xl font-semibold">Game Links</h2>
             <ul class="list-disc list-inside mt-2">
                 <li><a href="/sessions" class="link link-primary">View Game Sessions</a></li>
+                <li><a href="/missions" class="link link-primary">View Mission Board</a></li>
             </ul>
         </div>
 

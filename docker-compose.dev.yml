@@ -9,7 +9,7 @@ services:
       - /app/backend:/app
       - /app/alembic.ini:/app/alembic.ini
       - backend_data:/data
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     environment:
       DATABASE_URL: "sqlite:////data/app.db"
       PYTHONPATH: "/app"
