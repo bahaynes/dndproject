@@ -2,11 +2,11 @@
     email admin@bahaynes.com
 }
 
-http://dndproject.bahaynes.com {
+http://{$DOMAIN_NAME} {
     redir https://{host}{uri}
 }
 
-https://dndproject.bahaynes.com {
+https://{$DOMAIN_NAME} {
     tls {
         dns cloudflare {env.CLOUDFLARE_API_TOKEN}
     }
