@@ -28,6 +28,7 @@ websockets==15.0.1
 
 # Added for authentication and database
 alembic==1.13.2
+bcrypt==3.2.2
 greenlet==3.0.3
 passlib[bcrypt]==1.7.4
 python-jose[cryptography]==3.3.0
