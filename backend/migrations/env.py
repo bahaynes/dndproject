@@ -17,6 +17,9 @@ if config.config_file_name is not None:
 # add your model's MetaData object here
 # for 'autogenerate' support
 from app.database import Base, DATABASE_URL
+# Import all models so Alembic sees them
+from app import all_models
+
 # target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
 
