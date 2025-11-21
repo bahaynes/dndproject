@@ -1,5 +1,5 @@
 import pytest
-from app import models, database
+from app.modules.characters import models as char_models
 from datetime import datetime
 
 # --- Test Cases ---
@@ -251,7 +251,7 @@ def test_store_endpoints(client, db_session):
 
     # Purchase item
     me_res = client.get("/users/me/", headers=player_headers)
-    character = db_session.query(models.Character).filter(models.Character.id == me_res.json()["character"]["id"]).first()
+    character = db_session.query(char_models.Character).filter(char_models.Character.id == me_res.json()["character"]["id"]).first()
     character.stats.scrip = 500
     db_session.commit()
 
