@@ -4,13 +4,16 @@ from sqlalchemy.orm import Session
 
 from ...dependencies import get_db, get_current_active_user, get_current_active_admin_user
 from ..auth.schemas import User
+from ..events.service import event_service
 from . import schemas, service as crud
 
 router = APIRouter()
 
 @router.post("/", response_model=schemas.Mission, tags=["Missions"], dependencies=[Depends(get_current_active_admin_user)])
-def create_mission(mission: schemas.MissionCreate, db: Session = Depends(get_db)):
-    return crud.create_mission(db=db, mission=mission)
+async def create_mission(mission: schemas.MissionCreate, db: Session = Depends(get_db)):
+    result = crud.create_mission(db=db, mission=mission)
+    await event_service.broadcast("mission_update")
+    return result
 
 @router.get("/", response_model=List[schemas.Mission], tags=["Missions"])
 def read_missions(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
@@ -25,7 +28,7 @@ def read_mission(mission_id: int, db: Session = Depends(get_db)):
     return db_mission
 
 @router.post("/{mission_id}/signup", response_model=schemas.Mission, tags=["Missions"])
-def signup_for_mission(
+async def signup_for_mission(
     mission_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
@@ -41,17 +44,21 @@ def signup_for_mission(
     if character in mission.players:
         raise HTTPException(status_code=400, detail="Character already signed up for this mission")
 
-    return crud.add_character_to_mission(db, mission=mission, character=character)
+    result = crud.add_character_to_mission(db, mission=mission, character=character)
+    await event_service.broadcast("mission_update")
+    return result
 
 @router.put("/{mission_id}/status", response_model=schemas.Mission, tags=["Missions"], dependencies=[Depends(get_current_active_admin_user)])
-def update_mission_status(mission_id: int, status: str, db: Session = Depends(get_db)):
+async def update_mission_status(mission_id: int, status: str, db: Session = Depends(get_db)):
     mission = crud.get_mission(db, mission_id=mission_id)
     if not mission:
         raise HTTPException(status_code=404, detail="Mission not found")
-    return crud.update_mission_status(db, mission=mission, status=status)
+    result = crud.update_mission_status(db, mission=mission, status=status)
+    await event_service.broadcast("mission_update")
+    return result
 
 @router.post("/{mission_id}/distribute_rewards", tags=["Missions"], dependencies=[Depends(get_current_active_admin_user)])
-def distribute_rewards(mission_id: int, db: Session = Depends(get_db)):
+async def distribute_rewards(mission_id: int, db: Session = Depends(get_db)):
     mission = crud.get_mission(db, mission_id=mission_id)
     if not mission:
         raise HTTPException(status_code=404, detail="Mission not found")
@@ -60,4 +67,5 @@ def distribute_rewards(mission_id: int, db: Session = Depends(get_db)):
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
 
+    await event_service.broadcast("mission_update")
     return result

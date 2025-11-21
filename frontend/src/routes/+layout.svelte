@@ -3,10 +3,12 @@
   import { auth, login, logout } from '$lib/auth'; // Corrected import
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { get } from 'svelte/store';
+  import { serverEvents } from '$lib/events';
 
   onMount(async () => {
+    serverEvents.init();
     if (browser) {
       const token = localStorage.getItem('accessToken');
       const currentAuth = get(auth);
@@ -39,6 +41,10 @@
       goto('/login');
     }
   }
+
+  onDestroy(() => {
+      serverEvents.close();
+  });
 </script>
 
 <header class="bg-gray-800 text-white p-4">

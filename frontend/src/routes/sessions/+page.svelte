@@ -1,17 +1,28 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import type { GameSessionWithPlayers } from '../../lib/types';
   import { auth } from '../../lib/auth';
   import { get } from 'svelte/store';
+  import { serverEvents } from '$lib/events';
 
   let sessions: GameSessionWithPlayers[] = [];
   let error: string | null = null;
   let myCharacterId: number | undefined;
 
+  const unsubscribe = serverEvents.subscribe(event => {
+      if (event && event.type === 'session_update') {
+          fetchSessions();
+      }
+  });
+
   onMount(async () => {
     const authState = get(auth);
     myCharacterId = authState.user?.character?.id;
     await fetchSessions();
+  });
+
+  onDestroy(() => {
+      unsubscribe();
   });
 
   async function fetchSessions() {
