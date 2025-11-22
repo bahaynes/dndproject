@@ -1,6 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { login } from '$lib/auth';
+    import { setAuth } from '$lib/auth';
+    import type { User } from '$lib/types';
 
     let username = '';
     let email = '';
@@ -34,19 +35,13 @@
             if (response.ok) {
                 successMessage = "Registration successful! Logging you in...";
                 const data = await response.json();
-                const user = {
-                    id: data.id,
-                    username: data.username,
-                    email: data.email,
-                    is_active: data.is_active,
-                    role: data.role,
-                    character: data.character
-                };
+                const accessToken = data.access_token;
+                const { access_token, token_type, ...userProfile } = data;
 
-                login(user);
+                setAuth(userProfile as User, accessToken);
 
                 if (typeof window !== 'undefined') {
-                    localStorage.setItem('accessToken', data.access_token);
+                    localStorage.setItem('accessToken', accessToken);
                 }
 
                 setTimeout(() => {
@@ -54,7 +49,10 @@
                 }, 1500);
             } else {
                 const errorData = await response.json();
-                error = errorData.detail || 'Failed to register';
+                const detail = Array.isArray(errorData?.detail)
+                    ? errorData.detail.map((d: any) => d.msg || d.detail || JSON.stringify(d)).join('; ')
+                    : errorData?.detail || 'Failed to register';
+                error = detail;
             }
         } catch (e) {
             error = 'An unexpected error occurred.';

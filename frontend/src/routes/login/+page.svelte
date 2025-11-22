@@ -1,5 +1,6 @@
 <script lang="ts">
-    import { login } from '$lib/auth';
+    import { setAuth } from '$lib/auth';
+    import type { User } from '$lib/types';
     import { goto } from '$app/navigation';
 
     let username = '';
@@ -23,7 +24,10 @@
 
             if (!tokenResponse.ok) {
                 const errorData = await tokenResponse.json();
-                error = errorData.detail || 'Failed to login';
+                const detail = Array.isArray(errorData?.detail)
+                    ? errorData.detail.map((d: any) => d.msg || d.detail || JSON.stringify(d)).join('; ')
+                    : errorData?.detail || 'Failed to login';
+                error = detail;
                 return;
             }
 
@@ -38,14 +42,16 @@
             });
 
             if (!userResponse.ok) {
-                error = 'Failed to fetch user details after login.';
+                const errorData = await userResponse.json();
+                const detail = errorData?.detail || 'Failed to fetch user details after login.';
+                error = detail;
                 return;
             }
 
-            const userData = await userResponse.json();
+            const userData: User = await userResponse.json();
 
             // 3. Update the auth state
-            login(userData);
+            setAuth(userData, accessToken);
 
             // 4. Store the token for future sessions (e.g., in localStorage)
             if (typeof window !== 'undefined') {

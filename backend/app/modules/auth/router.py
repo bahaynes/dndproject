@@ -1,9 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from typing import List
 
 from ... import security
-from ...dependencies import get_db, get_current_active_user
+from ...dependencies import (
+    get_db,
+    get_current_active_user,
+    get_current_active_admin_user,
+)
 from . import schemas, service as crud
 
 router = APIRouter()
@@ -42,6 +47,10 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
         "access_token": access_token,
         "token_type": "bearer",
     }
+
+@router.get("/users/", response_model=List[schemas.User], tags=["Users"], dependencies=[Depends(get_current_active_admin_user)])
+def list_users(db: Session = Depends(get_db)):
+    return crud.get_users(db)
 
 @router.get("/users/me/", response_model=schemas.User, tags=["Users"])
 async def read_users_me(current_user: schemas.User = Depends(get_current_active_user)):

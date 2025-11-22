@@ -1,26 +1,29 @@
-// src/lib/auth.ts
+// Central auth store holding user profile and bearer token
 import { writable, type Writable } from 'svelte/store';
-
-export interface User {
-  username: string;
-  email?: string;
-  // add more fields as needed
-}
+import type { User } from '$lib/types';
 
 export interface AuthState {
   user: User | null;
+  token: string | null;
   isAuthenticated: boolean;
 }
 
-export const auth: Writable<AuthState> = writable({
+const initialState: AuthState = {
   user: null,
+  token: null,
   isAuthenticated: false,
-});
+};
 
-export function login(user: User) {
-  auth.set({ user, isAuthenticated: true });
+export const auth: Writable<AuthState> = writable(initialState);
+
+export function setAuth(user: User, token: string) {
+  auth.set({
+    user,
+    token,
+    isAuthenticated: true,
+  });
 }
 
-export function logout() {
-  auth.set({ user: null, isAuthenticated: false });
+export function clearAuth() {
+  auth.set(initialState);
 }

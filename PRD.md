@@ -1,135 +1,110 @@
-# Product Requirements Document: DnD Westmarches Hub
+# Product Requirements Document: The Shattered Front (Campaign Manager)
 
 ## 1. Introduction
 
-DnD Westmarches Hub is a lightweight, web-based companion app for running West Marches–style or other open-table role-playing campaigns. It provides a centralized platform for players and game masters (Admins) to manage characters, missions, items, and game sessions.
+**The Shattered Front Hub** is a specialized campaign management tool designed for a "War-Game" style West Marches DnD 5e campaign. Unlike standard tools, this application enforces strict resource scarcity, time tracking, and roster management mechanics.
 
-The application is built with **SvelteKit (frontend)** and **FastAPI (backend)**. Data is stored in **SQLite by default**, with optional **PostgreSQL** support for larger groups. The system is designed for **easy self-hosting** using **Podman**.
+The application is built with **SvelteKit (frontend)** and **FastAPI (backend)**. It is designed for **self-hosting** via **Podman** to serve a private group of 5–10 players managing a larger roster of characters.
 
 ## 2. Goals and Objectives
 
-The primary goals of this project are to:
-
-* **Enhance the RPG Experience**: Provide a digital companion that streamlines game management and supports immersion for both players and game masters.
-* **Centralize Game Data**: Offer a single source of truth for campaign information, accessible in real-time.
-* **Simplify Game Master Tasks**: Automate common GM tasks like mission creation, reward distribution, and character management.
-* **Empower Players**: Provide a user-friendly interface to track characters, missions, and progress.
-* **Enable Self-Hosting**: Deliver a containerized application that can be deployed with minimal setup.
+* **Enforce "Iron Attrition" Mechanics**: Automate the tracking of Gritty Realism rests, spell slot persistence between sessions, and medical leave.
+* **Enable Roster Play**: Allow players to manage a "stable" of characters, switching between them based on fatigue and mission requirements.
+* **Centralize the "Fog of War"**: Provide a Hex-based map where territory control (Alliance vs. Hegemony) dictates mission difficulty and travel costs.
+* **Gamify Logistics**: Track the 7-Day Deployment clock and Short Rest budgets automatically.
 
 ## 3. Target Audience
 
-* **Role-Playing Game Players** – players who want to track their characters and campaign progress.
-* **Game Masters** – admins who run and manage role-playing games.
-* **Self-Hosters and Hobbyists** – people who like running their own apps with Docker/Podman.
-
-Initial scope: **1 GM and 5–10 players per deployment**.
+* **The Strategic Player**: Players managing 2–3 characters who need to decide which one is "fresh" enough for a mission.
+* **The Tactician GM**: An admin who needs to update the war front, managing which map hexes are safe and which are hostile.
 
 ## 4. Features and Functionality
 
-### 4.1. User Roles and Authentication
+### 4.1. User & Roster Management (Core Change)
 
-* **Local Authentication (default)**: Username and password login with JWT session handling.
-* **User Roles**:
+* **User Profile (The Commander)**: The User account represents the Player.
+    * **Banked XP**: XP is awarded to the *User*, not the Character. The User interface allows distributing this XP to specific characters in their roster.
+* **The Roster (Barracks)**: Users can create and manage multiple characters.
+* **Character States**: Characters must have a status flag:
+    * 🟢 **Ready**: Full HP, fresh spell slots.
+    * 🟡 **Fatigued**: Returned from mission. Only recovered via "Tactical Rest" (Short Rest benefits). Missing high-level slots.
+    * 🔴 **Deployed**: Currently assigned to an active mission.
+    * 🏥 **Medical Leave**: Player explicitly benches character for 1 week to trigger a "True Long Rest."
 
-  * **Player** – manage their character, join missions, view sessions.
-  * **Admin (Game Master)** – manage game content and oversee sessions.
-  * **Optional Future Role**: Co-GM (limited admin rights).
-* **Optional OAuth (future)**: Support for external providers (e.g., Discord, Google).
-* **Character Creation**: A new character is automatically created for each new user (editable by the player).
+### 4.2. Player Features
 
-### 4.2. Player Features (MVP)
+* **Barracks Dashboard**: View all characters, assign Banked XP to level them up, and toggle "Medical Leave."
+* **Deployment View (Character Sheet)**:
+    * **Resource persistence**: Manually track current HP and Spell Slots remaining at the end of a session.
+    * **Tactical Medkit**: A toggle to "use" the single-use item per mission.
+* **The Job Board**:
+    * View missions categorized by type (Scramble, Infiltration, Logistics).
+    * **Deployment Calculator**: Selecting a mission automatically displays the **Travel Cost** and resulting **Short Rest Budget** based on the current map state.
+* **Requisition Store**: Buy items, but also **buy HP** (Medical attention) using Gold.
 
-* **Character Sheet** – stats, XP, description, and inventory.
-* **Character Customization** – update name, description, and image.
-* **Inventory Management** – add, remove, and view items.
-* **Mission Board** – browse available/completed missions; sign up for missions.
-* **Session Calendar** – view scheduled game sessions.
-* **Company Store** – browse items purchasable with in-game currency (“Scrip”).
+### 4.3. Admin (GM) Features
 
-### 4.3. Admin Features (MVP)
+* **War Map Manager (Hex Grid)**:
+    * Manage a visual Hex grid.
+    * Toggle Hex status: **Blue** (Alliance/Safe), **Red** (Hegemony/Hostile), **Grey** (Neutral).
+    * *Logic:* Changing a Hex color automatically updates the Travel Cost for missions passing through it.
+* **Mission Control**:
+    * Create missions with specific "Duration" parameters.
+    * **After Action Report (AAR)**:
+        * Mark mission as Success/Fail.
+        * Input total XP earned (deposited to User Banks).
+        * Input Gold earned.
+        * **Territory Control**: Option to convert a Grey Hex to Blue upon success.
+* **Session "Soft" Reset**: A button to apply "Tactical Rest" to all characters who just finished a session (Heal to full, reset Short Rest abilities, do *not* reset Long Rest slots).
 
-* **Admin Dashboard** – toggle between player/admin view.
-* **Character Roster** – view and edit all characters.
-* **Mission Management** – create, edit, assign rewards.
-* **Item Management** – manage master item list and store inventory.
-* **Session Management** – schedule sessions, track signups, mark as completed, and attach after-action reports.
-* **Data Tools** – export/import all game data to/from JSON backups.
+### 4.4. Shared Features
 
-### 4.4. Shared Features (Stretch Goals)
-
-* **Session Notes / Journals** – players can keep notes, admins can add shared logs.
-* **Tags & Filters** – tag missions, items, or sessions for easier search.
-* **Campaign Map (Pins)** – upload a campaign map image, add pins with text.
-* **Notifications Panel** – simple in-app alerts when new missions/sessions are posted.
-* **Markdown Support** – allow markdown in mission descriptions, notes, and reports.
-* **Search & Filters** – mission board and store item search.
-* **Dark Mode** toggle.
-* **Mobile Responsiveness** – ensure full functionality on mobile devices.
-
-### 4.5. Real-time Updates
-
-* **Server-Sent Events (SSE)** for lightweight live updates (mission board, session signup, item store).
-* **Clarification**: Real-time covers *list refresh and status changes*, not simultaneous editing.
-* Future: optional WebSockets for richer collaboration (chat, shared editing).
-
-### 4.6. Quality of Life Features
-
-* **Audit Logs** – simple activity history for admins (missions created, rewards distributed).
-* **Error & Health Monitoring** – optional integration with Sentry, Prometheus, or similar.
-* **Accessibility** – ensure screen reader compatibility, color contrast, and keyboard navigation.
-* **Test Data Seeder** – ability to populate with sample characters/missions for demo/testing.
+* **The Deployment Clock**: A visual widget showing the 7-Day limit for active sessions.
+* **Server-Sent Events (SSE)**: Real-time updates when the GM flips a Hex color or posts a new mission.
+* **Markdown Support**: For mission briefings and AARs.
 
 ## 5. Technical Requirements
 
 ### 5.1. Technology Stack
 
-* **Frontend**: SvelteKit + TailwindCSS
-* **Backend**: FastAPI (Python, async)
-* **Database**: SQLite (default) or PostgreSQL (optional)
-* **Authentication**:
+* **Frontend**: SvelteKit + TailwindCSS (DaisyUI for military/tactical theme).
+* **Backend**: FastAPI (Python).
+* **Database**: SQLite (default).
+* **Containerization**: Podman Compose.
 
-  * Local username/password auth with JWT (default)
-  * Optional OAuth (Discord/Google) in future
-* **Real-time Updates**: Server-Sent Events (SSE)
-* **Containerization**: Podman + Podman Compose
-* **State Management**: Svelte stores
+### 5.2. Database Schema Refinement
 
-### 5.2. Database Schema
+* `User`:
+    * `banked_xp`: Integer (Pool of XP available to spend).
+* `Character`:
+    * `status`: Enum (Ready, Deployed, Fatigued, LongResting).
+    * `current_hp`: Integer.
+    * `current_xp`: Integer.
+    * `slots_level_1`: Integer (remaining).
+    * `slots_level_2`: Integer (remaining)... etc.
+    * `last_played_date`: Timestamp (to calculate Long Rest eligibility).
+* `MapHex`:
+    * `grid_id`: String (e.g., "B4").
+    * `owner`: Enum (Alliance, Hegemony, Neutral).
+    * `has_fort`: Boolean (Allows Long Rests if true).
+* `Mission`:
+    * `mission_type`: Enum (Scramble, Infiltration, Logistics).
+    * `travel_days_outbound`: Integer.
+    * `travel_days_inbound`: Integer.
+    * `short_rest_budget`: Integer (Computed field).
 
-Core models:
+### 5.3. Business Logic (The Iron Attrition)
 
-* `User` – auth + role info
-* `Character` – player character metadata
-* `CharacterStats` – detailed stats for a character
-* `Mission` – missions and properties
-* `MissionReward` – mission reward entries
-* `Item` – item definitions
-* `InventoryItem` – mapping of items → character inventory
-* `StoreItem` – store availability + price
-* `GameSession` – scheduled sessions
-* `GameSessionPlayer` – player signups per session
-* `Note` (stretch) – player or shared campaign notes
-* `Tag` (stretch) – tags applied to missions, items, or sessions
-* `AuditLog` (stretch) – system events for tracking GM/admin actions
-
-### 5.3. Deployment
-
-* Single repository with both frontend + backend.
-* `Dockerfile` and `podman-compose.yml` provided.
-* Default config: one container runs FastAPI backend + serves static SvelteKit frontend.
-* Optional: separate containers (frontend, backend, database) for advanced setups.
-* Offline operation supported (SQLite + local auth), though not required.
-* Deployment ready for minimal cloud hosting (Fly.io, Railway, or bare VPS).
-* CI/CD pipeline (GitHub Actions) for linting, testing, and build.
+* **The Rest Calculator**:
+    * Logic to calculate `Available Short Rests = 7 - (Outbound + Inbound Travel)`.
+* **The XP Distributor**:
+    * Transaction logic to move XP from `User.banked_xp` to `Character.xp`.
+* **The Long Rest Trigger**:
+    * A cron job or manual trigger that checks: `If Character.status == LongResting AND (CurrentDate - StartDate) >= 7 Days -> Set Status = Ready`.
 
 ## 6. Future Enhancements
 
-* **OAuth Integration** (Discord/Google) for smoother logins.
-* **AI Integration** – optional mission/item generation via OpenAI/Claude APIs.
-* **Dice Roller** – lightweight command syntax for in-app rolls.
-* **Advanced Real-time** – WebSocket support for richer collaboration.
-* **Performance Monitoring** – especially for Postgres deployments.
-* **Multi-Tenancy** – support multiple campaigns/worlds from one deployment.
-* **Offline-first PWA** – add service worker for caching and mobile play.
-* **Plugin System** – allow optional modules (house rules, custom sheets).
-
+* **Discord Bot Integration**: Post new missions to a Discord channel automatically.
+* **Asset Management**: Upload maps for specific dungeons (Sector maps).
+* **Casualty Log**: A "Graveyard" page for characters who didn't extract.
+* **Fort Builder**: A UI for players to pool Gold to upgrade a "Blue Hex" with specific buildings (e.g., "Build Hospital" = Cheaper healing).

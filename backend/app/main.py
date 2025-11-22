@@ -45,7 +45,9 @@ async def health_check():
     return {"status": "ok"}
 
 # Include routers
+# Auth: expose under both root and /api for compatibility with frontend proxy
 app.include_router(auth_router.router)
+app.include_router(auth_router.router, prefix="/api")
 app.include_router(char_router.router, prefix="/api/characters", tags=["Characters"])
 app.include_router(item_router.router, prefix="/api/items", tags=["Items"])
 app.include_router(inventory_router.router, prefix="/api/characters/{character_id}/inventory", tags=["Inventory"])

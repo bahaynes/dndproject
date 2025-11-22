@@ -1,5 +1,6 @@
 <script lang="ts">
-    import { auth, type User } from '$lib/auth';
+    import { auth } from '$lib/auth';
+    import type { User } from '$lib/types';
     import { onMount } from 'svelte';
 
     let user: User | null = null;
@@ -24,13 +25,14 @@
         </div>
 
         {#if user.role === 'admin'}
-            <div class="mt-6">
-                <h2 class="text-xl font-semibold">Admin Tools</h2>
-                <ul class="list-disc list-inside mt-2">
+        <div class="mt-6">
+            <h2 class="text-xl font-semibold">Admin Tools</h2>
+            <ul class="list-disc list-inside mt-2">
+                    <li><a href="/dashboard/admin/roster" class="link link-secondary">User Roster</a></li>
                     <li><a href="/dashboard/admin/sessions" class="link link-secondary">Manage Game Sessions</a></li>
-                </ul>
-            </div>
-        {/if}
+            </ul>
+        </div>
+    {/if}
 
     {:else}
         <p class="mt-4">Loading user information...</p>

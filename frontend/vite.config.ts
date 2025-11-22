@@ -16,7 +16,8 @@ export default defineConfig({
 			'/api': {
 				target: 'http://backend:8000',
 				changeOrigin: true,
-				rewrite: (path) => path.replace(/^\/api/, ''),
+				// Keep the /api prefix so requests reach FastAPI routes mounted at /api/*
+				rewrite: (path) => path, 
 			}
 		},
 		allowedHosts: [

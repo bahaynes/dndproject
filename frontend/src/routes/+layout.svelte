@@ -1,6 +1,6 @@
 <script lang="ts">
   import '../app.css';
-  import { auth, login, logout } from '$lib/auth'; // Corrected import
+  import { auth, setAuth, clearAuth } from '$lib/auth';
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
@@ -13,13 +13,12 @@
 
       if (token && !currentAuth.isAuthenticated) {
         try {
-          // Corrected URL
           const response = await fetch('/api/users/me/', {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
           });
           if (response.ok) {
             const user = await response.json();
-            login(user); // Corrected function call
+            setAuth(user, token);
           } else {
             // Token is invalid, so log out
             handleLogout();
@@ -33,7 +32,7 @@
   });
 
   function handleLogout() {
-    logout(); // Corrected function call
+    clearAuth();
     if (browser) {
       localStorage.removeItem('accessToken');
       goto('/login');
