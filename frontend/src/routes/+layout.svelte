@@ -40,24 +40,28 @@
   }
 </script>
 
-<header class="bg-gray-800 text-white p-4">
-  <nav class="container mx-auto flex justify-between items-center">
-    <a href="/" class="font-bold">DnD Hub</a>
-    <div>
+<header>
+  <nav class="page-container flex items-center justify-between py-4">
+    <a href="/" class="brand-mark">
+      <span>DnD</span>
+      <span>Westmarches</span>
+    </a>
+    <div class="flex items-center gap-2">
+      <a href="/sessions" class="nav-link">Sessions</a>
       {#if $auth.isAuthenticated}
-        <a href="/dashboard" class="px-4 hover:underline">Dashboard</a>
+        <a href="/dashboard" class="nav-link">Dashboard</a>
         {#if $auth.user}
-          <span class="px-4">Welcome, {$auth.user.username}</span>
+          <span class="nav-link">Welcome, {$auth.user.username}</span>
         {/if}
-        <button on:click={handleLogout} class="px-4 hover:underline">Logout</button>
+        <button on:click={handleLogout} class="nav-link">Logout</button>
       {:else}
-        <a href="/login" class="px-4 hover:underline">Login</a>
-        <a href="/register" class="px-4 hover:underline">Register</a>
+        <a href="/login" class="nav-link">Login</a>
+        <a href="/register" class="nav-link">Register</a>
       {/if}
     </div>
   </nav>
 </header>
 
-<main>
+<main class="page-shell">
   <slot />
 </main>

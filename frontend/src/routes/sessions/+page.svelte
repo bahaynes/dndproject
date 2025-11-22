@@ -82,50 +82,60 @@
   }
 </script>
 
-<div class="container mx-auto p-4">
-  <h1 class="text-2xl font-bold">Game Sessions</h1>
+<div class="page-container space-y-6">
+  <div class="flex flex-col gap-2">
+    <p class="text-sm uppercase tracking-wide text-amber-200">Session board</p>
+    <h1 class="text-3xl font-bold">Game Sessions</h1>
+    <p class="muted">Sign up your character, review party slots, and keep the frontier organized.</p>
+  </div>
 
   {#if error}
-    <div class="alert alert-error my-4">
-      <div class="flex-1">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="w-6 h-6 mx-2 stroke-current">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
-        </svg>
-        <span>{error}</span>
-      </div>
-    </div>
+    <div class="alert alert-error">{error}</div>
   {/if}
 
   {#if sessions.length === 0 && !error}
-    <p class="mt-4">There are no scheduled sessions at this time. Check back later!</p>
+    <div class="panel p-6">
+      <p class="muted">There are no scheduled sessions at this time. Check back later!</p>
+    </div>
   {:else}
-    <div class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+    <div class="card-grid">
       {#each sessions as session}
-        <div class="card bg-base-100 shadow-xl">
+        <div class="card">
           <div class="card-body">
-            <h2 class="card-title">{session.name}</h2>
-            <p>{session.description}</p>
-            <div class="my-2">
-              <span class="font-bold">Date:</span> {new Date(session.session_date).toLocaleString()}
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="pill w-fit mb-2">Session</p>
+                <h2 class="card-title">{session.name}</h2>
+              </div>
+              <span class="badge {session.status === 'Completed' ? 'badge-success' : 'badge-info'}">{session.status}</span>
             </div>
-            <div class="my-2">
-              <span class="font-bold">Status:</span>
-              <span class="badge {session.status === 'Completed' ? 'badge-success' : 'badge-info'} ml-2">{session.status}</span>
+            <p class="muted">{session.description}</p>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div class="panel panel-strong p-3">
+                <p class="text-amber-100 uppercase tracking-wide text-xs">Date</p>
+                <p class="font-semibold mt-1">{new Date(session.session_date).toLocaleString()}</p>
+              </div>
+              <div class="panel panel-strong p-3">
+                <p class="text-amber-100 uppercase tracking-wide text-xs">Players</p>
+                <p class="font-semibold mt-1">{session.players.length}</p>
+              </div>
             </div>
-             <p><strong>Players ({session.players.length}):</strong></p>
-              <ul class="list-disc list-inside">
+            <div class="space-y-1 text-sm">
+              <p class="font-semibold">Roster</p>
+              <ul class="list-disc list-inside muted">
                 {#each session.players as player}
                   <li>{player.name}</li>
                 {/each}
               </ul>
-            <div class="card-actions justify-end mt-4">
+            </div>
+            <div class="card-actions mt-2">
               {#if session.status === 'Scheduled'}
                 <button
-                  class="btn {isSignedUp(session) ? 'btn-warning' : 'btn-primary'}"
+                  class="btn {isSignedUp(session) ? 'btn-muted' : 'btn-primary'}"
                   on:click={() => toggleSignup(session)}
                   disabled={!myCharacterId}
                 >
-                  {isSignedUp(session) ? 'Cancel Signup' : 'Sign Up'}
+                  {isSignedUp(session) ? 'Cancel signup' : 'Sign up'}
                 </button>
               {/if}
             </div>

@@ -12,29 +12,57 @@
     // In a real app, you'd fetch the user profile here if it's not already loaded
 </script>
 
-<div class="container mx-auto p-4">
-    <h1 class="text-2xl font-bold">Dashboard</h1>
+<div class="page-container space-y-8">
+    <div class="panel p-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+            <p class="text-sm uppercase tracking-wide text-amber-200">Dashboard</p>
+            <h1 class="text-3xl font-bold">Your command deck</h1>
+            <p class="muted">Pick up quests, review signups, and keep the guild running smooth.</p>
+        </div>
+        {#if user?.role}
+            <span class="pill">Role: {user.role}</span>
+        {/if}
+    </div>
+
     {#if user}
-        <p class="mt-4">Welcome, {user.username}!</p>
+        <div class="card-grid">
+            <div class="card panel-strong">
+                <div class="card-body">
+                    <p class="pill w-fit">Welcome back</p>
+                    <p class="text-lg font-semibold">Greetings, {user.username}!</p>
+                    <p class="muted">Head straight to your next adventure.</p>
+                    <div class="card-actions">
+                        <a href="/sessions" class="btn btn-primary">View sessions</a>
+                    </div>
+                </div>
+            </div>
 
-        <div class="mt-6">
-            <h2 class="text-xl font-semibold">Game Links</h2>
-            <ul class="list-disc list-inside mt-2">
-                <li><a href="/sessions" class="link link-primary">View Game Sessions</a></li>
-            </ul>
+            <div class="card">
+                <div class="card-body">
+                    <p class="pill w-fit">Game links</p>
+                    <h2 class="card-title">Quick actions</h2>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/sessions" class="nav-link">Session board</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            {#if user.role === 'admin'}
+                <div class="card">
+                    <div class="card-body">
+                        <p class="pill w-fit">Admin tools</p>
+                        <h2 class="card-title">Keep the table balanced</h2>
+                        <ul class="space-y-2 text-sm">
+                            <li><a href="/dashboard/admin/roster" class="nav-link">User roster</a></li>
+                            <li><a href="/dashboard/admin/sessions" class="nav-link">Manage game sessions</a></li>
+                        </ul>
+                    </div>
+                </div>
+            {/if}
         </div>
-
-        {#if user.role === 'admin'}
-        <div class="mt-6">
-            <h2 class="text-xl font-semibold">Admin Tools</h2>
-            <ul class="list-disc list-inside mt-2">
-                    <li><a href="/dashboard/admin/roster" class="link link-secondary">User Roster</a></li>
-                    <li><a href="/dashboard/admin/sessions" class="link link-secondary">Manage Game Sessions</a></li>
-            </ul>
-        </div>
-    {/if}
-
     {:else}
-        <p class="mt-4">Loading user information...</p>
+        <div class="panel p-6">
+            <p>Loading user information...</p>
+        </div>
     {/if}
 </div>

@@ -61,53 +61,69 @@
     }
 </script>
 
-<div class="flex items-center justify-center min-h-screen bg-gray-100">
-    <div class="px-8 py-6 mt-4 text-left bg-white shadow-lg rounded-lg">
-        <h3 class="text-2xl font-bold text-center">Create an account</h3>
-        <form on:submit|preventDefault={handleSubmit}>
-            <div class="mt-4">
-                <div>
-                    <label class="block" for="username">Username</label>
-                    <input type="text" placeholder="Username"
-                           id="username"
-                           class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600"
-                           bind:value={username}
-                           required>
-                </div>
-                <div class="mt-4">
-                    <label class="block" for="email">Email</label>
-                    <input type="email" placeholder="Email"
-                           id="email"
-                           class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600"
-                           bind:value={email}
-                           required>
-                </div>
-                <div class="mt-4">
-                    <label class="block" for="password">Password</label>
-                    <input type="password" placeholder="Password"
-                           id="password"
-                           class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600"
-                           bind:value={password}
-                           required>
-                </div>
-                <div class="mt-4">
-                    <label class="block" for="confirmPassword">Confirm Password</label>
-                    <input type="password" placeholder="Confirm Password"
-                           id="confirmPassword"
-                           class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600"
-                           bind:value={confirmPassword}
-                           required>
-                </div>
+<div class="page-container flex items-center justify-center min-h-[70vh]">
+    <div class="panel w-full max-w-2xl p-8 space-y-6 glow-border">
+        <div class="space-y-2 text-center">
+            <div class="pill w-fit mx-auto">New recruit</div>
+            <h3 class="text-3xl font-bold">Forge your adventurer profile</h3>
+            <p class="muted">Claim your seat at the table and keep your quests organized.</p>
+        </div>
+        <form on:submit|preventDefault={handleSubmit} class="grid gap-4 md:grid-cols-2 md:gap-6">
+            <div class="space-y-2 md:col-span-1">
+                <label class="label" for="username">Username</label>
+                <input
+                    id="username"
+                    type="text"
+                    placeholder="Your handle"
+                    class="input-field"
+                    bind:value={username}
+                    required
+                >
+            </div>
+            <div class="space-y-2 md:col-span-1">
+                <label class="label" for="email">Email</label>
+                <input
+                    id="email"
+                    type="email"
+                    placeholder="you@realm.com"
+                    class="input-field"
+                    bind:value={email}
+                    required
+                >
+            </div>
+            <div class="space-y-2 md:col-span-1">
+                <label class="label" for="password">Password</label>
+                <input
+                    id="password"
+                    type="password"
+                    placeholder="Secret phrase"
+                    class="input-field"
+                    bind:value={password}
+                    required
+                >
+            </div>
+            <div class="space-y-2 md:col-span-1">
+                <label class="label" for="confirmPassword">Confirm Password</label>
+                <input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="Match your phrase"
+                    class="input-field"
+                    bind:value={confirmPassword}
+                    required
+                >
+            </div>
+            <div class="md:col-span-2 space-y-2">
                 {#if error}
-                    <p class="text-red-500 text-xs mt-2">{error}</p>
+                    <p class="text-sm text-red-300">{error}</p>
                 {/if}
                 {#if successMessage}
-                    <p class="text-green-500 text-xs mt-2">{successMessage}</p>
+                    <p class="text-sm text-emerald-200">{successMessage}</p>
                 {/if}
-                <div class="flex items-baseline justify-between">
-                    <button class="px-6 py-2 mt-4 text-white bg-blue-600 rounded-lg hover:bg-blue-900" disabled={!!successMessage}>Register</button>
-                    <a href="/login" class="text-sm text-blue-600 hover:underline">Already have an account?</a>
-                </div>
+            </div>
+            <div class="md:col-span-2 flex items-center justify-between gap-3 pt-2">
+                <button class="btn btn-primary" disabled={!!successMessage}>Register</button>
+                <a href="/login" class="nav-link">Already sworn in?</a>
             </div>
         </form>
     </div>
