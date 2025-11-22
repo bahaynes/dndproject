@@ -43,7 +43,7 @@ def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
         "email": new_user.email,
         "is_active": new_user.is_active,
         "role": new_user.role,
-        "character": new_user.character,
+        "characters": new_user.characters,
         "access_token": access_token,
         "token_type": "bearer",
     }

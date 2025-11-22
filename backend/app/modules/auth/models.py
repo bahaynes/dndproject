@@ -13,4 +13,5 @@ class User(Base):
     role = Column(String, default="player", nullable=False)  # Roles: 'player', 'admin'
     is_active = Column(Boolean, default=True)
 
-    character = relationship("Character", back_populates="owner", uselist=False)
+    # A user can own multiple characters; admins manage campaign data
+    characters = relationship("Character", back_populates="owner", cascade="all, delete-orphan")

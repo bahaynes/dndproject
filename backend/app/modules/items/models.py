@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from ...database import Base
 
@@ -8,6 +8,8 @@ class Item(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
     description = Column(String, nullable=True)
+    rarity = Column(String, default="common", nullable=False)
+    attunement_required = Column(Boolean, default=False, nullable=False)
 
     inventory_items = relationship("InventoryItem", back_populates="item")
     store_listing = relationship("StoreItem", back_populates="item", uselist=False)
@@ -18,6 +20,7 @@ class InventoryItem(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     quantity = Column(Integer, default=1, nullable=False)
+    is_attuned = Column(Boolean, default=False, nullable=False)
 
     character_id = Column(Integer, ForeignKey("characters.id"), nullable=False)
     item_id = Column(Integer, ForeignKey("items.id"), nullable=False)

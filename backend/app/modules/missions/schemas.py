@@ -1,47 +1,46 @@
 from pydantic import BaseModel
 from typing import Optional, List
-from ..items.schemas import Item
 from ..characters.base_schema import CharacterBase
+from ..common.dossier import Dossier
 
-# Schema for Character inside Mission response to avoid circular recursion
+
 class CharacterInMission(CharacterBase):
+    """Minimal character data shown on mission planning views."""
+
     id: int
     owner_id: int
+
     class Config:
         from_attributes = True
 
-# Mission Schemas
-class MissionRewardBase(BaseModel):
-    item_id: Optional[int] = None
-    xp: Optional[int] = None
-    scrip: Optional[int] = None
-
-class MissionRewardCreate(MissionRewardBase):
-    pass
-
-class MissionReward(MissionRewardBase):
-    id: int
-    item: Optional[Item] = None
-    class Config:
-        from_attributes = True
 
 class MissionBase(BaseModel):
-    name: str
-    description: Optional[str] = None
-    status: str = "Available"
+    """Reusable attributes for a mission definition."""
+
+    title: str
+    summary: Optional[str] = None
+    status: str = "available"
+    target_hex: Optional[str] = None
+    dossier_data: Optional[Dossier] = None
+
 
 class MissionCreate(MissionBase):
-    rewards: List[MissionRewardCreate] = []
+    """Payload for creating or updating a mission."""
+
+    pass
+
 
 class Mission(MissionBase):
-    id: int
-    rewards: List[MissionReward] = []
+    """Mission response with roster information."""
+
+    id: str
     players: List[CharacterInMission] = []
+
     class Config:
         from_attributes = True
 
+
 class MissionWithPlayers(Mission):
-    # This seems redundant if Mission already has players,
-    # but original schemas had MissionWithPlayers.
-    # I'll keep Mission as the main one, which includes players.
+    """Alias retained for backwards compatibility."""
+
     pass

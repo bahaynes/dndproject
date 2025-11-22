@@ -9,6 +9,8 @@ router = APIRouter()
 
 @router.get("/{character_id}", response_model=schemas.Character)
 def read_character(character_id: int, db: Session = Depends(get_db)):
+    """Fetch a character with stats, inventory, missions, and sessions."""
+
     db_character = crud.get_character(db, character_id=character_id)
     if db_character is None:
         raise HTTPException(status_code=404, detail="Character not found")
@@ -22,6 +24,8 @@ def update_character(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
+    """Update character profile and stats. Only owners or admins can update."""
+
     db_character = crud.get_character(db, character_id=character_id)
     if db_character is None:
         raise HTTPException(status_code=404, detail="Character not found")

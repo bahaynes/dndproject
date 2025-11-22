@@ -27,7 +27,6 @@ def import_game_data(db: Session, data: schemas.GameDataExport):
     db.execute(mission_models.mission_players.delete())
     db.query(item_models.InventoryItem).delete()
     db.query(item_models.StoreItem).delete()
-    db.query(mission_models.MissionReward).delete()
     db.query(session_models.GameSession).delete()
     db.query(mission_models.Mission).delete()
     db.query(item_models.Item).delete()

@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum as SAEnum, Boolean
 from sqlalchemy.orm import relationship
 from ...database import Base
+from ..common.enums import CharacterStatus
 
 class Character(Base):
     __tablename__ = "characters"
@@ -10,8 +11,10 @@ class Character(Base):
     description = Column(String, nullable=True)
     image_url = Column(String, nullable=True)
 
-    owner_id = Column(Integer, ForeignKey("users.id"), unique=True)
-    owner = relationship("User", back_populates="character")
+    status = Column(SAEnum(CharacterStatus), default=CharacterStatus.READY, nullable=False)
+
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    owner = relationship("User", back_populates="characters")
 
     stats = relationship("CharacterStats", back_populates="character", uselist=False, cascade="all, delete-orphan")
     inventory = relationship("InventoryItem", back_populates="character", cascade="all, delete-orphan")
@@ -25,7 +28,9 @@ class CharacterStats(Base):
     id = Column(Integer, primary_key=True, index=True)
     character_id = Column(Integer, ForeignKey("characters.id"), unique=True)
 
-    xp = Column(Integer, default=0)
-    scrip = Column(Integer, default=0)
+    xp = Column(Integer, default=0, nullable=False)
+    commendations = Column(Integer, default=0, nullable=False)
+    current_hp = Column(Integer, default=0, nullable=False)
+    short_rest_available = Column(Boolean, default=True, nullable=False)
 
     character = relationship("Character", back_populates="stats")

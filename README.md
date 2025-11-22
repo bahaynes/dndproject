@@ -46,3 +46,10 @@ To stop all running services, run:
 ```bash
 /app/stop_dev.sh
 ```
+
+## Domain Scaffolding Highlights
+
+- Backend now includes terrain/hex map definitions, mission dossiers, and session routing aligned to the PRD.
+- Character roster supports multiple characters per user with status, commendations, and attunement-aware inventories.
+- Use the `/api/map`, `/api/missions`, and `/api/sessions` endpoints to drive the map, mission, and session flows.
+- Tests are wired through `/app/run_tests_dev.sh --backend`; existing fixtures will need updates for the new schemas before running.

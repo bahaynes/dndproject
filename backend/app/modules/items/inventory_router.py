@@ -10,6 +10,8 @@ router = APIRouter()
 
 @router.post("/", response_model=schemas.InventoryItem, tags=["Inventory"], dependencies=[Depends(get_current_active_admin_user)])
 def add_item_to_character_inventory(character_id: int, item_id: int, quantity: int = 1, db: Session = Depends(get_db)):
+    """Admin utility to grant items directly to a character."""
+
     db_character = char_service.get_character(db, character_id=character_id)
     if not db_character:
         raise HTTPException(status_code=404, detail="Character not found")
@@ -25,6 +27,8 @@ def remove_item_from_character_inventory(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
+    """Remove an item stack from a character's inventory."""
+
     # Logic from main.py
     removed_item = crud.remove_item_from_inventory(db, inventory_item_id=inventory_item_id, quantity=quantity)
     if removed_item is None:
