@@ -11,7 +11,15 @@ class Character(Base):
     description = Column(String, nullable=True)
     image_url = Column(String, nullable=True)
 
-    status = Column(SAEnum(CharacterStatus), default=CharacterStatus.READY, nullable=False)
+    status = Column(
+        SAEnum(
+            CharacterStatus,
+            name="characterstatus",
+            values_callable=lambda enum: [member.value for member in enum],
+        ),
+        default=CharacterStatus.READY.value,
+        nullable=False,
+    )
 
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     owner = relationship("User", back_populates="characters")

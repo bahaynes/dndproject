@@ -39,7 +39,6 @@ This project is configured with a container-based development environment manage
 This section documents common issues and lessons learned from working on this project.
 
 *   **`docker compose` vs `docker-compose`**: The command to run Docker Compose might be `docker compose` (with a space) instead of `docker-compose` (with a hyphen). The scripts in this repository use the version with a space.
-*   **`sudo` for Docker**: The Docker daemon in the development environment requires `sudo`. All `docker` commands in the helper scripts are run with `sudo`.
 *   **Backend Healthchecks**: The backend service in `docker-compose.dev.yml` uses a `curl`-based healthcheck. This requires `curl` to be installed in the backend image.
 *   **`PYTHONPATH` for Tests**: The `tests` service runs in its own container. The `PYTHONPATH` is set explicitly in `docker-compose.dev.yml` to ensure that `pytest` can find the application modules.
 *   **Uvicorn Reload Loop**: The `uvicorn` server with `--reload` can sometimes get stuck in an infinite reload loop. This is often caused by issues with volume mounts and file system notifications. If this happens, you can try restarting the container or temporarily removing the `--reload` flag for debugging.

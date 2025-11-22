@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .database import engine, Base
+from .database import engine, Base, ensure_character_status_column, ensure_legacy_columns
 
 # Import all models to ensure they are registered with Base
 from .modules.auth import models as auth_models
@@ -22,8 +22,10 @@ from .modules.sessions import router as session_router
 from .modules.admin import router as admin_router
 from .modules.map import router as map_router
 
-# Create tables
+# Create tables and backfill legacy columns for dev databases
 Base.metadata.create_all(bind=engine)
+ensure_character_status_column()
+ensure_legacy_columns()
 
 app = FastAPI()
 
