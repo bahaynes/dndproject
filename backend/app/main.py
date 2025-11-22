@@ -14,6 +14,8 @@ from .modules.sessions import models as session_models
 from .modules.auth import router as auth_router
 from .modules.characters import router as char_router
 from .modules.items import router as item_router
+from .modules.items import inventory_router
+from .modules.items import store_router
 from .modules.missions import router as mission_router
 from .modules.sessions import router as session_router
 from .modules.admin import router as admin_router
@@ -45,7 +47,9 @@ async def health_check():
 # Include routers
 app.include_router(auth_router.router)
 app.include_router(char_router.router, prefix="/api/characters", tags=["Characters"])
-app.include_router(item_router.router, prefix="/api")
+app.include_router(item_router.router, prefix="/api/items", tags=["Items"])
+app.include_router(inventory_router.router, prefix="/api/characters/{character_id}/inventory", tags=["Inventory"])
+app.include_router(store_router.router, prefix="/api/store", tags=["Store"])
 app.include_router(mission_router.router, prefix="/api/missions")
 app.include_router(session_router.router, prefix="/api/sessions")
 app.include_router(admin_router.router, prefix="/api/admin")

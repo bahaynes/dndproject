@@ -220,7 +220,7 @@ def test_inventory_endpoints(client):
     assert response.json()["quantity"] == 5
 
     # Remove item from inventory
-    response = client.delete(f"/api/inventory/{inventory_item_id}?quantity=2", headers=player_headers)
+    response = client.delete(f"/api/characters/{character_id}/inventory/{inventory_item_id}?quantity=2", headers=player_headers)
     assert response.status_code == 200
     assert response.json()["quantity"] == 3
 

@@ -1,15 +1,8 @@
 {
-    email admin@bahaynes.com
+    # Local development, no email needed
 }
 
-http://dndproject.bahaynes.com {
-    redir https://{host}{uri}
-}
-
-https://dndproject.bahaynes.com {
-    tls {
-        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
-    }
+:80 {
     encode gzip
 
     # API requests
@@ -26,3 +19,4 @@ https://dndproject.bahaynes.com {
         file_server
     }
 }
+
