@@ -4,19 +4,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 
 # Import all models to ensure they are registered with Base
-from .modules.auth import models as auth_models
-from .modules.characters import models as char_models
-from .modules.items import models as item_models
-from .modules.missions import models as mission_models
-from .modules.sessions import models as session_models
+from . import all_models
 
 # Import routers
 from .modules.auth import router as auth_router
 from .modules.characters import router as char_router
 from .modules.items import router as item_router
+from .modules.missions import router as mission_models
 from .modules.missions import router as mission_router
 from .modules.sessions import router as session_router
 from .modules.admin import router as admin_router
+from .modules.map import router as map_router
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -43,9 +41,10 @@ async def health_check():
     return {"status": "ok"}
 
 # Include routers
-app.include_router(auth_router.router)
+app.include_router(auth_router.router, prefix="/api")
 app.include_router(char_router.router, prefix="/api/characters", tags=["Characters"])
 app.include_router(item_router.router, prefix="/api")
 app.include_router(mission_router.router, prefix="/api/missions")
 app.include_router(session_router.router, prefix="/api/sessions")
 app.include_router(admin_router.router, prefix="/api/admin")
+app.include_router(map_router.router, prefix="/api/map", tags=["Map"])
