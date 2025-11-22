@@ -112,6 +112,12 @@
               <span class="font-bold">Status:</span>
               <span class="badge {session.status === 'Completed' ? 'badge-success' : 'badge-info'} ml-2">{session.status}</span>
             </div>
+            {#if session.target_tile_id}
+            <div class="my-2">
+                <span class="font-bold">Target Hex:</span>
+                <a href="/map?tile={session.target_tile_id}" class="link link-primary">View on Map</a>
+            </div>
+            {/if}
              <p><strong>Players ({session.players.length}):</strong></p>
               <ul class="list-disc list-inside">
                 {#each session.players as player}

@@ -82,4 +82,15 @@ export interface GameSessionWithPlayers {
     status: 'Scheduled' | 'Completed';
     after_action_report?: string;
     players: CharacterInGameSession[];
+    target_tile_id?: number;
+}
+
+export interface MapTile {
+    id: number;
+    q: number;
+    r: number;
+    terrain: string;
+    is_revealed: boolean;
+    description?: string;
+    notes?: string;
 }
