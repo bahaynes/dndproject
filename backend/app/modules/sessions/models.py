@@ -16,5 +16,7 @@ class GameSession(Base):
     session_date = Column(DateTime, nullable=False)
     status = Column(String, default="Scheduled", nullable=False) # e.g., Scheduled, Completed
     after_action_report = Column(String, nullable=True)
+    target_tile_id = Column(Integer, ForeignKey("map_tiles.id"), nullable=True)
 
+    target_tile = relationship("MapTile")
     players = relationship("Character", secondary=game_session_players, back_populates="game_sessions")

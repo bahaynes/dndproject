@@ -15,6 +15,7 @@ class GameSessionBase(BaseModel):
     session_date: datetime.datetime
     status: str = "Scheduled"
     after_action_report: Optional[str] = None
+    target_tile_id: Optional[int] = None
 
 class GameSessionCreate(GameSessionBase):
     pass
