@@ -203,6 +203,83 @@ def ensure_legacy_columns():
                     text("ALTER TABLE game_sessions ADD COLUMN aar_summary TEXT")
                 )
 
+
+def ensure_default_admin():
+    """Ensure there is at least one admin user, optionally driven by DEV_ADMIN_* env vars.
+
+    This is intended for development and initial bootstrap. It will:
+    - Skip entirely if DEV_ADMIN_PASSWORD is not set.
+    - Skip if an admin user already exists.
+    - Otherwise create a new admin user with a default character and stats.
+    """
+    # Only run when explicitly configured; avoid surprising credentials in shared environments.
+    password = os.getenv("DEV_ADMIN_PASSWORD")
+    if not password:
+        msg = "DEV_ADMIN_PASSWORD not set; skipping default admin seeding."
+        logger.info(msg)
+        print(msg)
+        return
+
+    username = os.getenv("DEV_ADMIN_USERNAME", "admin")
+    email = os.getenv("DEV_ADMIN_EMAIL", "admin@example.com")
+
+    from app.modules.auth import models as auth_models, schemas as auth_schemas, service as auth_service
+    from app.modules.characters import models as char_models
+
+    db = SessionLocal()
+    try:
+        existing_admin = (
+            db.query(auth_models.User)
+            .filter(auth_models.User.role == "admin")
+            .first()
+        )
+        if existing_admin:
+            msg = (
+                f"Admin user already exists (id={existing_admin.id}, "
+                f"username={existing_admin.username}); skipping default admin seeding."
+            )
+            logger.info(msg)
+            print(msg)
+            return
+
+        msg = f"No admin user found; creating default admin username={username} email={email}"
+        logger.warning(msg)
+        print(msg)
+        payload = auth_schemas.UserCreate(
+            username=username,
+            email=email,
+            password=password,
+            role="admin",
+        )
+        user = auth_service.create_user(db, payload)
+
+        # Ensure character/stats exist (create_user already does this, but keep the intent explicit)
+        character = (
+            db.query(char_models.Character)
+            .filter(char_models.Character.owner_id == user.id)
+            .first()
+        )
+        if not character:
+            character = char_models.Character(
+                name=f"{user.username}'s Character",
+                owner_id=user.id,
+            )
+            db.add(character)
+            db.commit()
+            db.refresh(character)
+
+        if not character.stats:
+            stats = char_models.CharacterStats(character_id=character.id)
+            db.add(stats)
+            db.commit()
+            db.refresh(stats)
+
+        msg = f"Default admin created successfully (id={user.id}, username={user.username})."
+        logger.info(msg)
+        print(msg)
+    finally:
+        db.close()
+
 def get_db():
     db = SessionLocal()
     try:

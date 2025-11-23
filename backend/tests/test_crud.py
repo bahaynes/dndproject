@@ -188,12 +188,18 @@ def test_mission_crud(db_session):
 def test_game_session_crud(db_session):
     user_in = auth_schemas.UserCreate(username="sessionplayer", email="sessionplayer@example.com", password="password", role="player")
     db_user = auth_service.create_user(db_session, user_in)
-    session_in = session_schemas.GameSessionCreate(name="Test Session", description="A test session", status="Open", session_date=datetime.now())
+    session_in = session_schemas.GameSessionCreate(
+        mission_id="mission-1",
+        title="Test Session",
+        gm_notes="A test session",
+        status=session_schemas.SessionStatus.OPEN,
+        session_date=datetime.now(),
+    )
     db_session_obj = session_service.create_game_session(db_session, session_in)
 
     retrieved_session = session_service.get_game_session(db_session, db_session_obj.id)
     assert retrieved_session
-    assert retrieved_session.name == "Test Session"
+    assert retrieved_session.title == "Test Session"
 
     sessions = session_service.get_game_sessions(db_session)
     assert len(sessions) == 1
@@ -204,10 +210,16 @@ def test_game_session_crud(db_session):
     session_service.remove_character_from_game_session(db_session, db_session_obj, db_user.character)
     assert db_user.character not in db_session_obj.players
 
-    session_update = session_schemas.GameSessionCreate(name="New Session Name", description="New description", status="Closed", session_date=datetime.now())
+    session_update = session_schemas.GameSessionCreate(
+        mission_id="mission-1",
+        title="New Session Name",
+        gm_notes="New description",
+        status=session_schemas.SessionStatus.COMPLETED,
+        session_date=datetime.now(),
+    )
     updated_session = session_service.update_game_session(db_session, db_session_obj, session_update)
-    assert updated_session.name == "New Session Name"
-    assert updated_session.status == "Closed"
+    assert updated_session.title == "New Session Name"
+    assert updated_session.status == session_schemas.SessionStatus.COMPLETED
 
 def test_data_import_export(db_session):
     auth_service.create_user(db_session, auth_schemas.UserCreate(username="exportuser", email="exportuser@example.com", password="password", role="player"))

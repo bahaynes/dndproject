@@ -5,7 +5,10 @@ export interface User {
     role: 'player' | 'admin';
     is_active: boolean;
     character?: Character;
+    characters?: Character[];
 }
+
+export type CharacterStatus = 'ready' | 'deployed' | 'fatigued' | 'medical_leave';
 
 export interface Character {
     id: number;
@@ -13,17 +16,21 @@ export interface Character {
     description?: string;
     image_url?: string;
     owner_id: number;
-    stats: CharacterStats;
-    inventory: InventoryItem[];
-    missions: Mission[];
-    game_sessions: GameSession[];
+    status: CharacterStatus;
+    stats?: CharacterStats;
+    inventory?: InventoryItem[];
+    missions?: Mission[];
+    game_sessions?: GameSession[];
 }
 
 export interface CharacterStats {
     id: number;
     character_id: number;
     xp: number;
-    scrip: number;
+    commendations?: number;
+    current_hp?: number;
+    short_rest_available?: boolean;
+    scrip?: number;
 }
 
 export interface Item {
@@ -39,11 +46,12 @@ export interface InventoryItem {
 }
 
 export interface Mission {
-    id: number;
-    name: string;
-    description?: string;
+    id: string;
+    title: string;
+    summary?: string;
     status: string;
-    rewards: MissionReward[];
+    target_hex?: string;
+    dossier_data?: Record<string, any>;
     players: Character[];
 }
 
@@ -55,13 +63,17 @@ export interface MissionReward {
     item?: Item;
 }
 
+export type SessionStatus = 'open' | 'confirmed' | 'completed' | 'cancelled';
+
 export interface GameSession {
-    id: number;
-    name: string;
-    description?: string;
+    id: string;
+    mission_id: string;
+    title: string;
     session_date: string; // ISO 8601 date string
-    status: 'Scheduled' | 'Completed';
-    after_action_report?: string;
+    status: SessionStatus;
+    route_data: string[];
+    gm_notes?: string;
+    aar_summary?: string;
     players: Character[];
 }
 
@@ -74,12 +86,6 @@ export interface CharacterInGameSession {
 }
 
 
-export interface GameSessionWithPlayers {
-    id: number;
-    name: string;
-    description?: string;
-    session_date: string; // ISO 8601 date string
-    status: 'Scheduled' | 'Completed';
-    after_action_report?: string;
+export interface GameSessionWithPlayers extends GameSession {
     players: CharacterInGameSession[];
 }

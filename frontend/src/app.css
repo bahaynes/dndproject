@@ -105,6 +105,24 @@ header {
   color: #b6ddff;
 }
 
+.badge-error {
+  background: rgba(197, 48, 48, 0.12);
+  border-color: rgba(197, 48, 48, 0.35);
+  color: #f5d0d0;
+}
+
+.badge-muted {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+.badge-ghost {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border);
+  color: #f8f4ed;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -235,6 +253,40 @@ header {
   gap: 1.25rem;
 }
 
+.board-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.split-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.stat-card {
+  background: var(--panel-strong);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: var(--shadow);
+}
+
 .nav-link {
   color: var(--muted);
   font-weight: 600;
@@ -277,4 +329,17 @@ header {
   filter: blur(18px);
   opacity: 0.6;
   z-index: -1;
+}
+
+.code-block {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 0.9rem;
+  border: 1px solid var(--border);
+  background: #0f0c16;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  overflow-x: auto;
 }

@@ -1,11 +1,34 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from typing import List
 
 from ...dependencies import get_db, get_current_active_user
 from ..auth.schemas import User
 from . import schemas, service as crud
 
 router = APIRouter()
+
+
+@router.get("/", response_model=List[schemas.Character])
+def list_characters(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """List all characters owned by the current user."""
+
+    return crud.list_characters_for_user(db=db, owner_id=current_user.id)
+
+
+@router.post("/", response_model=schemas.Character, status_code=status.HTTP_201_CREATED)
+def create_character(
+    character: schemas.CharacterCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """Create a new character for the current user."""
+
+    return crud.create_character(db=db, character=character, owner_id=current_user.id)
+
 
 @router.get("/{character_id}", response_model=schemas.Character)
 def read_character(character_id: int, db: Session = Depends(get_db)):

@@ -48,7 +48,9 @@
     </a>
     <div class="flex items-center gap-2">
       <a href="/sessions" class="nav-link">Sessions</a>
+      <a href="/missions" class="nav-link">Missions</a>
       {#if $auth.isAuthenticated}
+        <a href="/dashboard/roster" class="nav-link">Roster</a>
         <a href="/dashboard" class="nav-link">Dashboard</a>
         {#if $auth.user}
           <span class="nav-link">Welcome, {$auth.user.username}</span>
