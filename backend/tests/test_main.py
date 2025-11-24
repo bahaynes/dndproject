@@ -6,7 +6,7 @@ from datetime import datetime
 
 def test_create_user_success(client):
     response = client.post(
-        "/users/",
+        "/api/users/",
         json={"username": "testuser", "email": "test@example.com", "password": "password123"},
     )
     assert response.status_code == 200
@@ -24,12 +24,12 @@ def test_create_user_success(client):
 def test_create_user_duplicate_username(client):
     # Create the first user
     client.post(
-        "/users/",
+        "/api/users/",
         json={"username": "testuser", "email": "test1@example.com", "password": "password123"},
     )
     # Attempt to create a second user with the same username
     response = client.post(
-        "/users/",
+        "/api/users/",
         json={"username": "testuser", "email": "test2@example.com", "password": "password123"},
     )
     assert response.status_code == 400
@@ -38,12 +38,12 @@ def test_create_user_duplicate_username(client):
 def test_create_user_duplicate_email(client):
     # Create the first user
     client.post(
-        "/users/",
+        "/api/users/",
         json={"username": "testuser1", "email": "test@example.com", "password": "password123"},
     )
     # Attempt to create a second user with the same email
     response = client.post(
-        "/users/",
+        "/api/users/",
         json={"username": "testuser2", "email": "test@example.com", "password": "password123"},
     )
     assert response.status_code == 400
@@ -53,13 +53,13 @@ def test_create_user_duplicate_email(client):
 def test_login_for_access_token(client):
     # First, create a user to log in with
     client.post(
-        "/users/",
+        "/api/users/",
         json={"username": "loginuser", "email": "login@example.com", "password": "password123"},
     )
 
     # Now, attempt to log in
     response = client.post(
-        "/token",
+        "/api/token",
         data={"username": "loginuser", "password": "password123"},
     )
     assert response.status_code == 200
@@ -70,11 +70,11 @@ def test_login_for_access_token(client):
 
 def test_login_incorrect_password(client):
     client.post(
-        "/users/",
+        "/api/users/",
         json={"username": "loginuser", "email": "login@example.com", "password": "password123"},
     )
     response = client.post(
-        "/token",
+        "/api/token",
         data={"username": "loginuser", "password": "wrongpassword"},
     )
     assert response.status_code == 401
@@ -83,17 +83,17 @@ def test_login_incorrect_password(client):
 
 def test_read_users_me_success(client):
     client.post(
-        "/users/",
+        "/api/users/",
         json={"username": "me_user", "email": "me@example.com", "password": "password123"},
     )
     login_response = client.post(
-        "/token",
+        "/api/token",
         data={"username": "me_user", "password": "password123"},
     )
     token = login_response.json()["access_token"]
 
     me_response = client.get(
-        "/users/me/",
+        "/api/users/me/",
         headers={"Authorization": f"Bearer {token}"},
     )
     assert me_response.status_code == 200
@@ -104,7 +104,7 @@ def test_read_users_me_success(client):
 
 def test_read_users_me_invalid_token(client):
     response = client.get(
-        "/users/me/",
+        "/api/users/me/",
         headers={"Authorization": "Bearer invalidtoken"},
     )
     assert response.status_code == 401
@@ -114,7 +114,7 @@ def test_read_users_me_invalid_token(client):
 def test_read_character_success(client):
     # Create a user, which also creates a character
     user_response = client.post(
-        "/users/",
+        "/api/users/",
         json={"username": "char_owner", "email": "char@example.com", "password": "password123"},
     )
     assert user_response.status_code == 200
@@ -132,18 +132,18 @@ def test_read_character_success(client):
 def test_update_character_success(client):
     # Create a user and get token
     client.post(
-        "/users/",
+        "/api/users/",
         json={"username": "update_char_owner", "email": "update_char@example.com", "password": "password123"},
     )
     login_response = client.post(
-        "/token",
+        "/api/token",
         data={"username": "update_char_owner", "password": "password123"},
     )
     token = login_response.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
-    # Get character ID from the /users/me endpoint
-    me_response = client.get("/users/me/", headers=headers)
+    # Get character ID from the /api/users/me endpoint
+    me_response = client.get("/api/users/me/", headers=headers)
     character_id = me_response.json()["character"]["id"]
 
     # Update the character
@@ -162,10 +162,10 @@ def test_update_character_success(client):
 def test_item_endpoints(client):
     # Create an admin user and get a token
     client.post(
-        "/users/",
+        "/api/users/",
         json={"username": "item_admin", "email": "item_admin@example.com", "password": "password", "role": "admin"},
     )
-    response = client.post("/token", data={"username": "item_admin", "password": "password"})
+    response = client.post("/api/token", data={"username": "item_admin", "password": "password"})
     token = response.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -189,24 +189,24 @@ def test_item_endpoints(client):
 def test_inventory_endpoints(client):
     # Create an admin user for creating items
     client.post(
-        "/users/",
+        "/api/users/",
         json={"username": "inv_admin", "email": "inv_admin@example.com", "password": "password", "role": "admin"},
     )
-    admin_login_response = client.post("/token", data={"username": "inv_admin", "password": "password"})
+    admin_login_response = client.post("/api/token", data={"username": "inv_admin", "password": "password"})
     admin_token = admin_login_response.json()["access_token"]
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
     # Create a player user
     client.post(
-        "/users/",
+        "/api/users/",
         json={"username": "inv_user", "email": "inv_user@example.com", "password": "password", "role": "player"},
     )
-    player_login_response = client.post("/token", data={"username": "inv_user", "password": "password"})
+    player_login_response = client.post("/api/token", data={"username": "inv_user", "password": "password"})
     player_token = player_login_response.json()["access_token"]
     player_headers = {"Authorization": f"Bearer {player_token}"}
 
     # Get character ID
-    me_response = client.get("/users/me/", headers=player_headers)
+    me_response = client.get("/api/users/me/", headers=player_headers)
     character_id = me_response.json()["character"]["id"]
 
     # Create an item
@@ -227,12 +227,12 @@ def test_inventory_endpoints(client):
 
 def test_store_endpoints(client, db_session):
     # Create an admin user and a player user
-    client.post("/users/", json={"username": "store_admin", "email": "store_admin@example.com", "password": "password", "role": "admin"})
-    admin_login = client.post("/token", data={"username": "store_admin", "password": "password"})
+    client.post("/api/users/", json={"username": "store_admin", "email": "store_admin@example.com", "password": "password", "role": "admin"})
+    admin_login = client.post("/api/token", data={"username": "store_admin", "password": "password"})
     admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
 
-    client.post("/users/", json={"username": "buyer", "email": "buyer@example.com", "password": "password", "role": "player"})
-    player_login = client.post("/token", data={"username": "buyer", "password": "password"})
+    client.post("/api/users/", json={"username": "buyer", "email": "buyer@example.com", "password": "password", "role": "player"})
+    player_login = client.post("/api/token", data={"username": "buyer", "password": "password"})
     player_headers = {"Authorization": f"Bearer {player_login.json()['access_token']}"}
 
     # Create an item
@@ -250,7 +250,7 @@ def test_store_endpoints(client, db_session):
     assert len(res.json()) > 0
 
     # Purchase item
-    me_res = client.get("/users/me/", headers=player_headers)
+    me_res = client.get("/api/users/me/", headers=player_headers)
     character = db_session.query(char_models.Character).filter(char_models.Character.id == me_res.json()["character"]["id"]).first()
     character.stats.scrip = 500
     db_session.commit()
@@ -262,12 +262,12 @@ def test_store_endpoints(client, db_session):
 
 def test_mission_endpoints(client):
     # Create admin and player
-    client.post("/users/", json={"username": "mission_admin", "email": "mission_admin@example.com", "password": "password", "role": "admin"})
-    admin_login = client.post("/token", data={"username": "mission_admin", "password": "password"})
+    client.post("/api/users/", json={"username": "mission_admin", "email": "mission_admin@example.com", "password": "password", "role": "admin"})
+    admin_login = client.post("/api/token", data={"username": "mission_admin", "password": "password"})
     admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
 
-    client.post("/users/", json={"username": "mission_player", "email": "mission_player@example.com", "password": "password", "role": "player"})
-    player_login = client.post("/token", data={"username": "mission_player", "password": "password"})
+    client.post("/api/users/", json={"username": "mission_player", "email": "mission_player@example.com", "password": "password", "role": "player"})
+    player_login = client.post("/api/token", data={"username": "mission_player", "password": "password"})
     player_headers = {"Authorization": f"Bearer {player_login.json()['access_token']}"}
 
     # Create mission
@@ -303,12 +303,12 @@ def test_mission_endpoints(client):
 
 def test_game_session_endpoints(client):
     # Create admin and player
-    client.post("/users/", json={"username": "session_admin", "email": "session_admin@example.com", "password": "password", "role": "admin"})
-    admin_login = client.post("/token", data={"username": "session_admin", "password": "password"})
+    client.post("/api/users/", json={"username": "session_admin", "email": "session_admin@example.com", "password": "password", "role": "admin"})
+    admin_login = client.post("/api/token", data={"username": "session_admin", "password": "password"})
     admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
 
-    client.post("/users/", json={"username": "session_player", "email": "session_player@example.com", "password": "password", "role": "player"})
-    player_login = client.post("/token", data={"username": "session_player", "password": "password"})
+    client.post("/api/users/", json={"username": "session_player", "email": "session_player@example.com", "password": "password", "role": "player"})
+    player_login = client.post("/api/token", data={"username": "session_player", "password": "password"})
     player_headers = {"Authorization": f"Bearer {player_login.json()['access_token']}"}
 
     # Create session
