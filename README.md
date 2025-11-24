@@ -46,3 +46,9 @@ To stop all running services, run:
 ```bash
 /app/stop_dev.sh
 ```
+
+## Deployment
+
+This project includes an automated CI/CD pipeline for deploying to production and generating preview environments for Pull Requests.
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for configuration instructions.

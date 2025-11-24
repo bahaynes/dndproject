@@ -1,14 +1,18 @@
-name: CI
+name: CI/CD
 
 on:
   pull_request:
     branches: [ main ]
+    types: [opened, synchronize, reopened]
   push:
     branches: [ main ]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
         include:
@@ -18,7 +22,7 @@ jobs:
             test_cmd: "docker run --rm ghcr.io/bahaynes/dndproject-backend:${GITHUB_SHA} pytest"
           - service: frontend
             dockerfile: frontend/Containerfile
-            image: ghcr.io/${{ github.repository }}-frontend
+            image: ghcr.io/bahaynes/dndproject-frontend
             test_cmd: |
               docker build -f frontend/Containerfile \
               -t frontend-test:${GITHUB_SHA} \
@@ -28,8 +32,6 @@ jobs:
 
     env:
       REGISTRY: ghcr.io
-      OWNER: ${{ github.repository_owner }}
-      REPO: ${{ github.event.repository.name }}
 
     steps:
       - name: Checkout repository
@@ -68,12 +70,131 @@ jobs:
           name: vitest-report
           path: frontend/reports/junit.xml
 
-      - name: Push image
+      - name: Push image (Main)
         if: github.ref == 'refs/heads/main'
         run: |
-          # Push SHA-tagged image
           docker push ${{ matrix.image }}:${GITHUB_SHA}
-          
-          # Tag as latest and push
           docker tag ${{ matrix.image }}:${GITHUB_SHA} ${{ matrix.image }}:latest
           docker push ${{ matrix.image }}:latest
+
+      - name: Push image (PR)
+        if: github.event_name == 'pull_request'
+        run: |
+          docker tag ${{ matrix.image }}:${GITHUB_SHA} ${{ matrix.image }}:pr-${{ github.event.number }}
+          docker push ${{ matrix.image }}:pr-${{ github.event.number }}
+
+  deploy-preview:
+    needs: build-and-test
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: preview-${{ github.event.number }}
+      url: https://pr-${{ github.event.number }}.dndproject.bahaynes.com
+    steps:
+      - name: Calculate Ports
+        id: ports
+        run: |
+          PR_NUM=${{ github.event.number }}
+          BASE=10000
+          OFFSET=$(( PR_NUM * 10 ))
+          echo "http_port=$(( BASE + OFFSET + 1 ))" >> $GITHUB_OUTPUT
+          echo "https_port=$(( BASE + OFFSET + 2 ))" >> $GITHUB_OUTPUT
+          echo "backend_port=$(( BASE + OFFSET + 3 ))" >> $GITHUB_OUTPUT
+          echo "dev_port=$(( BASE + OFFSET + 4 ))" >> $GITHUB_OUTPUT
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Prepare Remote Directory
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: mkdir -p ~/deploy/pr-${{ github.event.number }}
+
+      - name: Copy docker-compose.yml
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "docker-compose.yml"
+          target: "~/deploy/pr-${{ github.event.number }}"
+
+      - name: Start Preview
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          envs: HTTP_PORT,HTTPS_PORT,BACKEND_PORT,DEV_PORT,PR_NUM,CLOUDFLARE_API_TOKEN
+          script: |
+            cd ~/deploy/pr-${PR_NUM}
+            export FRONTEND_HTTP_PORT=$HTTP_PORT
+            export FRONTEND_HTTPS_PORT=$HTTPS_PORT
+            export BACKEND_PORT=$BACKEND_PORT
+            export FRONTEND_DEV_PORT=$DEV_PORT
+            export DOMAIN_NAME=pr-${PR_NUM}.dndproject.bahaynes.com
+            export MODE=prod
+            export IMAGE_TAG=pr-${PR_NUM}
+            export CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN
+
+            # Ensure we are logged in if needed (assuming GHCR is public or creds on server)
+
+            docker compose pull
+            docker compose up -d --no-build
+        env:
+          HTTP_PORT: ${{ steps.ports.outputs.http_port }}
+          HTTPS_PORT: ${{ steps.ports.outputs.https_port }}
+          BACKEND_PORT: ${{ steps.ports.outputs.backend_port }}
+          DEV_PORT: ${{ steps.ports.outputs.dev_port }}
+          PR_NUM: ${{ github.event.number }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+  deploy-prod:
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://dndproject.bahaynes.com
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Prepare Remote Directory
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: mkdir -p ~/deploy/prod
+
+      - name: Copy docker-compose.yml
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "docker-compose.yml"
+          target: "~/deploy/prod"
+
+      - name: Deploy Production
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          envs: CLOUDFLARE_API_TOKEN
+          script: |
+            cd ~/deploy/prod
+            export DOMAIN_NAME=dndproject.bahaynes.com
+            export IMAGE_TAG=latest
+            export MODE=prod
+            export CLOUDFLARE_API_TOKEN=$CLOUDFLARE_API_TOKEN
+
+            docker compose pull
+            docker compose up -d --no-build
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

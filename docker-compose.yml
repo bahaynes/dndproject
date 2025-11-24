@@ -1,15 +1,17 @@
 services:
   frontend:
+    image: ghcr.io/bahaynes/dndproject-frontend:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: ./frontend/Containerfile
     ports:
-      - "5173:5173"    # dev
-      - "9080:80"      # prod
-      - "9443:443"     # prod
+      - "${FRONTEND_DEV_PORT:-5173}:5173"    # dev
+      - "${FRONTEND_HTTP_PORT:-9080}:80"     # prod
+      - "${FRONTEND_HTTPS_PORT:-9443}:443"   # prod
     depends_on:
       - backend
     environment:
+      - DOMAIN_NAME=${DOMAIN_NAME:-dndproject.bahaynes.com}
       - VITE_API_URL=/api
       - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
     volumes:
@@ -17,13 +19,14 @@ services:
       - caddy_config:/config
 
   backend:
+    image: ghcr.io/bahaynes/dndproject-backend:${IMAGE_TAG:-latest}
     build:
       context: .
       dockerfile: ./backend/Containerfile
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     environment:
-      - DATABASE_URL=sqlite:///./app.db
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./app.db}
       - MODE=${MODE:-dev}
     command: >
       sh -c "if [ '$${MODE}' = 'prod' ];
