@@ -3,11 +3,12 @@ import Layout from '../routes/+layout.svelte';
 import { vi } from 'vitest';
 
 vi.mock('svelte', async (importOriginal) => {
-    const svelte = await importOriginal();
-    return {
-        ...svelte,
-        onMount: vi.fn(),
-    };
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const svelte = (await importOriginal()) as any;
+	return {
+		...svelte,
+		onMount: vi.fn()
+	};
 });
 
 describe('+layout.svelte', () => {

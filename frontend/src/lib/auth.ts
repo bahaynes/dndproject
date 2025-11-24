@@ -1,26 +1,24 @@
 // src/lib/auth.ts
 import { writable, type Writable } from 'svelte/store';
-
-export interface User {
-  username: string;
-  email?: string;
-  // add more fields as needed
-}
+import type { User } from './types';
+export type { User };
 
 export interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
+	user: User | null;
+	isAuthenticated: boolean;
+	token?: string;
 }
 
 export const auth: Writable<AuthState> = writable({
-  user: null,
-  isAuthenticated: false,
+	user: null,
+	isAuthenticated: false,
+	token: undefined
 });
 
-export function login(user: User) {
-  auth.set({ user, isAuthenticated: true });
+export function login(user: User, token?: string) {
+	auth.set({ user, isAuthenticated: true, token });
 }
 
 export function logout() {
-  auth.set({ user: null, isAuthenticated: false });
+	auth.set({ user: null, isAuthenticated: false, token: undefined });
 }
