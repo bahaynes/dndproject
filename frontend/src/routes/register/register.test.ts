@@ -65,7 +65,7 @@ describe('Register Page', () => {
 		expect(mockFetch).toHaveBeenCalledWith('/api/users/', expect.any(Object));
 
 		// 2. Check if auth state was updated
-		expect(login).toHaveBeenCalledWith(mockUser);
+		expect(login).toHaveBeenCalledWith(mockUser, 'new_fake_token');
 
 		// 3. Check if localStorage was updated
 		expect(setItemSpy).toHaveBeenCalledWith('accessToken', 'new_fake_token');

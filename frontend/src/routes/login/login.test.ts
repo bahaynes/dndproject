@@ -63,7 +63,10 @@ describe('Login Page', () => {
 		expect(setItemSpy).toHaveBeenCalledWith('accessToken', 'fake_token');
 
 		// 4. Check if the auth state was updated
-		expect(login).toHaveBeenCalledWith({ username: 'testuser', email: 'test@example.com' });
+		expect(login).toHaveBeenCalledWith(
+			{ username: 'testuser', email: 'test@example.com' },
+			'fake_token'
+		);
 
 		// 5. Check if the user was redirected
 		expect(goto).toHaveBeenCalledWith('/dashboard');
