@@ -3,6 +3,7 @@
   import type { GameSessionWithPlayers } from '../../lib/types';
   import { auth } from '../../lib/auth';
   import { get } from 'svelte/store';
+  import { API_BASE_URL } from '$lib/config';
 
   let sessions: GameSessionWithPlayers[] = [];
   let error: string | null = null;
@@ -21,7 +22,7 @@
       if (!token) {
         throw new Error('Not authenticated. Please log in.');
       }
-      const response = await fetch('/api/sessions/', {
+      const response = await fetch(`${API_BASE_URL}/sessions/`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -54,7 +55,7 @@
     }
 
     const method = isSignedUp(session) ? 'DELETE' : 'POST';
-    const url = `/api/sessions/${session.id}/signup`;
+    const url = `${API_BASE_URL}/sessions/${session.id}/signup`;
 
     try {
       const response = await fetch(url, {

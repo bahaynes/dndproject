@@ -1,6 +1,7 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
     import { login } from '$lib/auth';
+    import { API_BASE_URL } from '$lib/config';
 
     let username = '';
     let email = '';
@@ -19,7 +20,7 @@
         }
 
         try {
-            const response = await fetch('/api/users/', {
+            const response = await fetch(`${API_BASE_URL}/users/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

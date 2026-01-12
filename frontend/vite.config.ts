@@ -16,7 +16,7 @@ export default defineConfig({
 			'/api': {
 				target: 'http://backend:8000',
 				changeOrigin: true,
-				rewrite: (path) => path.replace(/^\/api/, ''),
+				// rewrite: (path) => path.replace(/^\/api/, ''), // Removed rewrite to support backend expecting /api
 			}
 		},
 		allowedHosts: [

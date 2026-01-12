@@ -30,6 +30,8 @@ origins = [
     "http://localhost",
     "http://localhost:5173",  # SvelteKit default dev port
     "http://localhost:3000",
+    "https://*.vercel.app",   # Allow Vercel deployments
+    "*",                      # Allow all for testing
 ]
 
 app.add_middleware(
@@ -45,7 +47,8 @@ async def health_check():
     return {"status": "ok"}
 
 # Include routers
-app.include_router(auth_router.router)
+# Mount auth under /api so /token becomes /api/token, consistent with other routes
+app.include_router(auth_router.router, prefix="/api")
 app.include_router(char_router.router, prefix="/api/characters", tags=["Characters"])
 app.include_router(item_router.router, prefix="/api/items", tags=["Items"])
 app.include_router(inventory_router.router, prefix="/api/characters/{character_id}/inventory", tags=["Inventory"])
