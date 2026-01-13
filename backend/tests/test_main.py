@@ -1,149 +1,103 @@
 import pytest
 from app.modules.characters import models as char_models
+from app.modules.campaigns import models as campaign_models
+from app.modules.auth import models as auth_models
 from datetime import datetime
+from app.database import Base, get_db
+from app.config import get_settings
+from app import security
+
+# --- Helpers ---
+@pytest.fixture
+def campaign(db_session):
+    pass
+
+def create_auth_headers(client, db_session, username, discord_id, role, campaign_id):
+    # 1. Create User in DB
+    user = auth_models.User(
+        username=username,
+        discord_id=discord_id,
+        campaign_id=campaign_id,
+        role=role
+    )
+    db_session.add(user)
+
+    # Create Character
+    char = char_models.Character(name=f"{username}'s Character", owner=user, campaign_id=campaign_id)
+    db_session.add(char)
+    char_stats = char_models.CharacterStats(character=char)
+    db_session.add(char_stats)
+
+    db_session.commit()
+    db_session.refresh(user)
+
+    # 2. Generate Token
+    access_token = security.create_access_token(data={
+        "sub": discord_id,
+        "campaign_id": campaign_id,
+        "role": role
+    })
+
+    return {"Authorization": f"Bearer {access_token}"}
+
+@pytest.fixture
+def setup_data(db_session):
+    # Create Campaign
+    camp = campaign_models.Campaign(
+        name="Test Campaign",
+        discord_guild_id="1234567890",
+        dm_role_id="dm",
+        player_role_id="player"
+    )
+    db_session.add(camp)
+    db_session.commit()
+    db_session.refresh(camp)
+    return camp
 
 # --- Test Cases ---
 
-def test_create_user_success(client):
-    response = client.post(
-        "/api/users/",
-        json={"username": "testuser", "email": "test@example.com", "password": "password123"},
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["username"] == "testuser"
-    assert data["email"] == "test@example.com"
-    assert "id" in data
-    assert "hashed_password" not in data
-    # Check if the default character was created
-    assert "character" in data
-    assert data["character"] is not None
-    assert data["character"]["name"] == "testuser's Character"
+def test_read_users_me_success(client, db_session, setup_data):
+    headers = create_auth_headers(client, db_session, "me_user", "u_me", "player", setup_data.id)
 
-
-def test_create_user_duplicate_username(client):
-    # Create the first user
-    client.post(
-        "/api/users/",
-        json={"username": "testuser", "email": "test1@example.com", "password": "password123"},
-    )
-    # Attempt to create a second user with the same username
-    response = client.post(
-        "/api/users/",
-        json={"username": "testuser", "email": "test2@example.com", "password": "password123"},
-    )
-    assert response.status_code == 400
-    assert response.json() == {"detail": "This username is already in use. Please choose another one."}
-
-def test_create_user_duplicate_email(client):
-    # Create the first user
-    client.post(
-        "/api/users/",
-        json={"username": "testuser1", "email": "test@example.com", "password": "password123"},
-    )
-    # Attempt to create a second user with the same email
-    response = client.post(
-        "/api/users/",
-        json={"username": "testuser2", "email": "test@example.com", "password": "password123"},
-    )
-    assert response.status_code == 400
-    assert response.json() == {"detail": "This email is already registered. If you have an account, please sign in instead."}
-
-
-def test_login_for_access_token(client):
-    # First, create a user to log in with
-    client.post(
-        "/api/users/",
-        json={"username": "loginuser", "email": "login@example.com", "password": "password123"},
-    )
-
-    # Now, attempt to log in
-    response = client.post(
-        "/api/token",
-        data={"username": "loginuser", "password": "password123"},
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert "access_token" in data
-    assert data["token_type"] == "bearer"
-
-
-def test_login_incorrect_password(client):
-    client.post(
-        "/api/users/",
-        json={"username": "loginuser", "email": "login@example.com", "password": "password123"},
-    )
-    response = client.post(
-        "/api/token",
-        data={"username": "loginuser", "password": "wrongpassword"},
-    )
-    assert response.status_code == 401
-    assert response.json() == {"detail": "Incorrect username or password"}
-
-
-def test_read_users_me_success(client):
-    client.post(
-        "/api/users/",
-        json={"username": "me_user", "email": "me@example.com", "password": "password123"},
-    )
-    login_response = client.post(
-        "/api/token",
-        data={"username": "me_user", "password": "password123"},
-    )
-    token = login_response.json()["access_token"]
-
+    # Correct URL: /api/auth/users/me/
     me_response = client.get(
-        "/api/users/me/",
-        headers={"Authorization": f"Bearer {token}"},
+        "/api/auth/users/me/",
+        headers=headers,
     )
     assert me_response.status_code == 200
     data = me_response.json()
     assert data["username"] == "me_user"
-    assert data["email"] == "me@example.com"
-
+    assert data["campaign_id"] == setup_data.id
 
 def test_read_users_me_invalid_token(client):
     response = client.get(
-        "/api/users/me/",
+        "/api/auth/users/me/",
         headers={"Authorization": "Bearer invalidtoken"},
     )
     assert response.status_code == 401
     assert response.json() == {"detail": "Could not validate credentials"}
 
+def test_read_character_success(client, db_session, setup_data):
+    headers = create_auth_headers(client, db_session, "char_owner", "u_char", "player", setup_data.id)
 
-def test_read_character_success(client):
-    # Create a user, which also creates a character
-    user_response = client.post(
-        "/api/users/",
-        json={"username": "char_owner", "email": "char@example.com", "password": "password123"},
-    )
-    assert user_response.status_code == 200
-    user_data = user_response.json()
+    # Get user to get character id
+    me_response = client.get("/api/auth/users/me/", headers=headers)
+    assert me_response.status_code == 200
+    user_data = me_response.json()
     character_id = user_data["character"]["id"]
 
     # Read the character
-    char_response = client.get(f"/api/characters/{character_id}")
+    char_response = client.get(f"/api/characters/{character_id}", headers=headers)
     assert char_response.status_code == 200
     char_data = char_response.json()
     assert char_data["id"] == character_id
     assert char_data["name"] == "char_owner's Character"
 
+def test_update_character_success(client, db_session, setup_data):
+    headers = create_auth_headers(client, db_session, "update_char", "u_upd", "player", setup_data.id)
 
-def test_update_character_success(client):
-    # Create a user and get token
-    client.post(
-        "/api/users/",
-        json={"username": "update_char_owner", "email": "update_char@example.com", "password": "password123"},
-    )
-    login_response = client.post(
-        "/api/token",
-        data={"username": "update_char_owner", "password": "password123"},
-    )
-    token = login_response.json()["access_token"]
-    headers = {"Authorization": f"Bearer {token}"}
-
-    # Get character ID from the /users/me endpoint
-    me_response = client.get("/api/users/me/", headers=headers)
+    # Get character ID
+    me_response = client.get("/api/auth/users/me/", headers=headers)
     character_id = me_response.json()["character"]["id"]
 
     # Update the character
@@ -158,16 +112,8 @@ def test_update_character_success(client):
     assert updated_char_data["name"] == "Updated Name"
     assert updated_char_data["description"] == "Updated Description"
 
-
-def test_item_endpoints(client):
-    # Create an admin user and get a token
-    client.post(
-        "/api/users/",
-        json={"username": "item_admin", "email": "item_admin@example.com", "password": "password", "role": "admin"},
-    )
-    response = client.post("/api/token", data={"username": "item_admin", "password": "password"})
-    token = response.json()["access_token"]
-    headers = {"Authorization": f"Bearer {token}"}
+def test_item_endpoints(client, db_session, setup_data):
+    headers = create_auth_headers(client, db_session, "item_admin", "u_item", "admin", setup_data.id)
 
     # Test create_item
     response = client.post("/api/items/", json={"name": "Test Item", "description": "A test item"}, headers=headers)
@@ -185,35 +131,19 @@ def test_item_endpoints(client):
     assert response.status_code == 200
     assert len(response.json()) > 0
 
+def test_inventory_endpoints(client, db_session, setup_data):
+    admin_headers = create_auth_headers(client, db_session, "inv_admin", "u_inv_admin", "admin", setup_data.id)
+    player_headers = create_auth_headers(client, db_session, "inv_player", "u_inv_player", "player", setup_data.id)
 
-def test_inventory_endpoints(client):
-    # Create an admin user for creating items
-    client.post(
-        "/api/users/",
-        json={"username": "inv_admin", "email": "inv_admin@example.com", "password": "password", "role": "admin"},
-    )
-    admin_login_response = client.post("/api/token", data={"username": "inv_admin", "password": "password"})
-    admin_token = admin_login_response.json()["access_token"]
-    admin_headers = {"Authorization": f"Bearer {admin_token}"}
-
-    # Create a player user
-    client.post(
-        "/api/users/",
-        json={"username": "inv_user", "email": "inv_user@example.com", "password": "password", "role": "player"},
-    )
-    player_login_response = client.post("/api/token", data={"username": "inv_user", "password": "password"})
-    player_token = player_login_response.json()["access_token"]
-    player_headers = {"Authorization": f"Bearer {player_token}"}
-
-    # Get character ID
-    me_response = client.get("/api/users/me/", headers=player_headers)
+    # Get character ID for player
+    me_response = client.get("/api/auth/users/me/", headers=player_headers)
     character_id = me_response.json()["character"]["id"]
 
-    # Create an item
+    # Create an item (as admin)
     item_response = client.post("/api/items/", json={"name": "Inv Item", "description": "An inventory item"}, headers=admin_headers)
     item_id = item_response.json()["id"]
 
-    # Add item to inventory
+    # Add item to inventory (admin)
     response = client.post(f"/api/characters/{character_id}/inventory?item_id={item_id}&quantity=5", headers=admin_headers)
     assert response.status_code == 200
     inventory_item_id = response.json()["id"]
@@ -224,16 +154,9 @@ def test_inventory_endpoints(client):
     assert response.status_code == 200
     assert response.json()["quantity"] == 3
 
-
-def test_store_endpoints(client, db_session):
-    # Create an admin user and a player user
-    client.post("/api/users/", json={"username": "store_admin", "email": "store_admin@example.com", "password": "password", "role": "admin"})
-    admin_login = client.post("/api/token", data={"username": "store_admin", "password": "password"})
-    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
-
-    client.post("/api/users/", json={"username": "buyer", "email": "buyer@example.com", "password": "password", "role": "player"})
-    player_login = client.post("/api/token", data={"username": "buyer", "password": "password"})
-    player_headers = {"Authorization": f"Bearer {player_login.json()['access_token']}"}
+def test_store_endpoints(client, db_session, setup_data):
+    admin_headers = create_auth_headers(client, db_session, "store_admin", "u_store_admin", "admin", setup_data.id)
+    player_headers = create_auth_headers(client, db_session, "store_buyer", "u_store_buyer", "player", setup_data.id)
 
     # Create an item
     item_res = client.post("/api/items/", json={"name": "Store Item", "description": "A store item"}, headers=admin_headers)
@@ -250,8 +173,11 @@ def test_store_endpoints(client, db_session):
     assert len(res.json()) > 0
 
     # Purchase item
-    me_res = client.get("/api/users/me/", headers=player_headers)
-    character = db_session.query(char_models.Character).filter(char_models.Character.id == me_res.json()["character"]["id"]).first()
+    me_res = client.get("/api/auth/users/me/", headers=player_headers)
+    char_id = me_res.json()["character"]["id"]
+
+    # Give scrip
+    character = db_session.query(char_models.Character).filter(char_models.Character.id == char_id).first()
     character.stats.scrip = 500
     db_session.commit()
 
@@ -259,16 +185,9 @@ def test_store_endpoints(client, db_session):
     assert res.status_code == 200
     assert res.json()["message"] == "Purchase successful"
 
-
-def test_mission_endpoints(client):
-    # Create admin and player
-    client.post("/api/users/", json={"username": "mission_admin", "email": "mission_admin@example.com", "password": "password", "role": "admin"})
-    admin_login = client.post("/api/token", data={"username": "mission_admin", "password": "password"})
-    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
-
-    client.post("/api/users/", json={"username": "mission_player", "email": "mission_player@example.com", "password": "password", "role": "player"})
-    player_login = client.post("/api/token", data={"username": "mission_player", "password": "password"})
-    player_headers = {"Authorization": f"Bearer {player_login.json()['access_token']}"}
+def test_mission_endpoints(client, db_session, setup_data):
+    admin_headers = create_auth_headers(client, db_session, "mission_admin", "u_miss_admin", "admin", setup_data.id)
+    player_headers = create_auth_headers(client, db_session, "mission_player", "u_miss_player", "player", setup_data.id)
 
     # Create mission
     mission_res = client.post("/api/missions/", json={"name": "Test Mission", "description": "A test mission", "status": "Active", "rewards": []}, headers=admin_headers)
@@ -300,16 +219,9 @@ def test_mission_endpoints(client):
     assert res.status_code == 200
     assert res.json()["message"] == "Rewards distributed successfully"
 
-
-def test_game_session_endpoints(client):
-    # Create admin and player
-    client.post("/api/users/", json={"username": "session_admin", "email": "session_admin@example.com", "password": "password", "role": "admin"})
-    admin_login = client.post("/api/token", data={"username": "session_admin", "password": "password"})
-    admin_headers = {"Authorization": f"Bearer {admin_login.json()['access_token']}"}
-
-    client.post("/api/users/", json={"username": "session_player", "email": "session_player@example.com", "password": "password", "role": "player"})
-    player_login = client.post("/api/token", data={"username": "session_player", "password": "password"})
-    player_headers = {"Authorization": f"Bearer {player_login.json()['access_token']}"}
+def test_game_session_endpoints(client, db_session, setup_data):
+    admin_headers = create_auth_headers(client, db_session, "session_admin", "u_sess_admin", "admin", setup_data.id)
+    player_headers = create_auth_headers(client, db_session, "session_player", "u_sess_player", "player", setup_data.id)
 
     # Create session
     session_res = client.post("/api/sessions/", json={"name": "Test Session", "description": "A test session", "status": "Open", "session_date": datetime.now().isoformat()}, headers=admin_headers)

@@ -1,5 +1,9 @@
-from typing import List, Optional
+from typing import List, Optional, ForwardRef
 from pydantic import BaseModel
+
+# Forward reference for Character to avoid circular import issues at module level
+# We use a string forward reference if possible, or conditional import
+# In Pydantic v2, we can just use the class name if it's imported later or use a string.
 
 class Token(BaseModel):
     access_token: str
@@ -16,14 +20,23 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     campaign_id: int
     role: str = "player"
-    email: Optional[str] = None # Keeping email here as optional input but not storing in User model for now
+    email: Optional[str] = None
+
+class CharacterOut(BaseModel):
+    id: int
+    name: str
+    description: Optional[str] = None
+
+    class Config:
+        from_attributes = True
 
 class User(UserBase):
     id: int
     is_active: bool
     role: str
     campaign_id: int
-    # character: Optional[Character] = None # Avoiding circular import for now
+
+    character: Optional[CharacterOut] = None
 
     class Config:
         from_attributes = True

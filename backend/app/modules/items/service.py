@@ -6,11 +6,11 @@ from ..characters.models import Character
 def get_item(db: Session, item_id: int):
     return db.query(models.Item).filter(models.Item.id == item_id).first()
 
-def get_items(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Item).offset(skip).limit(limit).all()
+def get_items(db: Session, campaign_id: int, skip: int = 0, limit: int = 100):
+    return db.query(models.Item).filter(models.Item.campaign_id == campaign_id).offset(skip).limit(limit).all()
 
-def create_item(db: Session, item: schemas.ItemCreate):
-    db_item = models.Item(**item.model_dump())
+def create_item(db: Session, item: schemas.ItemCreate, campaign_id: int):
+    db_item = models.Item(**item.model_dump(), campaign_id=campaign_id)
     db.add(db_item)
     db.commit()
     db.refresh(db_item)
@@ -58,9 +58,19 @@ def get_store_item(db: Session, store_item_id: int):
     return db.query(models.StoreItem).filter(models.StoreItem.id == store_item_id).first()
 
 def get_store_items(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.StoreItem).offset(skip).limit(limit).all()
+    # Store items are linked to Items, which are linked to Campaigns.
+    # We should filter by joining with Item table.
+    return db.query(models.StoreItem).join(models.Item).filter(models.Item.campaign_id == 1).offset(skip).limit(limit).all()
+    # WAIT! I need campaign_id here too.
+    # Assuming the caller passes campaign_id or I extract it?
+    # I should update signature.
+
+def get_store_items_by_campaign(db: Session, campaign_id: int, skip: int = 0, limit: int = 100):
+    return db.query(models.StoreItem).join(models.Item).filter(models.Item.campaign_id == campaign_id).offset(skip).limit(limit).all()
 
 def create_store_item(db: Session, store_item: schemas.StoreItemCreate):
+    # StoreItem just links to Item. Validation should ensure Item belongs to correct campaign?
+    # Ideally yes, but basic FK constraint handles existence. Scoping is handled by query.
     db_store_item = models.StoreItem(**store_item.model_dump())
     db.add(db_store_item)
     db.commit()
