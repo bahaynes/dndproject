@@ -6,11 +6,16 @@ from ..characters import models as char_models
 def get_mission(db: Session, mission_id: int):
     return db.query(models.Mission).filter(models.Mission.id == mission_id).first()
 
-def get_missions(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(models.Mission).offset(skip).limit(limit).all()
+def get_missions(db: Session, campaign_id: int, skip: int = 0, limit: int = 100):
+    return db.query(models.Mission).filter(models.Mission.campaign_id == campaign_id).offset(skip).limit(limit).all()
 
-def create_mission(db: Session, mission: schemas.MissionCreate):
-    db_mission = models.Mission(name=mission.name, description=mission.description, status=mission.status)
+def create_mission(db: Session, mission: schemas.MissionCreate, campaign_id: int):
+    db_mission = models.Mission(
+        name=mission.name,
+        description=mission.description,
+        status=mission.status,
+        campaign_id=campaign_id
+    )
     db.add(db_mission)
     db.commit()
     # Now that the mission has an ID, create the rewards

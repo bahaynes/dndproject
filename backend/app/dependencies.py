@@ -1,46 +1,74 @@
+from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
 from jose import JWTError, jwt
+from sqlalchemy.orm import Session
 
-from .database import SessionLocal
-from . import security
-from .modules.auth import service as auth_service, schemas as auth_schemas
+from .database import get_db
+from .config import get_settings
+from .modules.auth import models, schemas
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/token")
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+async def get_current_user_global(
+    token: str = Depends(oauth2_scheme),
+    settings = Depends(get_settings)
+):
+    """
+    Validates the token and returns the payload (Discord ID, etc.)
+    """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, security.SECRET_KEY, algorithms=[security.ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        discord_id: str = payload.get("sub")
+        if discord_id is None:
             raise credentials_exception
-        token_data = auth_schemas.TokenData(username=username)
+        return payload
     except JWTError:
         raise credentials_exception
-    user = auth_service.get_user_by_username(db, username=token_data.username)
+
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+    settings = Depends(get_settings)
+):
+    """
+    Validates the token AND ensures it is scoped to a campaign.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        discord_id: str = payload.get("sub")
+        campaign_id: int = payload.get("campaign_id")
+
+        if discord_id is None or campaign_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = db.query(models.User).filter(
+        models.User.discord_id == discord_id,
+        models.User.campaign_id == campaign_id
+    ).first()
+
     if user is None:
         raise credentials_exception
     return user
 
-async def get_current_active_user(current_user: auth_schemas.User = Depends(get_current_user)):
+async def get_current_active_user(current_user: models.User = Depends(get_current_user)):
     if not current_user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
 
-async def get_current_active_admin_user(current_user: auth_schemas.User = Depends(get_current_active_user)):
+async def get_current_active_admin_user(current_user: models.User = Depends(get_current_active_user)):
     if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized: Admin access required")
+        raise HTTPException(status_code=403, detail="Not enough privileges")
     return current_user

@@ -35,13 +35,8 @@ class MissionCreate(MissionBase):
 
 class Mission(MissionBase):
     id: int
+    campaign_id: int
     rewards: List[MissionReward] = []
     players: List[CharacterInMission] = []
     class Config:
         from_attributes = True
-
-class MissionWithPlayers(Mission):
-    # This seems redundant if Mission already has players,
-    # but original schemas had MissionWithPlayers.
-    # I'll keep Mission as the main one, which includes players.
-    pass

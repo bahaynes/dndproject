@@ -17,4 +17,8 @@ class GameSession(Base):
     status = Column(String, default="Scheduled", nullable=False) # e.g., Scheduled, Completed
     after_action_report = Column(String, nullable=True)
 
+    # Scoping
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
+    campaign = relationship("Campaign", back_populates="sessions")
+
     players = relationship("Character", secondary=game_session_players, back_populates="game_sessions")

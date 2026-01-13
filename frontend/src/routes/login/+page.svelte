@@ -1,96 +1,25 @@
 <script lang="ts">
-    import { login } from '$lib/auth';
-    import { goto } from '$app/navigation';
-    import { API_BASE_URL } from '$lib/config';
+  import { API_BASE_URL } from '$lib/config';
 
-    let username = '';
-    let password = '';
-    let error: string | null = null;
-
-    async function handleSubmit() {
-        error = null;
-        try {
-            // 1. Get the access token
-            const tokenResponse = await fetch(`${API_BASE_URL}/token`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                    username: username,
-                    password: password,
-                }),
-            });
-
-            if (!tokenResponse.ok) {
-                const errorData = await tokenResponse.json();
-                error = errorData.detail || 'Failed to login';
-                return;
-            }
-
-            const tokenData = await tokenResponse.json();
-            const accessToken = tokenData.access_token;
-
-            // 2. Use the token to get user info
-            const userResponse = await fetch(`${API_BASE_URL}/users/me/`, {
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`
-                }
-            });
-
-            if (!userResponse.ok) {
-                error = 'Failed to fetch user details after login.';
-                return;
-            }
-
-            const userData = await userResponse.json();
-
-            // 3. Update the auth state
-            login(userData);
-
-            // 4. Store the token for future sessions (e.g., in localStorage)
-            if (typeof window !== 'undefined') {
-                localStorage.setItem('accessToken', accessToken);
-            }
-
-            await goto('/dashboard');
-
-        } catch (e) {
-            error = 'An unexpected error occurred.';
-            console.error(e);
-        }
-    }
+  function handleLogin() {
+    window.location.href = `${API_BASE_URL}/auth/discord/login`;
+  }
 </script>
 
 <div class="flex items-center justify-center min-h-screen bg-gray-100">
-    <div class="px-8 py-6 mt-4 text-left bg-white shadow-lg rounded-lg">
-        <h3 class="text-2xl font-bold text-center">Login to your account</h3>
-        <form on:submit|preventDefault={handleSubmit}>
-            <div class="mt-4">
-                <div>
-                    <label class="block" for="username">Username</label>
-                    <input type="text" placeholder="Username"
-                           id="username"
-                           class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600"
-                           bind:value={username}
-                           required>
-                </div>
-                <div class="mt-4">
-                    <label class="block" for="password">Password</label>
-                    <input type="password" placeholder="Password"
-                           id="password"
-                           class="w-full px-4 py-2 mt-2 border rounded-md focus:outline-none focus:ring-1 focus:ring-blue-600"
-                           bind:value={password}
-                           required>
-                </div>
-                {#if error}
-                    <p class="text-red-500 text-xs mt-2">{error}</p>
-                {/if}
-                <div class="flex items-baseline justify-between">
-                    <button class="px-6 py-2 mt-4 text-white bg-blue-600 rounded-lg hover:bg-blue-900">Login</button>
-                    <a href="/register" class="text-sm text-blue-600 hover:underline">Register</a>
-                </div>
-            </div>
-        </form>
-    </div>
+  <div class="p-8 bg-white shadow-md rounded-lg text-center">
+    <h1 class="text-2xl font-bold mb-6">Login to DnD Westmarches</h1>
+    <p class="mb-4 text-gray-600">Please sign in using your Discord account.</p>
+
+    <button
+      on:click={handleLogin}
+      class="flex items-center justify-center w-full px-4 py-2 text-white bg-indigo-600 rounded hover:bg-indigo-700 focus:outline-none"
+    >
+      <!-- Discord Logo SVG -->
+      <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037 2.03 2.03 0 0 0 .59 1.05 2.031 2.031 0 0 0 .589.049.073.073 0 0 0 .079-.036 19.774 19.774 0 0 0-4.885 1.516c-.05.01-.064.08-.024.11a16.142 16.142 0 0 1 1.764 2.89.076.076 0 0 0 .065.048c.026-.002.052.003.076.014a19.866 19.866 0 0 0 6.666 0 .077.077 0 0 0 .077-.062 16.16 16.16 0 0 1 1.764-2.89.073.073 0 0 0-.025-.11ZM6.3 16.48a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm11.4 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"/>
+      </svg>
+      Login with Discord
+    </button>
+  </div>
 </div>

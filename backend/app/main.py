@@ -12,6 +12,7 @@ from .modules.sessions import models as session_models
 
 # Import routers
 from .modules.auth import router as auth_router
+from .modules.campaigns import router as campaign_router
 from .modules.characters import router as char_router
 from .modules.items import router as item_router
 from .modules.items import inventory_router
@@ -49,7 +50,8 @@ async def health_check():
 
 # Include routers
 # Mount auth under /api so /token becomes /api/token, consistent with other routes
-app.include_router(auth_router.router, prefix="/api")
+app.include_router(auth_router.router, prefix="/api/auth") # Changed prefix to /api/auth for clarity
+app.include_router(campaign_router.router, prefix="/api/campaigns")
 app.include_router(char_router.router, prefix="/api/characters", tags=["Characters"])
 app.include_router(item_router.router, prefix="/api/items", tags=["Items"])
 app.include_router(inventory_router.router, prefix="/api/characters/{character_id}/inventory", tags=["Inventory"])

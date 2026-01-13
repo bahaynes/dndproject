@@ -15,6 +15,10 @@ class Mission(Base):
     description = Column(String, nullable=True)
     status = Column(String, default="Available", nullable=False) # e.g., Available, In-Progress, Completed
 
+    # Scoping
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
+    campaign = relationship("Campaign", back_populates="missions")
+
     rewards = relationship("MissionReward", back_populates="mission", cascade="all, delete-orphan")
     players = relationship("Character", secondary=mission_players, back_populates="missions")
 
