@@ -13,3 +13,7 @@ services:
         sync: false
       - key: SECRET_KEY
         generate: true
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
