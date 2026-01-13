@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: dnd-backend
+    rootDir: backend
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -c gunicorn_conf.py app.main:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        generate: true
