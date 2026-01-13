@@ -64,6 +64,18 @@ The `render.yaml` blueprint handles most of these automatically.
 - `ACCESS_TOKEN_EXPIRE_MINUTES`: Token expiration (default: `30`).
 - `PYTHON_VERSION`: `3.11.9` (Managed via `.python-version`).
 
+### Discord Authentication Configuration
+
+To enable Discord Login and Multi-Tenancy, the Backend requires the following additional environment variables:
+
+- `DISCORD_CLIENT_ID`: The Client ID from your Discord Developer Application. Used for OAuth2 authentication.
+- `DISCORD_CLIENT_SECRET`: The Client Secret from your Discord Developer Application. Used to securely exchange auth codes for tokens.
+- `DISCORD_BOT_TOKEN`: The Token for the associated Discord Bot. Used by the backend to fetch guild roles and verify membership server-side.
+- `DISCORD_REDIRECT_URI`: The callback URL for OAuth2. This must point to your **Backend API** endpoint and exactly match the redirect URI configured in the Discord Developer Portal.
+  - Development: `http://localhost:8000/api/auth/discord/callback`
+  - Production: `https://westmarches.bahaynes.com/api/auth/discord/callback`
+- `ADMIN_DISCORD_IDS`: Comma-separated list of Discord User IDs (snowflakes) authorized to initialize new Campaigns (setup).
+
 **Frontend (Vercel)**
 You must manually set this environment variable in your Vercel Project Settings.
 - `VITE_API_URL`: The full URL to your backend API.
