@@ -1,26 +1,65 @@
-// src/lib/auth.ts
-import { writable, type Writable } from 'svelte/store';
+import { writable } from 'svelte/store';
+import { browser } from '$app/environment';
 
-export interface User {
+interface User {
+  id: number;
   username: string;
-  email?: string;
-  // add more fields as needed
+  email: string;
+  role: string;
+  avatar_url?: string;
+  discord_id: string;
+  campaign_id: number;
 }
 
-export interface AuthState {
-  user: User | null;
+interface Campaign {
+  id: number;
+  name: string;
+  discord_guild_id: string;
+}
+
+interface AuthState {
   isAuthenticated: boolean;
+  user: User | null;
+  campaign: Campaign | null; // Currently selected campaign
+  token: string | null;
 }
 
-export const auth: Writable<AuthState> = writable({
-  user: null,
+const initialState: AuthState = {
   isAuthenticated: false,
-});
+  user: null,
+  campaign: null,
+  token: null
+};
 
-export function login(user: User) {
-  auth.set({ user, isAuthenticated: true });
+function createAuthStore() {
+  const { subscribe, set, update } = writable<AuthState>(initialState);
+
+  return {
+    subscribe,
+    login: (user: User, token: string, campaign?: Campaign) => {
+      if (browser) {
+        localStorage.setItem('accessToken', token);
+      }
+      update(state => ({
+        ...state,
+        isAuthenticated: true,
+        user,
+        token,
+        campaign: campaign || state.campaign
+      }));
+    },
+    logout: () => {
+      if (browser) {
+        localStorage.removeItem('accessToken');
+      }
+      set(initialState);
+    },
+    setCampaign: (campaign: Campaign) => {
+      update(state => ({ ...state, campaign }));
+    }
+  };
 }
 
-export function logout() {
-  auth.set({ user: null, isAuthenticated: false });
-}
+export const auth = createAuthStore();
+export const login = auth.login;
+export const logout = auth.logout;

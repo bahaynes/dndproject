@@ -10,6 +10,10 @@ class Character(Base):
     description = Column(String, nullable=True)
     image_url = Column(String, nullable=True)
 
+    # Scoping
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
+    campaign = relationship("Campaign", back_populates="characters")
+
     owner_id = Column(Integer, ForeignKey("users.id"), unique=True)
     owner = relationship("User", back_populates="character")
 

@@ -6,8 +6,13 @@ class Item(Base):
     __tablename__ = "items"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True, nullable=False)
+    # Removing unique constraint on name because multiple campaigns can have items with same name
+    name = Column(String, index=True, nullable=False)
     description = Column(String, nullable=True)
+
+    # Scoping
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
+    campaign = relationship("Campaign", back_populates="items")
 
     inventory_items = relationship("InventoryItem", back_populates="item")
     store_listing = relationship("StoreItem", back_populates="item", uselist=False)

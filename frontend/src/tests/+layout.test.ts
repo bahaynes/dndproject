@@ -40,7 +40,8 @@ describe('Layout', () => {
   test('renders Logout button and welcome text when authenticated', () => {
     render(Layout, {});
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
-    expect(screen.getByText('Welcome, testuser')).toBeInTheDocument();
+    // Updated expectation to match new layout (no "Welcome, " prefix)
+    expect(screen.getByText('testuser')).toBeInTheDocument();
     expect(screen.getByText('Logout')).toBeInTheDocument();
   });
 
