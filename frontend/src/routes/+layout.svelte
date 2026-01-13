@@ -5,6 +5,7 @@
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
+  import { API_BASE_URL } from '$lib/config';
 
   onMount(async () => {
     if (browser) {
@@ -14,7 +15,7 @@
       if (token && !currentAuth.isAuthenticated) {
         try {
           // Corrected URL
-          const response = await fetch('/api/users/me/', {
+          const response = await fetch(`${API_BASE_URL}/users/me/`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (response.ok) {

@@ -1,6 +1,7 @@
 <script lang="ts">
     import { login } from '$lib/auth';
     import { goto } from '$app/navigation';
+    import { API_BASE_URL } from '$lib/config';
 
     let username = '';
     let password = '';
@@ -10,7 +11,7 @@
         error = null;
         try {
             // 1. Get the access token
-            const tokenResponse = await fetch('/api/token', {
+            const tokenResponse = await fetch(`${API_BASE_URL}/token`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -31,7 +32,7 @@
             const accessToken = tokenData.access_token;
 
             // 2. Use the token to get user info
-            const userResponse = await fetch('/api/users/me/', {
+            const userResponse = await fetch(`${API_BASE_URL}/users/me/`, {
                 headers: {
                     'Authorization': `Bearer ${accessToken}`
                 }
