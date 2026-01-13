@@ -31,6 +31,7 @@ origins = [
     "http://localhost:5173",  # SvelteKit default dev port
     "http://localhost:3000",
     "https://*.vercel.app",   # Allow Vercel deployments
+    "https://westmarches.bahaynes.com", # Production Custom Domain
     "*",                      # Allow all for testing
 ]
 
