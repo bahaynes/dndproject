@@ -5,12 +5,12 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from backend.app.main import app
-from backend.app.database import Base, get_db
-from backend.app.modules.campaigns import models as campaign_models
-from backend.app.modules.auth import models as auth_models
-from backend.app.config import get_settings
-from backend.app.dependencies import get_current_user_global
+from app.main import app
+from app.database import Base, get_db
+from app.modules.campaigns import models as campaign_models
+from app.modules.auth import models as auth_models
+from app.config import get_settings
+from app.dependencies import get_current_user_global
 
 # Setup Test DB
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test_override.db"
