@@ -11,7 +11,7 @@ from .modules.missions import models as mission_models
 from .modules.sessions import models as session_models
 
 # Import routers
-from .modules.auth import routes as auth_router
+from .modules.auth import router as auth_router
 from .modules.campaigns import router as campaign_router
 from .modules.characters import router as char_router
 from .modules.items import router as item_router

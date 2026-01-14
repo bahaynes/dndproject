@@ -59,9 +59,9 @@ def setup_data(db_session):
 def test_read_users_me_success(client, db_session, setup_data):
     headers = create_auth_headers(client, db_session, "me_user", "u_me", "player", setup_data.id)
 
-    # Correct URL: /api/auth/users/me/
+    # Correct URL: /api/auth/me
     me_response = client.get(
-        "/api/auth/users/me/",
+        "/api/auth/me",
         headers=headers,
     )
     assert me_response.status_code == 200
@@ -71,7 +71,7 @@ def test_read_users_me_success(client, db_session, setup_data):
 
 def test_read_users_me_invalid_token(client):
     response = client.get(
-        "/api/auth/users/me/",
+        "/api/auth/me",
         headers={"Authorization": "Bearer invalidtoken"},
     )
     assert response.status_code == 401
@@ -81,7 +81,7 @@ def test_read_character_success(client, db_session, setup_data):
     headers = create_auth_headers(client, db_session, "char_owner", "u_char", "player", setup_data.id)
 
     # Get user to get character id
-    me_response = client.get("/api/auth/users/me/", headers=headers)
+    me_response = client.get("/api/auth/me", headers=headers)
     assert me_response.status_code == 200
     user_data = me_response.json()
     character_id = user_data["character"]["id"]
@@ -97,7 +97,7 @@ def test_update_character_success(client, db_session, setup_data):
     headers = create_auth_headers(client, db_session, "update_char", "u_upd", "player", setup_data.id)
 
     # Get character ID
-    me_response = client.get("/api/auth/users/me/", headers=headers)
+    me_response = client.get("/api/auth/me", headers=headers)
     character_id = me_response.json()["character"]["id"]
 
     # Update the character
@@ -136,7 +136,7 @@ def test_inventory_endpoints(client, db_session, setup_data):
     player_headers = create_auth_headers(client, db_session, "inv_player", "u_inv_player", "player", setup_data.id)
 
     # Get character ID for player
-    me_response = client.get("/api/auth/users/me/", headers=player_headers)
+    me_response = client.get("/api/auth/me", headers=player_headers)
     character_id = me_response.json()["character"]["id"]
 
     # Create an item (as admin)
@@ -173,7 +173,7 @@ def test_store_endpoints(client, db_session, setup_data):
     assert len(res.json()) > 0
 
     # Purchase item
-    me_res = client.get("/api/auth/users/me/", headers=player_headers)
+    me_res = client.get("/api/auth/me", headers=player_headers)
     char_id = me_res.json()["character"]["id"]
 
     # Give scrip
