@@ -1,0 +1,21 @@
+
+> frontend@0.0.1 dev
+> vite dev
+
+3:24:45 AM [vite] (client) Forced re-optimization of dependencies
+
+  VITE v7.3.1  ready in 2072 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://192.168.0.2:5173/
+3:25:44 AM [vite-plugin-svelte] src/routes/+layout.svelte:56:8 noninteractive element cannot have nonnegative tabIndex value
+https://svelte.dev/e/a11y_no_noninteractive_tabindex
+/*! 🌼 daisyUI 5.5.14 */
+3:25:45 AM [vite-plugin-svelte] src/lib/components/ThemeSwitcher.svelte:35:2 noninteractive element cannot have nonnegative tabIndex value
+https://svelte.dev/e/a11y_no_noninteractive_tabindex
+3:25:46 AM [vite-plugin-svelte] src/routes/+layout.svelte:56:8 noninteractive element cannot have nonnegative tabIndex value
+https://svelte.dev/e/a11y_no_noninteractive_tabindex
+3:25:46 AM [vite-plugin-svelte] src/lib/components/ThemeSwitcher.svelte:35:2 noninteractive element cannot have nonnegative tabIndex value
+https://svelte.dev/e/a11y_no_noninteractive_tabindex
+3:26:12 AM [vite] (client) hmr update /src/app.css
+3:26:12 AM [vite] (ssr) page reload src/app.css
