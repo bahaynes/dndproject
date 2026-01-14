@@ -54,6 +54,7 @@ coverage.xml
 /frontend/.svelte-kit
 /frontend/build
 /frontend/dist
+/frontend/.pnpm-store
 
 # General
 .DS_Store
