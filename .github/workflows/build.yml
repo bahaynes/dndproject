@@ -7,7 +7,70 @@ on:
     branches: [ main ]
 
 jobs:
+  test-backend-native:
+    name: Backend Tests (Native)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r backend/requirements.txt
+          pip install pytest httpx
+
+      - name: Run tests
+        run: |
+          PYTHONPATH=backend python -m pytest backend/tests
+
+  test-frontend-native:
+    name: Frontend Tests (Native)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run tests
+        run: pnpm run test:ci
+
   build-and-test:
+    needs: [test-backend-native, test-frontend-native]
+    if: always()
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -15,16 +78,13 @@ jobs:
           - service: backend
             dockerfile: backend/Containerfile
             image: ghcr.io/bahaynes/dndproject-backend
-            test_cmd: "docker run --rm ghcr.io/bahaynes/dndproject-backend:${GITHUB_SHA} pytest"
+            # Backend tests run natively in 'test-backend-native', so we skip them here (echo true)
+            test_cmd: "echo 'Skipping Docker tests for backend, ran natively.'"
           - service: frontend
             dockerfile: frontend/Containerfile
             image: ghcr.io/${{ github.repository }}-frontend
-            test_cmd: |
-              docker build -f frontend/Containerfile \
-              -t frontend-test:${GITHUB_SHA} \
-              --target test \
-              . && \
-              docker run --rm frontend-test:${GITHUB_SHA}
+            # Frontend tests run natively in 'test-frontend-native', so we skip them here
+            test_cmd: "echo 'Skipping Docker tests for frontend, ran natively.'"
 
     env:
       REGISTRY: ghcr.io

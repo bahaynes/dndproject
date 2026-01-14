@@ -6,6 +6,7 @@
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
   import { API_BASE_URL } from '$lib/config';
+  import ThemeSwitcher from '$lib/components/ThemeSwitcher.svelte';
 
   onMount(async () => {
     if (browser) {
@@ -45,27 +46,52 @@
   }
 </script>
 
-<header class="bg-gray-800 text-white p-4">
-  <nav class="container mx-auto flex justify-between items-center">
-    <a href="/" class="font-bold text-xl">DnD Westmarches</a>
-    <div class="flex items-center space-x-4">
+<div class="min-h-screen flex flex-col">
+  <nav class="navbar bg-base-300 shadow-lg border-b border-base-content/10">
+    <div class="navbar-start">
+      <div class="dropdown">
+        <div tabindex="0" role="button" class="btn btn-ghost lg:hidden">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
+        </div>
+        <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-200 rounded-box w-52">
+          {#if $auth.isAuthenticated}
+             <li><a href="/dashboard">Dashboard</a></li>
+             <li><a href="/campaigns">Switch Campaign</a></li>
+             <li><button on:click={handleLogout}>Logout</button></li>
+          {:else}
+             <li><a href="/login">Login</a></li>
+          {/if}
+        </ul>
+      </div>
+      <a href="/" class="btn btn-ghost text-xl font-[var(--font-cinzel)] tracking-wider">DnD Westmarches</a>
+    </div>
+
+    <div class="navbar-center hidden lg:flex">
+      <ul class="menu menu-horizontal px-1 gap-2">
+        {#if $auth.isAuthenticated}
+          <li><a href="/dashboard" class="font-semibold">Dashboard</a></li>
+          <li><a href="/campaigns" class="font-semibold">Switch Campaign</a></li>
+        {/if}
+      </ul>
+    </div>
+
+    <div class="navbar-end gap-2">
       {#if $auth.isAuthenticated}
         {#if $auth.campaign}
-            <span class="bg-indigo-700 px-3 py-1 rounded text-sm">{$auth.campaign.name}</span>
+            <div class="badge badge-primary hidden md:flex font-bold">{$auth.campaign.name}</div>
         {/if}
-        <a href="/dashboard" class="hover:text-gray-300">Dashboard</a>
-        <a href="/campaigns" class="hover:text-gray-300">Switch Campaign</a>
         {#if $auth.user}
-          <span class="hidden md:inline">{$auth.user.username}</span>
+          <div class="text-sm font-bold hidden md:block opacity-70 mr-2">{$auth.user.username}</div>
         {/if}
-        <button on:click={handleLogout} class="hover:text-red-400">Logout</button>
+        <button on:click={handleLogout} class="btn btn-sm btn-error hidden lg:flex">Logout</button>
       {:else}
-        <a href="/login" class="hover:text-gray-300">Login</a>
+        <a href="/login" class="btn btn-primary btn-sm hidden lg:flex">Login</a>
       {/if}
+      <ThemeSwitcher />
     </div>
   </nav>
-</header>
 
-<main class="min-h-screen bg-gray-50">
-  <slot />
-</main>
+  <main class="flex-grow bg-base-100">
+    <slot />
+  </main>
+</div>
