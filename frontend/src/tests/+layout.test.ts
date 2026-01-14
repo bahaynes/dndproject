@@ -39,18 +39,21 @@ describe('Layout', () => {
 
   test('renders Logout button and welcome text when authenticated', () => {
     render(Layout, {});
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    // There are multiple "Dashboard" links (mobile/desktop), so we check getAll
+    expect(screen.getAllByText('Dashboard')[0]).toBeInTheDocument();
     // Updated expectation to match new layout (no "Welcome, " prefix)
     expect(screen.getByText('testuser')).toBeInTheDocument();
-    expect(screen.getByText('Logout')).toBeInTheDocument();
+    // There are multiple "Logout" buttons
+    expect(screen.getAllByText('Logout')[0]).toBeInTheDocument();
   });
 
   test('calls logout and redirects when logout button is clicked', async () => {
     const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem');
     render(Layout, {});
 
-    const logoutButton = screen.getByText('Logout');
-    await fireEvent.click(logoutButton);
+    // Click the first available logout button (likely the desktop one or mobile one, doesn't matter logic is same)
+    const logoutButtons = screen.getAllByText('Logout');
+    await fireEvent.click(logoutButtons[0]);
 
     // Check that our mocked logout function was called
     expect(logout).toHaveBeenCalled();
