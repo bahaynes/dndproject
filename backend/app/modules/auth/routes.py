@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 import httpx
+from typing import Optional
 from ...config import get_settings
 
 from ... import security
@@ -13,9 +14,12 @@ router = APIRouter()
 settings = get_settings()
 
 @router.get("/discord/login", tags=["Authentication"])
-async def login_via_discord():
+async def login_via_discord(
+    return_to: Optional[str] = None,
+):
     """
     Redirects the user to Discord OAuth2 login page.
+    Optionally accepts a 'return_to' query param to redirect back to a specific frontend URL (e.g. Vercel preview).
     """
     scope = "identify guilds"
     discord_auth_url = (
@@ -25,11 +29,46 @@ async def login_via_discord():
         f"&response_type=code"
         f"&scope={scope}"
     )
-    return RedirectResponse(url=discord_auth_url)
+
+    response = RedirectResponse(url=discord_auth_url)
+
+    # Validate and store return_to in a cookie if provided
+    if return_to:
+        # Simple validation: allow localhost, *.vercel.app, and the production domain
+        allowed_domains = ["localhost", ".vercel.app", "westmarches.bahaynes.com"]
+        is_allowed = False
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(return_to)
+            hostname = parsed.hostname
+            if hostname:
+                for domain in allowed_domains:
+                    if domain.startswith("."): # wildcard
+                        if hostname.endswith(domain):
+                            is_allowed = True
+                            break
+                    elif hostname == domain:
+                        is_allowed = True
+                        break
+        except Exception:
+            pass
+
+        if is_allowed:
+             # Set cookie for 5 minutes
+            response.set_cookie(
+                key="auth_return_to",
+                value=return_to,
+                max_age=300,
+                httponly=True,
+                samesite="lax",
+                secure=False # Set to True in production if using https, but lax works mostly
+            )
+
+    return response
 
 
 @router.get("/discord/callback", tags=["Authentication"])
-async def discord_callback(code: str, db: Session = Depends(get_db)):
+async def discord_callback(code: str, request: Request, response: Response, db: Session = Depends(get_db)):
     """
     Handles the callback from Discord, exchanges code for token, and gets user info.
     Returns a temporary token that allows the user to list/select campaigns.
@@ -69,31 +108,31 @@ async def discord_callback(code: str, db: Session = Depends(get_db)):
     username = discord_user.get("username")
     avatar = discord_user.get("avatar")
 
-    # Check if user exists in ANY campaign to maybe auto-login if only one?
-    # For now, we issue a "Global Token" (Discord ID only, no campaign)
-    # The frontend will use this to hit /campaigns/mine or /campaigns/join
-
     # We construct a special token payload
-    # sub = discord_id (instead of username, because username is not unique globally across campaigns in our DB, but discord_id is unique to the human)
-    # type = "global"
-
     token_payload = {
         "sub": discord_id,
         "type": "global",
         "username": username,
         "avatar": avatar,
-        "discord_access_token": access_token # Store this temporarily if needed for fetching guilds later? Or client sends it?
-        # Better to not store access_token in JWT. Client can keep it or we just re-ask for it?
-        # Actually, we need the access_token to fetch guilds for "Joinable".
-        # Let's return it in the response body, not the JWT.
     }
 
     jwt_token = security.create_access_token(data=token_payload)
 
+    # Determine redirect URL
+    return_to = request.cookies.get("auth_return_to")
+    base_url = settings.FRONTEND_URL
+
+    if return_to:
+        base_url = return_to
+
     # Redirect to frontend with token
-    # In a real app, you might set a cookie or redirect to a page that grabs the token from query params
-    frontend_url = f"http://localhost:5173/login/callback?token={jwt_token}&discord_token={access_token}"
-    return RedirectResponse(url=frontend_url)
+    frontend_url = f"{base_url}/login/callback?token={jwt_token}&discord_token={access_token}"
+
+    redirect = RedirectResponse(url=frontend_url)
+    if return_to:
+        redirect.delete_cookie("auth_return_to")
+
+    return redirect
 
 
 @router.get("/me", response_model=schemas.User, tags=["Users"])
