@@ -9,6 +9,7 @@ class Character(Base):
     name = Column(String, index=True, nullable=False)
     description = Column(String, nullable=True)
     image_url = Column(String, nullable=True)
+    character_sheet_url = Column(String, nullable=True)
 
     # Scoping
     campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)

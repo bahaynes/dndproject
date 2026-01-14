@@ -191,10 +191,32 @@ async def setup_campaign(
     if crud.get_campaign_by_guild_id(db, setup_data.discord_guild_id):
         raise HTTPException(status_code=400, detail="Campaign already exists for this guild.")
 
-    # Create
+    # Create campaign
     campaign = crud.create_campaign(db, setup_data)
 
-    return campaign
+    # Auto-assign the creator as the Admin of this campaign
+    user_create = auth_schemas.UserCreate(
+        username=current_user_payload.get("username"),
+        discord_id=discord_id,
+        avatar_url=f"https://cdn.discordapp.com/avatars/{discord_id}/{current_user_payload.get('avatar')}.png" if current_user_payload.get("avatar") else None,
+        campaign_id=campaign.id,
+        role="admin"
+    )
+    new_user = auth_crud.create_user(db, user_create)
+
+    # Generate Campaign Scoped Token (so they can go straight to dashboard)
+    access_token = security.create_access_token(data={
+        "sub": discord_id,
+        "campaign_id": campaign.id,
+        "role": "admin"
+    })
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "campaign": campaign,
+        "user": new_user
+    }
 
 @router.post("/discord/guilds", tags=["Admin"])
 async def get_admin_discord_guilds(

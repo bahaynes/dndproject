@@ -148,8 +148,18 @@
           });
 
           if(res.ok) {
-              // Reload lists
-              await loadCampaigns();
+              const data = await res.json();
+              const token = data.access_token;
+              const user = data.user;
+
+              // Login directly
+              login(user, token, data.campaign);
+
+              // Cleanup temp
+              localStorage.removeItem('tempGlobalToken');
+              localStorage.removeItem('tempDiscordToken');
+
+              goto('/dashboard');
           } else {
               const err = await res.json();
               error = err.detail || "Setup failed";

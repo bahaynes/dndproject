@@ -21,11 +21,29 @@ def create_mission(
 def read_missions(
     skip: int = 0,
     limit: int = 100,
+    tier: str = None,
+    region: str = None,
+    include_retired: bool = False,
+    include_hidden: bool = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    # Only admins can see retired or hidden missions
+    is_admin = current_user.role == "admin"
+    inc_retired = include_retired if is_admin else False
+    inc_hidden = include_hidden if is_admin else False
+
     # Filter by user's campaign
-    missions = crud.get_missions(db, skip=skip, limit=limit, campaign_id=current_user.campaign_id)
+    missions = crud.get_missions(
+        db, 
+        skip=skip, 
+        limit=limit, 
+        campaign_id=current_user.campaign_id,
+        tier=tier,
+        region=region,
+        include_retired=inc_retired,
+        include_hidden=inc_hidden
+    )
     return missions
 
 @router.get("/{mission_id}", response_model=schemas.Mission, tags=["Missions"])
@@ -90,3 +108,15 @@ def distribute_rewards(
         raise HTTPException(status_code=400, detail=result["error"])
 
     return result
+
+@router.put("/{mission_id}", response_model=schemas.Mission, tags=["Missions"])
+def update_mission(
+    mission_id: int,
+    mission_update: schemas.MissionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_admin_user)
+):
+    mission = crud.get_mission(db, mission_id=mission_id)
+    if not mission or mission.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Mission not found")
+    return crud.update_mission(db, mission=mission, mission_update=mission_update)

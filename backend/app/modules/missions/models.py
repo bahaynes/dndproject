@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, ForeignKey, Table, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from ...database import Base
 
@@ -14,6 +14,15 @@ class Mission(Base):
     name = Column(String, index=True, nullable=False)
     description = Column(String, nullable=True)
     status = Column(String, default="Available", nullable=False) # e.g., Available, In-Progress, Completed
+    
+    tier = Column(String, nullable=True)           # e.g., "Tier 1", "Tier 2"
+    region = Column(String, nullable=True)         # e.g., "Northlands"
+    last_run_date = Column(DateTime, nullable=True)
+    cooldown_days = Column(Integer, default=7)     # Days before re-runnable
+    is_retired = Column(Boolean, default=False)    # Soft delete
+    is_discoverable = Column(Boolean, default=True)  # Hidden until unlocked
+    
+    prerequisite_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
 
     # Scoping
     campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)

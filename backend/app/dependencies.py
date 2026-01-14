@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from .database import get_db
 from .config import get_settings
 from .modules.auth import models, schemas
+from .modules.characters import models as char_models
+from sqlalchemy.orm import joinedload
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/token")
 
@@ -54,7 +56,10 @@ async def get_current_user(
     except JWTError:
         raise credentials_exception
 
-    user = db.query(models.User).filter(
+    user = db.query(models.User).options(
+        joinedload(models.User.character),
+        joinedload(models.User.campaign)
+    ).filter(
         models.User.discord_id == discord_id,
         models.User.campaign_id == campaign_id
     ).first()
