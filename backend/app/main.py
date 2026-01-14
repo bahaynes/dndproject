@@ -48,6 +48,10 @@ app.add_middleware(
 async def health_check():
     return {"status": "ok"}
 
+@app.get("/", tags=["Health"])
+async def root():
+    return {"status": "ok", "message": "DnD West Marches API"}
+
 # Include routers
 # Mount auth under /api so /token becomes /api/token, consistent with other routes
 app.include_router(auth_router.router, prefix="/api/auth") # Changed prefix to /api/auth for clarity
