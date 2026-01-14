@@ -15,7 +15,7 @@ jobs:
           - service: backend
             dockerfile: backend/Containerfile
             image: ghcr.io/bahaynes/dndproject-backend
-            test_cmd: "docker run --rm ghcr.io/bahaynes/dndproject-backend:${GITHUB_SHA} pytest"
+            test_cmd: "docker run --rm ghcr.io/bahaynes/dndproject-backend:${GITHUB_SHA} python -m pytest backend/tests"
           - service: frontend
             dockerfile: frontend/Containerfile
             image: ghcr.io/${{ github.repository }}-frontend
