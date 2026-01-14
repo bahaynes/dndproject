@@ -28,10 +28,7 @@ websockets==15.0.1
 gunicorn==21.2.0
 
 # Added for authentication and database
-alembic==1.13.2
-bcrypt==3.2.2
 greenlet==3.3.0
-passlib[bcrypt]==1.7.4
 python-jose[cryptography]==3.3.0
 python-multipart==0.0.9
 SQLAlchemy==2.0.34

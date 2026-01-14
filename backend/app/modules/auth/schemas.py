@@ -20,7 +20,6 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     campaign_id: int
     role: str = "player"
-    email: Optional[str] = None
 
 class CharacterOut(BaseModel):
     id: int
