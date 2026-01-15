@@ -57,7 +57,7 @@ async def get_current_user(
         raise credentials_exception
 
     user = db.query(models.User).options(
-        joinedload(models.User.character),
+        joinedload(models.User.active_character),
         joinedload(models.User.campaign)
     ).filter(
         models.User.discord_id == discord_id,

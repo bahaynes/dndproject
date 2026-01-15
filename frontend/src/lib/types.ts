@@ -4,7 +4,8 @@ export interface User {
     email: string;
     role: 'player' | 'admin';
     is_active: boolean;
-    character?: Character;
+    active_character?: Character;
+    characters: Character[];
 }
 
 export interface Character {

@@ -64,9 +64,9 @@ def toggle_backing(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    character = current_user.character
+    character = current_user.active_character
     if not character:
-        raise HTTPException(status_code=400, detail="User has no character")
+        raise HTTPException(status_code=400, detail="User has no active character selected")
 
     db_proposal, error = crud.toggle_back_proposal(db, proposal_id=proposal_id, character=character)
     if error:

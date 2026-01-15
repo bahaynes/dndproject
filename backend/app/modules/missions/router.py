@@ -72,9 +72,9 @@ def signup_for_mission(
     if not mission or mission.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Mission not found")
 
-    character = current_user.character
+    character = current_user.active_character
     if not character:
-        raise HTTPException(status_code=400, detail="User has no character to sign up with")
+        raise HTTPException(status_code=400, detail="User has no active character selected")
 
     if character in mission.players:
         raise HTTPException(status_code=400, detail="Character already signed up for this mission")

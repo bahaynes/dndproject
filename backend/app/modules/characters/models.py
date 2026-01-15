@@ -15,8 +15,8 @@ class Character(Base):
     campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
     campaign = relationship("Campaign", back_populates="characters")
 
-    owner_id = Column(Integer, ForeignKey("users.id"), unique=True)
-    owner = relationship("User", back_populates="character")
+    owner_id = Column(Integer, ForeignKey("users.id"), unique=False, index=True)
+    owner = relationship("User", back_populates="characters", foreign_keys=[owner_id])
 
     stats = relationship("CharacterStats", back_populates="character", uselist=False, cascade="all, delete-orphan")
     inventory = relationship("InventoryItem", back_populates="character", cascade="all, delete-orphan")

@@ -1,249 +1,428 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { auth } from '$lib/auth';
-  import { get } from 'svelte/store';
-  import { API_BASE_URL } from '$lib/config';
-  import type { Character } from '$lib/types';
-  import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+	import { onMount } from 'svelte';
+	import { auth } from '$lib/auth';
+	import { get } from 'svelte/store';
+	import { API_BASE_URL } from '$lib/config';
+	import type { Character } from '$lib/types';
+	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
-  let character: Character | null = null;
-  let loading = true;
-  let error = "";
-  let isEditing = false;
-  let editName = "";
-  let editDescription = "";
-  let editCharacterSheetUrl = "";
+	let characters: Character[] = [];
+	let viewCharacter: Character | null = null; // The character currently being viewed/edited
+	let loading = true;
+	let error = '';
 
-  onMount(async () => {
-    await fetchCharacter();
-  });
+	// Editing state
+	let isEditing = false;
+	let editName = '';
+	let editDescription = '';
+	let editCharacterSheetUrl = '';
 
-  async function fetchCharacter() {
-    loading = true;
-    error = "";
-    try {
-      const authState = get(auth);
-      const characterId = authState.user?.character?.id;
-      
-      if (!characterId) {
-        // We don't set an error here anymore, we just let character be null
-        loading = false;
-        return;
-      }
+	// Creation state
+	let isCreating = false;
+	let newCharName = '';
+	let newCharDesc = '';
 
-      const res = await fetch(`${API_BASE_URL}/characters/${characterId}`, {
-        headers: {
-          Authorization: `Bearer ${authState.token}`
-        }
-      });
+	// Reactive activeCharacterId from auth store
+	$: activeCharacterId = $auth.user?.active_character?.id;
 
-      if (res.ok) {
-        character = await res.json();
-        if (character) {
-          editName = character.name;
-          editDescription = character.description || "";
-          editCharacterSheetUrl = character.character_sheet_url || "";
-        }
-      } else {
-        error = "Failed to load character details.";
-      }
-    } catch (e) {
-      error = "An error occurred while loading your character.";
-    } finally {
-      loading = false;
-    }
-  }
+	// Trigger fetch when token is available
+	$: if ($auth.token && loading && characters.length === 0 && !error) {
+		fetchMyCharacters();
+	}
 
-  async function createCharacter() {
-    loading = true;
-    error = "";
-    try {
-      const authState = get(auth);
-      const res = await fetch(`${API_BASE_URL}/characters/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authState.token}`
-        },
-        body: JSON.stringify({
-          name: `${authState.user?.username}'s Hero`,
-          description: "A new adventurer ready for glory."
-        })
-      });
+	async function fetchMyCharacters() {
+		const authState = get(auth);
+		if (!authState.token) return; // Should be handled by reactive stmt but safety check
 
-      if (res.ok) {
-        const newChar = await res.json();
-        // Update auth store with the new character info so dashboard/other pages know
-        auth.update(state => {
-          if (state.user) {
-            return {
-              ...state,
-              user: { ...state.user, character: newChar }
-            };
-          }
-          return state;
-        });
-        await fetchCharacter();
-      } else {
-        const errData = await res.json();
-        error = errData.detail || "Failed to create character.";
-      }
-    } catch (e) {
-      error = "An error occurred while creating character.";
-    } finally {
-      loading = false;
-    }
-  }
+		try {
+			const res = await fetch(`${API_BASE_URL}/characters/`, {
+				headers: {
+					Authorization: `Bearer ${authState.token}`
+				}
+			});
 
-  async function handleUpdate() {
-    if (!character) return;
-    
-    try {
-      const authState = get(auth);
-      const res = await fetch(`${API_BASE_URL}/characters/${character.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authState.token}`
-        },
-        body: JSON.stringify({
-          name: editName,
-          description: editDescription,
-          character_sheet_url: editCharacterSheetUrl
-        })
-      });
+			if (res.ok) {
+				characters = await res.json();
 
-      if (res.ok) {
-        character = await res.json();
-        isEditing = false;
-        // Optionally update the auth store if we want the dashboard to reflect changes
-      } else {
-        const errData = await res.json();
-        error = errData.detail || "Failed to update character.";
-      }
-    } catch (e) {
-      error = "An error occurred while saving.";
-    }
-  }
+				// Default view to active character, or first character, or null
+				const active = characters.find((c) => c.id === activeCharacterId);
+				viewCharacter = active || characters[0] || null;
+
+				if (viewCharacter) resetEditForm();
+				loading = false;
+			} else {
+				if (res.status === 401) {
+					// Token invalid/expired
+					// Let layout handle auth state usually, but we can stop loading
+					loading = false;
+					return;
+				}
+				error = 'Failed to load characters.';
+				loading = false;
+			}
+		} catch (e) {
+			error = 'An error occurred while loading characters.';
+			loading = false;
+		}
+	}
+
+	function resetEditForm() {
+		if (viewCharacter) {
+			editName = viewCharacter.name;
+			editDescription = viewCharacter.description || '';
+			editCharacterSheetUrl = viewCharacter.character_sheet_url || '';
+		}
+	}
+
+	function selectCharacter(char: Character) {
+		viewCharacter = char;
+		isEditing = false;
+		resetEditForm();
+	}
+
+	async function activateCharacter(char: Character) {
+		try {
+			const authState = get(auth);
+			const res = await fetch(`${API_BASE_URL}/characters/${char.id}/activate`, {
+				method: 'POST',
+				headers: { Authorization: `Bearer ${authState.token}` }
+			});
+
+			if (res.ok) {
+				const updatedUser = await res.json();
+				// Update auth store
+				auth.update((state) => ({
+					...state,
+					user: updatedUser
+				}));
+			}
+		} catch (e) {
+			console.error('Failed to activate character', e);
+		}
+	}
+
+	async function createCharacter() {
+		if (!newCharName) return;
+
+		try {
+			const authState = get(auth);
+			const res = await fetch(`${API_BASE_URL}/characters/`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${authState.token}`
+				},
+				body: JSON.stringify({
+					name: newCharName,
+					description: newCharDesc || 'A new adventurer.'
+				})
+			});
+
+			if (res.ok) {
+				const newChar = await res.json();
+				// Refresh list
+				await fetchMyCharacters();
+				// Switch view to new character
+				const found = characters.find((c) => c.id === newChar.id);
+				if (found) selectCharacter(found);
+
+				isCreating = false;
+				newCharName = '';
+				newCharDesc = '';
+			} else {
+				const err = await res.json();
+				alert(err.detail || 'Failed to create character');
+			}
+		} catch (e) {
+			alert('Error creating character');
+		}
+	}
+
+	async function handleUpdate() {
+		if (!viewCharacter) return;
+
+		try {
+			const authState = get(auth);
+			const res = await fetch(`${API_BASE_URL}/characters/${viewCharacter.id}`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${authState.token}`
+				},
+				body: JSON.stringify({
+					name: editName,
+					description: editDescription,
+					character_sheet_url: editCharacterSheetUrl
+				})
+			});
+
+			if (res.ok) {
+				const updated = await res.json();
+				// Update local list
+				characters = characters.map((c) => (c.id === updated.id ? updated : c));
+				viewCharacter = updated;
+				isEditing = false;
+
+				// If this was active, we might want to update auth store too to reflect name changes
+				if (activeCharacterId === updated.id) {
+					auth.update((state) => {
+						if (state.user) {
+							return { ...state, user: { ...state.user, active_character: updated } };
+						}
+						return state;
+					});
+				}
+			} else {
+				alert('Failed to update character');
+			}
+		} catch (e) {
+			alert('Error saving updates');
+		}
+	}
 </script>
 
-<div class="container mx-auto p-4 max-w-4xl">
-  {#if loading}
-    <LoadingSpinner size="lg" />
-  {:else if error}
-    <div class="alert alert-error shadow-lg mb-6">
-      <div>
-        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-        <span>{error}</span>
-      </div>
-    </div>
-    <button class="btn btn-primary" on:click={fetchCharacter}>Retry</button>
-  {:else if !character}
-    <div class="flex flex-col items-center justify-center p-12 bg-base-200 rounded-3xl border-2 border-dashed border-primary/20 text-center max-w-2xl mx-auto shadow-xl">
-      <div class="text-7xl mb-6">🎭</div>
-      <h2 class="text-3xl font-bold font-[var(--font-cinzel)] text-primary mb-4">No Hero Found</h2>
-      <p class="text-lg opacity-70 mb-8">Every legend begins somewhere. Your story in this campaign hasn't started yet.</p>
-      <button class="btn btn-primary btn-lg px-12 animate-bounce" on:click={createCharacter}>
-        Forge Your Hero
-      </button>
-    </div>
-  {:else if character}
-    <div class="flex flex-col md:flex-row gap-6">
-      <!-- Profile Card -->
-      <div class="w-full md:w-1/3">
-        <div class="card bg-base-200 shadow-xl border border-primary/10 h-full">
-          <figure class="px-6 pt-6">
-            {#if character.image_url}
-              <img src={character.image_url} alt={character.name} class="rounded-xl w-full object-cover aspect-square shadow-lg" />
-            {:else}
-              <div class="bg-primary/20 text-primary-content flex items-center justify-center rounded-xl w-full aspect-square text-6xl font-bold">
-                {character.name.charAt(0)}
-              </div>
-            {/if}
-          </figure>
-          <div class="card-body items-center text-center">
-            {#if isEditing}
-              <div class="form-control w-full">
-                <label class="label"><span class="label-text">Character Name</span></label>
-                <input type="text" bind:value={editName} class="input input-bordered input-primary w-full" />
-              </div>
-            {:else}
-              <h2 class="card-title text-3xl font-[var(--font-cinzel)] text-primary">{character.name}</h2>
-            {/if}
-            
-            <p class="opacity-70 text-sm">Level 1 Adventurer</p>
-            
-            <div class="flex flex-wrap gap-2 justify-center mt-4">
-              <div class="badge badge-outline">XP: {character.stats.xp}</div>
-              <div class="badge badge-outline badge-primary">Scrip: {character.stats.scrip}</div>
-            </div>
+<div class="container mx-auto max-w-6xl p-4">
+	{#if loading}
+		<div class="flex justify-center p-12"><LoadingSpinner size="lg" /></div>
+	{:else if error}
+		<div class="alert alert-error">{error}</div>
+	{:else}
+		<div class="flex flex-col gap-6 lg:flex-row">
+			<!-- LEFT SIDEBAR: Character List -->
+			<div class="flex w-full flex-col gap-4 lg:w-1/4">
+				<div class="flex items-center justify-between">
+					<h2 class="text-xl font-[var(--font-cinzel)] font-bold">Heroes</h2>
+					<button class="btn btn-xs btn-ghost" on:click={() => (isCreating = true)}>+ New</button>
+				</div>
 
-            <div class="card-actions mt-6 w-full flex-col">
-              {#if isEditing}
-                <button class="btn btn-primary w-full" on:click={handleUpdate}>Save Changes</button>
-                <button class="btn btn-ghost w-full" on:click={() => { isEditing = false; editName = character?.name || ""; editDescription = character?.description || ""; }}>Cancel</button>
-              {:else}
-                <button class="btn btn-outline btn-primary w-full" on:click={() => isEditing = true}>Edit Profile</button>
-              {/if}
-            </div>
-          </div>
-        </div>
-      </div>
+				{#if isCreating}
+					<div class="card bg-base-200 border-primary border p-4">
+						<h3 class="mb-2 text-sm font-bold">New Hero</h3>
+						<input
+							type="text"
+							placeholder="Name"
+							class="input input-sm input-bordered mb-2 w-full"
+							bind:value={newCharName}
+						/>
+						<textarea
+							placeholder="Brief description"
+							class="textarea textarea-sm textarea-bordered mb-2 w-full"
+							bind:value={newCharDesc}
+						></textarea>
+						<div class="flex gap-2">
+							<button class="btn btn-xs btn-primary flex-1" on:click={createCharacter}
+								>Create</button
+							>
+							<button class="btn btn-xs flex-1" on:click={() => (isCreating = false)}>Cancel</button
+							>
+						</div>
+					</div>
+				{/if}
 
-      <!-- Details Column -->
-      <div class="w-full md:w-2/3 flex flex-col gap-6">
-        <!-- Description -->
-        <div class="card bg-base-100 shadow-xl border border-base-content/10">
-          <div class="card-body">
-            <h3 class="card-title font-[var(--font-cinzel)] border-b border-base-content/10 pb-2 mb-4">Backstory & Details</h3>
-            {#if isEditing}
-              <div class="form-control w-full">
-                <textarea bind:value={editDescription} class="textarea textarea-bordered textarea-primary h-32" placeholder="Tell your story..."></textarea>
-              </div>
-              <div class="form-control w-full mt-4">
-                <label class="label"><span class="label-text">External Character Sheet URL</span></label>
-                <input type="url" bind:value={editCharacterSheetUrl} class="input input-bordered input-primary" placeholder="https://..." />
-              </div>
-            {:else}
-              <p class="whitespace-pre-wrap leading-relaxed">
-                {character.description || "No backstory provided yet. Click edit to add one!"}
-              </p>
-              
-              {#if character.character_sheet_url}
-                <div class="mt-6">
-                  <a href={character.character_sheet_url} target="_blank" class="btn btn-secondary btn-outline gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
-                      <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />
-                    </svg>
-                    View External Sheet
-                  </a>
-                </div>
-              {/if}
-            {/if}
-          </div>
-        </div>
+				<div class="flex flex-col gap-2">
+					{#each characters as char}
+						<button
+							class="card card-side bg-base-100 hover:bg-base-200 items-center gap-3 border p-2 text-left transition-all
+                         {viewCharacter?.id === char.id
+								? 'border-primary ring-primary ring-1'
+								: 'border-base-content/10'}"
+							on:click={() => selectCharacter(char)}
+						>
+							<div class="avatar placeholder">
+								<div class="bg-neutral text-neutral-content w-10 rounded-full">
+									<span class="text-xs">{char.name.charAt(0)}</span>
+								</div>
+							</div>
+							<div class="min-w-0 flex-1">
+								<div class="truncate text-sm font-bold">{char.name}</div>
+								<div class="text-[10px] opacity-60">Lvl 1 Adventurer</div>
+							</div>
+							{#if activeCharacterId === char.id}
+								<div class="badge badge-success badge-xs">Active</div>
+							{/if}
+						</button>
+					{/each}
 
-        <!-- Navigation Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <a href="/characters/inventory" class="btn btn-lg h-auto py-6 bg-base-200 hover:bg-primary hover:text-primary-content flex flex-col gap-2 transition-all">
-            <span class="text-2xl">🎒</span>
-            <span class="font-bold">Inventory</span>
-          </a>
-          <a href="/missions" class="btn btn-lg h-auto py-6 bg-base-200 hover:bg-primary hover:text-primary-content flex flex-col gap-2 transition-all">
-            <span class="text-2xl">📜</span>
-            <span class="font-bold">Missions</span>
-          </a>
-          <a href="/sessions" class="btn btn-lg h-auto py-6 bg-base-200 hover:bg-primary hover:text-primary-content flex flex-col gap-2 transition-all">
-            <span class="text-2xl">📅</span>
-            <span class="font-bold">Sessions</span>
-          </a>
-          <a href="/store" class="btn btn-lg h-auto py-6 bg-base-200 hover:bg-primary hover:text-primary-content flex flex-col gap-2 transition-all">
-            <span class="text-2xl">⚖️</span>
-            <span class="font-bold">Store</span>
-          </a>
-        </div>
-      </div>
-    </div>
-  {/if}
+					{#if characters.length === 0 && !isCreating}
+						<div class="py-4 text-center text-sm italic opacity-50">
+							No heroes found. Create one to begin!
+						</div>
+						<button class="btn btn-primary btn-sm w-full" on:click={() => (isCreating = true)}
+							>Create First Character</button
+						>
+					{/if}
+				</div>
+			</div>
+
+			<!-- RIGHT MAIN: Character Detail -->
+			<div class="w-full lg:w-3/4">
+				{#if viewCharacter}
+					<div class="flex flex-col gap-6">
+						<!-- Header / Banner -->
+						<div class="card bg-base-200 border-primary/10 border shadow-xl">
+							<div class="card-body">
+								<div
+									class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center"
+								>
+									<div class="flex items-center gap-4">
+										<div class="avatar placeholder">
+											<div class="bg-primary text-primary-content h-20 w-20 rounded-xl text-3xl">
+												{viewCharacter.name.charAt(0)}
+											</div>
+										</div>
+										<div>
+											{#if isEditing}
+												<input
+													type="text"
+													class="input input-bordered input-lg w-full max-w-xs font-[var(--font-cinzel)]"
+													bind:value={editName}
+												/>
+											{:else}
+												<h1 class="text-primary text-3xl font-[var(--font-cinzel)] font-bold">
+													{viewCharacter.name}
+												</h1>
+												<p class="text-sm opacity-70">Level 1 Adventurer</p>
+											{/if}
+										</div>
+									</div>
+
+									<div class="flex flex-col items-end gap-2">
+										{#if activeCharacterId !== viewCharacter.id}
+											<button
+												class="btn btn-primary btn-sm"
+												on:click={() => activateCharacter(viewCharacter!)}
+											>
+												Set as Active
+											</button>
+										{:else}
+											<div class="badge badge-lg badge-success gap-2 p-3">
+												<span class="h-2 w-2 animate-pulse rounded-full bg-black"></span>
+												Currently Active
+											</div>
+										{/if}
+										<div class="mt-2 flex gap-2">
+											<div class="badge badge-outline">XP: {viewCharacter.stats.xp}</div>
+											<div class="badge badge-outline badge-primary">
+												Scrip: {viewCharacter.stats.scrip}
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<div class="divider my-2"></div>
+
+								{#if isEditing}
+									<div class="form-control">
+										<label class="label">
+											<span class="label-text">Backstory</span>
+											<textarea
+												class="textarea textarea-bordered mt-1 h-32 w-full"
+												bind:value={editDescription}
+											></textarea>
+										</label>
+									</div>
+									<div class="form-control mt-2">
+										<label class="label">
+											<span class="label-text">Character Sheet URL</span>
+											<input
+												type="text"
+												class="input input-bordered mt-1 w-full"
+												bind:value={editCharacterSheetUrl}
+											/>
+										</label>
+									</div>
+									<div class="mt-4 flex justify-end gap-2">
+										<button
+											class="btn btn-ghost"
+											on:click={() => {
+												isEditing = false;
+												resetEditForm();
+											}}>Cancel</button
+										>
+										<button class="btn btn-primary" on:click={handleUpdate}>Save Changes</button>
+									</div>
+								{:else}
+									<div class="prose mb-4 max-w-none whitespace-pre-wrap text-sm opacity-80">
+										{viewCharacter.description || 'No backstory provided.'}
+									</div>
+
+									<div class="mt-4 flex items-center justify-between">
+										<div class="flex gap-2">
+											{#if viewCharacter.character_sheet_url}
+												<a
+													href={viewCharacter.character_sheet_url}
+													target="_blank"
+													class="btn btn-xs btn-outline">Ext. Sheet</a
+												>
+											{/if}
+											<button class="btn btn-xs btn-ghost" on:click={() => (isEditing = true)}
+												>Edit Profile</button
+											>
+										</div>
+									</div>
+								{/if}
+							</div>
+						</div>
+
+						<!-- Action Grid (Only enabled if this is active character?) -->
+						<!-- Actually, we should probably allow viewing inventory/missions even inactive, but context might get weird. 
+                     For now, let's allow it but the pages themselves assume active_character. 
+                     Ideally we'd pass ID in URL, but our routes are /inventory currently.
+                     So we should warn if viewing non-active. -->
+
+						{#if activeCharacterId !== viewCharacter.id}
+							<div class="alert alert-warning text-sm shadow-lg">
+								<span
+									>Activate this character to manage their inventory, missions, or store purchases.</span
+								>
+							</div>
+						{/if}
+
+						<div class="grid grid-cols-2 gap-4 md:grid-cols-4">
+							<a
+								href="/characters/inventory"
+								class="btn h-auto flex-col gap-1 py-4 {activeCharacterId !== viewCharacter.id
+									? 'btn-disabled opacity-50'
+									: 'btn-outline'}"
+							>
+								<span class="text-xl">🎒</span>
+								<span>Inventory</span>
+							</a>
+							<a
+								href="/missions"
+								class="btn h-auto flex-col gap-1 py-4 {activeCharacterId !== viewCharacter.id
+									? 'btn-disabled opacity-50'
+									: 'btn-outline'}"
+							>
+								<span class="text-xl">📜</span>
+								<span>Missions</span>
+							</a>
+							<a
+								href="/sessions"
+								class="btn h-auto flex-col gap-1 py-4 {activeCharacterId !== viewCharacter.id
+									? 'btn-disabled opacity-50'
+									: 'btn-outline'}"
+							>
+								<span class="text-xl">📅</span>
+								<span>Sessions</span>
+							</a>
+							<a
+								href="/store"
+								class="btn h-auto flex-col gap-1 py-4 {activeCharacterId !== viewCharacter.id
+									? 'btn-disabled opacity-50'
+									: 'btn-outline'}"
+							>
+								<span class="text-xl">⚖️</span>
+								<span>Store</span>
+							</a>
+						</div>
+					</div>
+				{:else if !loading}
+					<div class="flex h-full items-center justify-center opacity-50">
+						Select or create a hero to view details.
+					</div>
+				{/if}
+			</div>
+		</div>
+	{/if}
 </div>

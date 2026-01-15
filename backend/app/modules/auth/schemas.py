@@ -44,7 +44,8 @@ class User(UserBase):
     role: str
     campaign_id: int
 
-    character: Optional[CharacterOut] = None
+    active_character: Optional[CharacterOut] = None
+    characters: List[CharacterOut] = []
     campaign: Optional[CampaignOut] = None
 
     class Config:

@@ -17,7 +17,7 @@
 
 	onMount(async () => {
 		const authState = get(auth);
-		myCharacterId = authState.user?.character?.id;
+		myCharacterId = authState.user?.active_character?.id;
 		await Promise.all([fetchSessions(), fetchMissions()]);
 	});
 
