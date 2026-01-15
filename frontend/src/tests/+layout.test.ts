@@ -48,7 +48,8 @@ describe('Layout', () => {
     // There are multiple "Dashboard" links (mobile/desktop), so we check getAll
     expect(screen.getAllByText('Dashboard')[0]).toBeInTheDocument();
     // Updated expectation to match new layout (no "Welcome, " prefix)
-    expect(screen.getByText('testuser')).toBeInTheDocument();
+    // There are multiple "testuser" elements (one for desktop, one for mobile)
+    expect(screen.getAllByText('testuser')[0]).toBeInTheDocument();
     // There are multiple "Logout" buttons
     expect(screen.getAllByText('Logout')[0]).toBeInTheDocument();
   });
