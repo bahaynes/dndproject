@@ -52,4 +52,6 @@ spec:
         path: ./frontend
         type: Directory
     - name: backend-data
-      emptyDir: {}
+      hostPath:
+        path: ./data
+        type: Directory

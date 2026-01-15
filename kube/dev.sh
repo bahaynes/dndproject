@@ -20,8 +20,11 @@ if [ -z "$DATABASE_URL" ] || [[ "$DATABASE_URL" == *"./app.db"* ]]; then
 fi
 
 echo "==> Starting dev pod..."
+# Ensure data directory exists
+mkdir -p "$PROJECT_DIR/data"
+
 # Use envsubst to replace placeholders and mount absolute paths
-sed "s|\./backend|$PROJECT_DIR/backend|g; s|\./frontend|$PROJECT_DIR/frontend|g" kube/dnd-pod-dev.yaml | envsubst | podman kube play --replace -
+sed "s|\./backend|$PROJECT_DIR/backend|g; s|\./frontend|$PROJECT_DIR/frontend|g; s|\./data|$PROJECT_DIR/data|g" kube/dnd-pod-dev.yaml | envsubst | podman kube play --replace -
 
 echo ""
 echo "==> Dev environment running!"

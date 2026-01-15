@@ -6,21 +6,27 @@ import { describe, beforeEach, test, expect, vi } from 'vitest';
 
 // Mock dependencies
 vi.mock('$app/navigation', () => ({
-    goto: vi.fn(),
+  goto: vi.fn(),
 }));
 
-vi.mock('$lib/auth', async (importOriginal) => {
-  const { writable } = await import('svelte/store');
-  const originalAuth = writable({ isAuthenticated: false, user: null });
-
-  // Keep the original User interface if needed, or other exports
-  const originalModule = await importOriginal();
-
+vi.mock('$lib/auth', async () => {
+  let value = { isAuthenticated: false, user: null };
+  const subscribers = new Set<any>();
+  const auth = {
+    subscribe: (fn: any) => {
+      fn(value);
+      subscribers.add(fn);
+      return () => subscribers.delete(fn);
+    },
+    set: (v: any) => {
+      value = v;
+      subscribers.forEach(fn => fn(value));
+    }
+  };
   return {
-    ...originalModule,
-    auth: originalAuth,
-    login: vi.fn((user) => originalAuth.set({ isAuthenticated: true, user })),
-    logout: vi.fn(() => originalAuth.set({ isAuthenticated: false, user: null })),
+    auth,
+    login: vi.fn((user) => auth.set({ isAuthenticated: true, user })),
+    logout: vi.fn(() => auth.set({ isAuthenticated: false, user: null })),
   };
 });
 

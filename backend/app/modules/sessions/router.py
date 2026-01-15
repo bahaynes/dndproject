@@ -74,6 +74,39 @@ def toggle_backing(
     
     return db_proposal
 
+
+@router.post("/{session_id}/signup", response_model=schemas.GameSessionWithPlayers, tags=["Game Sessions"])
+def signup_for_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    session = crud.get_game_session(db, session_id=session_id)
+    if not session or session.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Game session not found")
+
+    character = current_user.active_character
+    if not character:
+        raise HTTPException(status_code=400, detail="User has no active character selected")
+
+    return crud.add_character_to_game_session(db, session=session, character=character)
+
+@router.delete("/{session_id}/signup", response_model=schemas.GameSessionWithPlayers, tags=["Game Sessions"])
+def cancel_signup(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    session = crud.get_game_session(db, session_id=session_id)
+    if not session or session.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Game session not found")
+
+    character = current_user.active_character
+    if not character:
+        raise HTTPException(status_code=400, detail="User has no active character selected")
+
+    return crud.remove_character_from_game_session(db, session=session, character=character)
+
 @router.put("/{session_id}", response_model=schemas.GameSession, tags=["Game Sessions"])
 def update_session(
     session_id: int,
