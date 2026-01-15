@@ -50,7 +50,7 @@
 	<nav class="navbar bg-base-300 border-base-content/10 border-b shadow-lg">
 		<div class="navbar-start">
 			<div class="dropdown">
-				<button tabindex="0" class="btn btn-ghost lg:hidden">
+				<button tabindex="0" class="btn btn-ghost lg:hidden" aria-label="Mobile Menu">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						class="h-5 w-5"
@@ -111,6 +111,7 @@
 						<button
 							tabindex="0"
 							class="btn btn-ghost btn-circle avatar border-primary/20 overflow-hidden border"
+							aria-label="User Menu"
 						>
 							<div class="w-10 rounded-full">
 								{#if $auth.user?.avatar_url}
