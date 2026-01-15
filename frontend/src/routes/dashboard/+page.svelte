@@ -24,13 +24,14 @@
 </script>
 
 <div class="container mx-auto p-4">
-    <div class="flex justify-between items-center mb-6">
-         <h1 class="text-3xl font-bold">Dashboard</h1>
+    <div class="flex justify-between items-center mb-6 border-b border-base-content/10 pb-4">
+         <h1 class="text-3xl font-bold font-[var(--font-cinzel)] tracking-tight text-primary">
+            {campaign ? campaign.name : "Dashboard"}
+         </h1>
          {#if campaign}
-             <div class="bg-gray-100 px-4 py-2 rounded-lg">
-                 <span class="text-sm text-gray-500 uppercase font-semibold">Campaign</span>
-                 <p class="font-bold text-indigo-700">{campaign.name}</p>
-             </div>
+            <div class="hidden md:block text-xs opacity-50 uppercase font-bold text-right">
+                Active Campaign
+            </div>
          {/if}
     </div>
 

@@ -1,15 +1,7 @@
 import { writable } from 'svelte/store';
 import { browser } from '$app/environment';
+import type { User } from './types';
 
-interface User {
-  id: number;
-  username: string;
-  email: string;
-  role: string;
-  avatar_url?: string;
-  discord_id: string;
-  campaign_id: number;
-}
 
 interface Campaign {
   id: number;

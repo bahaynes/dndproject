@@ -1,0 +1,15 @@
+[Unit]
+Description=D&D Westmarches Hub
+After=network-online.target
+Wants=network-online.target
+
+[Kube]
+# Path will be updated by install-quadlet.sh
+Yaml=/home/USER/git/hub/dndproject/kube/dnd-pod.yaml
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=default.target

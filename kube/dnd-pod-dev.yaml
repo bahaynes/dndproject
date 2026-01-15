@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dnd-westmarches-dev
+  labels:
+    app: dnd-westmarches-dev
+spec:
+  containers:
+    - name: backend
+      image: localhost/dnd-backend-dev:latest
+      command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+      ports:
+        - containerPort: 8000
+          hostPort: 8000
+      env:
+        - name: DATABASE_URL
+          value: "${DATABASE_URL}"
+        - name: PYTHONPATH
+          value: "/app"
+        - name: DISCORD_CLIENT_ID
+          value: "${DISCORD_CLIENT_ID}"
+        - name: DISCORD_CLIENT_SECRET
+          value: "${DISCORD_CLIENT_SECRET}"
+        - name: DISCORD_BOT_TOKEN
+          value: "${DISCORD_BOT_TOKEN}"
+        - name: DISCORD_REDIRECT_URI
+          value: "${DISCORD_REDIRECT_URI}"
+        - name: ADMIN_DISCORD_IDS
+          value: "${ADMIN_DISCORD_IDS}"
+      volumeMounts:
+        - name: backend-src
+          mountPath: /app
+        - name: backend-data
+          mountPath: /data
+    - name: frontend
+      image: localhost/dnd-frontend-dev:latest
+      # Ensure metadata is generated and dependencies are ready when volume is mounted
+      command: ["sh", "-c", "pnpm install && pnpm svelte-kit sync && pnpm run dev --host"]
+      ports:
+        - containerPort: 5173
+          hostPort: 5173
+      volumeMounts:
+        - name: frontend-src
+          mountPath: /app
+  volumes:
+    - name: backend-src
+      hostPath:
+        path: ./backend
+        type: Directory
+    - name: frontend-src
+      hostPath:
+        path: ./frontend
+        type: Directory
+    - name: backend-data
+      hostPath:
+        path: ./data
+        type: Directory
