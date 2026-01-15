@@ -17,12 +17,19 @@
 	let purchaseQuantity = 1;
 	let showPurchaseConfirm = false;
 
-	onMount(async () => {
-		await Promise.all([fetchStoreItems(), fetchCharacter()]);
-	});
+	$: activeCharacterId = $auth.user?.active_character?.id;
+
+	// Fetch store items on mount
+	onMount(fetchStoreItems);
+
+	// Fetch character data whenever activeCharacterId changes (or initially)
+	$: if (activeCharacterId) {
+		fetchCharacter(activeCharacterId);
+	}
 
 	async function fetchStoreItems() {
 		try {
+			// .. existing fetchStoreItems code doesn't depend on character, just auth token ..
 			const authState = get(auth);
 			const res = await fetch(`${API_BASE_URL}/store/items/`, {
 				headers: {
@@ -37,13 +44,11 @@
 		}
 	}
 
-	async function fetchCharacter() {
+	async function fetchCharacter(charId: number) {
 		loading = true;
 		try {
 			const authState = get(auth);
-			const charId = authState.user?.active_character?.id;
-			if (!charId) return;
-
+			// Removing the internal charId fetch since we pass it in
 			const res = await fetch(`${API_BASE_URL}/characters/${charId}`, {
 				headers: {
 					Authorization: `Bearer ${authState.token}`
@@ -86,7 +91,7 @@
 			if (res.ok) {
 				successMessage = `Successfully purchased ${purchaseQuantity}x ${selectedItem.item.name}!`;
 				showPurchaseConfirm = false;
-				await Promise.all([fetchStoreItems(), fetchCharacter()]);
+				await Promise.all([fetchStoreItems(), fetchCharacter(character.id)]);
 
 				// Clear success message after 5s
 				setTimeout(() => (successMessage = ''), 5000);

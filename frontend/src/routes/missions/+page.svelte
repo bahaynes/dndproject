@@ -11,8 +11,10 @@
 	let error = '';
 	let myCharacterId: number | undefined;
 
+	// Reactive update for character ID
+	$: myCharacterId = $auth.user?.active_character?.id;
+
 	onMount(async () => {
-		myCharacterId = get(auth).user?.active_character?.id;
 		await fetchMissions();
 	});
 

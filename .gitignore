@@ -80,3 +80,4 @@ run_app.sh.log
 
 # Temporary verification files
 jules-scratch/
+/data/

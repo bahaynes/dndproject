@@ -6,9 +6,9 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - /home/bahaynes/git/dndproject/backend:/app
-      - /home/bahaynes/git/dndproject/alembic.ini:/app/alembic.ini
-      - backend_data:/data
+      - ./backend:/app
+      - ./alembic.ini:/app/alembic.ini
+      - ./data:/data
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     environment:
       DATABASE_URL: "sqlite:////data/app.db"
@@ -29,7 +29,7 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - /home/bahaynes/git/dndproject/frontend:/app
+      - ./frontend:/app
       - /app/node_modules
     depends_on:
       backend:
@@ -38,9 +38,6 @@ services:
       VITE_API_URL: "/api"
     networks:
       - app-network
-
-volumes:
-  backend_data:
 
 networks:
   app-network:

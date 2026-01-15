@@ -15,9 +15,11 @@
 	let selectedSessionId: number | null = null;
 	let selectedMissionId: number | null = null;
 
+	// Reactive update for character ID
+	$: myCharacterId = $auth.user?.active_character?.id;
+
+	// Fetch sessions on mount and when auth token is available (handled in onMount logic effectively)
 	onMount(async () => {
-		const authState = get(auth);
-		myCharacterId = authState.user?.active_character?.id;
 		await Promise.all([fetchSessions(), fetchMissions()]);
 	});
 
@@ -270,7 +272,7 @@
 					mission.last_run_date &&
 					new Date().getTime() - new Date(mission.last_run_date).getTime() <
 						mission.cooldown_days * 24 * 60 * 60 * 1000}
-				<option value={mission.id} disabled={inCooldown}>
+				<option value={mission.id} disabled={!!inCooldown}>
 					{mission.name} ({mission.tier || 'No Tier'}) {inCooldown ? '- ❄️ Cooldown' : ''}
 				</option>
 			{/each}

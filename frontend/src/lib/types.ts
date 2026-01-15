@@ -40,6 +40,14 @@ export interface InventoryItem {
     item: Item;
 }
 
+export interface StoreItem {
+    id: number;
+    item_id: number;
+    item: Item;
+    price: number;
+    quantity_available: number;
+}
+
 export interface Mission {
     id: number;
     name: string;

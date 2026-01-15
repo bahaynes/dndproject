@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { auth } from '$lib/auth';
 	import { get } from 'svelte/store';
 	import { API_BASE_URL } from '$lib/config';
@@ -10,9 +9,10 @@
 	let loading = true;
 	let error = '';
 
-	onMount(async () => {
-		await fetchInventory();
-	});
+	// Reactive trigger
+	$: if ($auth.user?.active_character?.id) {
+		fetchInventory();
+	}
 
 	async function fetchInventory() {
 		loading = true;
