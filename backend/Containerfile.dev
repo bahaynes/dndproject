@@ -22,4 +22,4 @@ ENV PATH="/usr/local/bin:${PATH}"
 # Expose the port for the backend server
 EXPOSE 8000
 
-# The command will be provided by docker-compose.dev.yml to allow for --reload
+# The command will be provided by dnd-pod-dev.yaml to allow for --reload
