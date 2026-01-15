@@ -5,13 +5,14 @@ metadata:
   labels:
     app: dnd-westmarches-dev
 spec:
+  hostNetwork: true
   containers:
     - name: backend
+      securityContext:
+        seccompProfile:
+          type: Unconfined
       image: localhost/dnd-backend-dev:latest
       command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-      ports:
-        - containerPort: 8000
-          hostPort: 8000
       env:
         - name: DATABASE_URL
           value: "${DATABASE_URL}"
@@ -33,12 +34,12 @@ spec:
         - name: backend-data
           mountPath: /data
     - name: frontend
+      securityContext:
+        seccompProfile:
+          type: Unconfined
       image: localhost/dnd-frontend-dev:latest
       # Ensure metadata is generated and dependencies are ready when volume is mounted
       command: ["sh", "-c", "pnpm install && pnpm svelte-kit sync && pnpm run dev --host"]
-      ports:
-        - containerPort: 5173
-          hostPort: 5173
       volumeMounts:
         - name: frontend-src
           mountPath: /app

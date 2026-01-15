@@ -4,8 +4,9 @@ set -e
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "==> Building dev images..."
-podman build -t localhost/dnd-backend-dev:latest -f backend/Containerfile.dev .
-podman build -t localhost/dnd-frontend-dev:latest -f frontend/Containerfile.dev .
+# Use host network and unconfined seccomp to ensure builds work in nested container environments
+podman build --security-opt seccomp=unconfined --network host -t localhost/dnd-backend-dev:latest -f backend/Containerfile.dev .
+podman build --security-opt seccomp=unconfined --network host -t localhost/dnd-frontend-dev:latest -f frontend/Containerfile.dev .
 
 # Source .env if it exists
 if [ -f "$PROJECT_DIR/.env" ]; then
