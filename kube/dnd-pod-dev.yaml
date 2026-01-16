@@ -5,6 +5,7 @@ metadata:
   labels:
     app: dnd-westmarches-dev
 spec:
+  ${POD_HOST_NETWORK}
   containers:
     - name: backend
       image: localhost/dnd-backend-dev:latest
