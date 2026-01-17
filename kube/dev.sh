@@ -4,8 +4,26 @@ set -e
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 echo "==> Building dev images..."
-podman build -t localhost/dnd-backend-dev:latest -f backend/Containerfile.dev .
-podman build -t localhost/dnd-frontend-dev:latest -f frontend/Containerfile.dev .
+
+# Detect environment constraints (e.g., nested containers)
+POD_BUILD_ARGS=""
+export POD_HOST_NETWORK=""
+YAML_FILTER="cat"
+TEST_IMAGE="public.ecr.aws/docker/library/python:3.11-slim"
+
+# Ensure we have the base image for testing
+podman pull "$TEST_IMAGE" >/dev/null 2>&1 || true
+
+if ! podman run --rm "$TEST_IMAGE" true >/dev/null 2>&1; then
+    echo "    Standard networking failed. Enabling host network mode (nested environment detected)."
+    POD_BUILD_ARGS="--security-opt seccomp=unconfined --network host"
+    export POD_HOST_NETWORK="hostNetwork: true"
+    # Remove ports when using host network to avoid conflicts
+    YAML_FILTER="sed '/ports:/d; /containerPort:/d; /hostPort:/d'"
+fi
+
+podman build $POD_BUILD_ARGS -t localhost/dnd-backend-dev:latest -f backend/Containerfile.dev .
+podman build $POD_BUILD_ARGS -t localhost/dnd-frontend-dev:latest -f frontend/Containerfile.dev .
 
 # Source .env if it exists
 if [ -f "$PROJECT_DIR/.env" ]; then
@@ -24,7 +42,8 @@ echo "==> Starting dev pod..."
 mkdir -p "$PROJECT_DIR/data"
 
 # Use envsubst to replace placeholders and mount absolute paths
-sed "s|\./backend|$PROJECT_DIR/backend|g; s|\./frontend|$PROJECT_DIR/frontend|g; s|\./data|$PROJECT_DIR/data|g" kube/dnd-pod-dev.yaml | envsubst | podman kube play --replace -
+# If using host network, we must filter out port mappings
+sed "s|\./backend|$PROJECT_DIR/backend|g; s|\./frontend|$PROJECT_DIR/frontend|g; s|\./data|$PROJECT_DIR/data|g" kube/dnd-pod-dev.yaml | envsubst | eval "$YAML_FILTER" | podman kube play --replace -
 
 echo ""
 echo "==> Dev environment running!"
