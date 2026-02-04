@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
+from typing import List
 from ..maps import service as maps_service, schemas as maps_schemas
 
 def get_campaign(db: Session, campaign_id: int):
@@ -10,6 +11,9 @@ def get_campaign_by_guild_id(db: Session, guild_id: str):
 
 def get_all_campaigns(db: Session):
     return db.query(models.Campaign).all()
+
+def get_campaigns_by_guild_ids(db: Session, guild_ids: List[str]):
+    return db.query(models.Campaign).filter(models.Campaign.discord_guild_id.in_(guild_ids)).all()
 
 def create_campaign(db: Session, campaign: schemas.CampaignCreate):
     db_campaign = models.Campaign(
