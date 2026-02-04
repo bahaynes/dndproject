@@ -1,5 +1,16 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { auth } from '$lib/auth';
+  import { get } from 'svelte/store';
   import { API_BASE_URL } from '$lib/config';
+
+  onMount(() => {
+    const { isAuthenticated } = get(auth);
+    if (isAuthenticated) {
+      goto('/dashboard');
+    }
+  });
 
   function handleLogin() {
     window.location.href = `${API_BASE_URL}/auth/discord/login`;

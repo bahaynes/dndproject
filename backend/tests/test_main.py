@@ -28,6 +28,11 @@ def create_auth_headers(client, db_session, username, discord_id, role, campaign
     char_stats = char_models.CharacterStats(character=char)
     db_session.add(char_stats)
 
+    # Set as active character
+    db_session.flush() # Ensure char has ID
+    user.active_character_id = char.id
+    db_session.add(user)
+
     db_session.commit()
     db_session.refresh(user)
 
@@ -84,7 +89,7 @@ def test_read_character_success(client, db_session, setup_data):
     me_response = client.get("/api/auth/me", headers=headers)
     assert me_response.status_code == 200
     user_data = me_response.json()
-    character_id = user_data["character"]["id"]
+    character_id = user_data["characters"][0]["id"]
 
     # Read the character
     char_response = client.get(f"/api/characters/{character_id}", headers=headers)
@@ -98,7 +103,7 @@ def test_update_character_success(client, db_session, setup_data):
 
     # Get character ID
     me_response = client.get("/api/auth/me", headers=headers)
-    character_id = me_response.json()["character"]["id"]
+    character_id = me_response.json()["characters"][0]["id"]
 
     # Update the character
     update_data = {"name": "Updated Name", "description": "Updated Description"}
@@ -137,7 +142,7 @@ def test_inventory_endpoints(client, db_session, setup_data):
 
     # Get character ID for player
     me_response = client.get("/api/auth/me", headers=player_headers)
-    character_id = me_response.json()["character"]["id"]
+    character_id = me_response.json()["characters"][0]["id"]
 
     # Create an item (as admin)
     item_response = client.post("/api/items/", json={"name": "Inv Item", "description": "An inventory item"}, headers=admin_headers)
@@ -174,7 +179,7 @@ def test_store_endpoints(client, db_session, setup_data):
 
     # Purchase item
     me_res = client.get("/api/auth/me", headers=player_headers)
-    char_id = me_res.json()["character"]["id"]
+    char_id = me_res.json()["characters"][0]["id"]
 
     # Give scrip
     character = db_session.query(char_models.Character).filter(char_models.Character.id == char_id).first()

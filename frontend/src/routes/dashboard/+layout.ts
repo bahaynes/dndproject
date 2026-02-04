@@ -8,7 +8,9 @@ export const load = async () => {
     // A more robust implementation would handle this on the server with cookies.
     if (browser) {
         const { isAuthenticated } = get(auth);
-        if (!isAuthenticated) {
+        const hasToken = localStorage.getItem('accessToken');
+
+        if (!isAuthenticated && !hasToken) {
             throw redirect(307, '/login');
         }
     }

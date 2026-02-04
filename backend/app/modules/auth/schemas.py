@@ -5,6 +5,14 @@ from pydantic import BaseModel
 # We use a string forward reference if possible, or conditional import
 # In Pydantic v2, we can just use the class name if it's imported later or use a string.
 
+class CampaignOut(BaseModel):
+    id: int
+    name: str
+    discord_guild_id: str
+
+    class Config:
+        from_attributes = True
+
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -35,7 +43,9 @@ class User(UserBase):
     role: str
     campaign_id: int
 
-    character: Optional[CharacterOut] = None
+    active_character: Optional[CharacterOut] = None
+    characters: List[CharacterOut] = []
+    campaign: Optional[CampaignOut] = None
 
     class Config:
         from_attributes = True

@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List
+import datetime
 from ..items.schemas import Item
 from ..characters.base_schema import CharacterBase
 
@@ -29,6 +30,13 @@ class MissionBase(BaseModel):
     name: str
     description: Optional[str] = None
     status: str = "Available"
+    tier: Optional[str] = None
+    region: Optional[str] = None
+    last_run_date: Optional[datetime.datetime] = None
+    cooldown_days: int = 7
+    is_retired: bool = False
+    is_discoverable: bool = True
+    prerequisite_id: Optional[int] = None
 
 class MissionCreate(MissionBase):
     rewards: List[MissionRewardCreate] = []

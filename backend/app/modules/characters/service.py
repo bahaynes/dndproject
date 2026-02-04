@@ -13,3 +13,21 @@ def update_character(db: Session, character_id: int, character: schemas.Characte
         db.commit()
         db.refresh(db_character)
     return db_character
+
+def create_character(db: Session, character: schemas.CharacterCreate, owner_id: int, campaign_id: int):
+    db_character = models.Character(
+        **character.model_dump(),
+        owner_id=owner_id,
+        campaign_id=campaign_id
+    )
+    db.add(db_character)
+    db.commit()
+    db.refresh(db_character)
+
+    # Add stats
+    db_stats = models.CharacterStats(character_id=db_character.id)
+    db.add(db_stats)
+    db.commit()
+    db.refresh(db_character)
+
+    return db_character

@@ -82,3 +82,69 @@ You must manually set this environment variable in your Vercel Project Settings.
   - Example: `https://westmarches.bahaynes.com/api`
   - Example: `https://dnd-backend.onrender.com/api`
   - **Note**: Must include the `/api` suffix.
+
+---
+
+## Podman Kube Deployment (Self-Hosted)
+
+Deploy the entire stack using Podman Kube YAML manifests. Works locally or on any Linux VPS (tested on AlmaLinux).
+
+### Prerequisites
+
+- Podman 4.4+ (for Quadlet support)
+- For HTTPS: Cloudflare API token with DNS edit rights
+
+### Local Development
+
+Build and run with live reload:
+
+```bash
+./kube/dev.sh
+```
+
+- Frontend: http://localhost:5173
+- Backend: http://localhost:8000
+
+Stop with:
+
+```bash
+./kube/teardown.sh
+```
+
+### Production Deployment (Local)
+
+Build production images and deploy:
+
+```bash
+./kube/build.sh
+./kube/deploy.sh
+```
+
+Access at http://localhost:9080 (or https://westmarches.bahaynes.com when DNS is configured).
+
+### VPS Deployment with SystemD (Quadlet)
+
+For auto-start on boot using Podman Quadlet:
+
+```bash
+# Build images first
+./kube/build.sh
+
+# Install systemd service
+./kube/install-quadlet.sh
+
+# Enable and start
+systemctl --user enable --now dnd-westmarches.service
+
+# Check status
+systemctl --user status dnd-westmarches.service
+
+# View logs
+journalctl --user -u dnd-westmarches.service -f
+```
+
+**Note:** For rootless Podman to work after logout, enable lingering:
+
+```bash
+loginctl enable-linger $USER
+```
