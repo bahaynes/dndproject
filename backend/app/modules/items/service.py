@@ -57,14 +57,6 @@ def remove_item_from_inventory(db: Session, inventory_item_id: int, quantity: in
 def get_store_item(db: Session, store_item_id: int):
     return db.query(models.StoreItem).filter(models.StoreItem.id == store_item_id).first()
 
-def get_store_items(db: Session, skip: int = 0, limit: int = 100):
-    # Store items are linked to Items, which are linked to Campaigns.
-    # We should filter by joining with Item table.
-    return db.query(models.StoreItem).join(models.Item).filter(models.Item.campaign_id == 1).offset(skip).limit(limit).all()
-    # WAIT! I need campaign_id here too.
-    # Assuming the caller passes campaign_id or I extract it?
-    # I should update signature.
-
 def get_store_items_by_campaign(db: Session, campaign_id: int, skip: int = 0, limit: int = 100):
     return db.query(models.StoreItem).join(models.Item).filter(models.Item.campaign_id == campaign_id).offset(skip).limit(limit).all()
 
