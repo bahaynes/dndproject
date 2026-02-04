@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from . import models, schemas
 from typing import List
+from ..maps import service as maps_service, schemas as maps_schemas
 
 def get_campaign(db: Session, campaign_id: int):
     return db.query(models.Campaign).filter(models.Campaign.id == campaign_id).first()
@@ -24,4 +25,14 @@ def create_campaign(db: Session, campaign: schemas.CampaignCreate):
     db.add(db_campaign)
     db.commit()
     db.refresh(db_campaign)
+    
+    # NEW: Create default World Map upon campaign creation
+    default_map = maps_schemas.HexMapCreate(
+        name="The Known World",
+        width=20,
+        height=20,
+        hex_size=60
+    )
+    maps_service.create_map(db, default_map, campaign_id=db_campaign.id, seed=True)
+    
     return db_campaign

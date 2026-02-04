@@ -7,7 +7,7 @@ from ...config import get_settings
 
 from ... import security
 from ...dependencies import get_db, get_current_user
-from . import schemas, service as crud
+from . import schemas, service as crud, models
 from ..campaigns import service as campaign_service
 
 router = APIRouter()
@@ -136,5 +136,5 @@ async def discord_callback(code: str, request: Request, response: Response, db: 
 
 
 @router.get("/me", response_model=schemas.User, tags=["Users"])
-async def read_users_me(current_user: schemas.User = Depends(get_current_user)):
+async def read_users_me(current_user: models.User = Depends(get_current_user)):
     return current_user

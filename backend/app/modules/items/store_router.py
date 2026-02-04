@@ -60,7 +60,10 @@ def purchase_store_item(
     if db_store_item.item.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Store item not found")
 
-    result = crud.purchase_item(db, current_user.character, db_store_item, quantity)
+    if not current_user.active_character:
+        raise HTTPException(status_code=400, detail="No active character selected")
+
+    result = crud.purchase_item(db, current_user.active_character, db_store_item, quantity)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
 

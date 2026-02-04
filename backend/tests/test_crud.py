@@ -102,7 +102,7 @@ def test_character_crud(db_session, campaign):
     user_in = auth_schemas.UserCreate(username="charowner", discord_id="charowner", campaign_id=campaign.id, role="player")
     db_user = auth_service.create_user(db_session, user_in)
 
-    character = char_service.get_character(db_session, db_user.character.id)
+    character = char_service.get_character(db_session, db_user.characters[0].id)
     assert character is not None
     assert character.name == "charowner's Character"
     assert character.owner_id == db_user.id
@@ -137,9 +137,9 @@ def test_inventory_crud(db_session, campaign):
     item_in = item_schemas.ItemCreate(name="Inventory Item", description="An item for inventory")
     db_item = item_service.create_item(db_session, item_in, campaign_id=campaign.id)
 
-    inventory_item = item_service.add_item_to_inventory(db_session, db_user.character.id, db_item.id, 5)
+    inventory_item = item_service.add_item_to_inventory(db_session, db_user.characters[0].id, db_item.id, 5)
     assert inventory_item.quantity == 5
-    assert inventory_item.character_id == db_user.character.id
+    assert inventory_item.character_id == db_user.characters[0].id
     assert inventory_item.item_id == db_item.id
 
     item_service.remove_item_from_inventory(db_session, inventory_item.id, 2)
@@ -169,14 +169,14 @@ def test_store_crud(db_session, campaign):
     store_items = item_service.get_store_items_by_campaign(db_session, campaign_id=campaign.id)
     assert len(store_items) == 1
 
-    db_user.character.stats.scrip = 500
+    db_user.characters[0].stats.scrip = 500
     db_session.commit()
-    result = item_service.purchase_item(db_session, db_user.character, db_store_item, 3)
+    result = item_service.purchase_item(db_session, db_user.characters[0], db_store_item, 3)
     assert result["message"] == "Purchase successful"
-    assert db_user.character.stats.scrip == 200
+    assert db_user.characters[0].stats.scrip == 200
     assert db_store_item.quantity_available == 7
 
-    result = item_service.purchase_item(db_session, db_user.character, db_store_item, 3)
+    result = item_service.purchase_item(db_session, db_user.characters[0], db_store_item, 3)
     assert result["error"] == "Not enough scrip"
 
 def test_mission_crud(db_session, campaign):
@@ -195,11 +195,11 @@ def test_mission_crud(db_session, campaign):
     missions = mission_service.get_missions(db_session, campaign_id=campaign.id)
     assert len(missions) == 1
 
-    mission_service.add_character_to_mission(db_session, db_mission, db_user.character)
-    assert db_user.character in db_mission.players
+    mission_service.add_character_to_mission(db_session, db_mission, db_user.characters[0])
+    assert db_user.characters[0] in db_mission.players
 
-    mission_service.remove_character_from_mission(db_session, db_mission, db_user.character)
-    assert db_user.character not in db_mission.players
+    mission_service.remove_character_from_mission(db_session, db_mission, db_user.characters[0])
+    assert db_user.characters[0] not in db_mission.players
 
     mission_service.update_mission_status(db_session, db_mission, "Completed")
     assert db_mission.status == "Completed"
@@ -207,15 +207,15 @@ def test_mission_crud(db_session, campaign):
     item_in = item_schemas.ItemCreate(name="Reward Item", description="A reward item")
     db_item = item_service.create_item(db_session, item_in, campaign_id=campaign.id)
     db_mission.rewards.append(mission_models.MissionReward(mission_id=db_mission.id, xp=100, scrip=50, item_id=db_item.id))
-    mission_service.add_character_to_mission(db_session, db_mission, db_user.character)
+    mission_service.add_character_to_mission(db_session, db_mission, db_user.characters[0])
     db_session.commit()
 
     result = mission_service.distribute_mission_rewards(db_session, db_mission)
     assert result["message"] == "Rewards distributed successfully"
-    assert db_user.character.stats.xp == 100
-    assert db_user.character.stats.scrip == 50
+    assert db_user.characters[0].stats.xp == 100
+    assert db_user.characters[0].stats.scrip == 50
 
-    inventory_item = db_session.query(item_models.InventoryItem).filter(item_models.InventoryItem.character_id == db_user.character.id, item_models.InventoryItem.item_id == db_item.id).first()
+    inventory_item = db_session.query(item_models.InventoryItem).filter(item_models.InventoryItem.character_id == db_user.characters[0].id, item_models.InventoryItem.item_id == db_item.id).first()
     assert inventory_item is not None
     assert inventory_item.quantity == 1
 
@@ -235,11 +235,11 @@ def test_game_session_crud(db_session, campaign):
     sessions = session_service.get_game_sessions(db_session, campaign_id=campaign.id)
     assert len(sessions) == 1
 
-    session_service.add_character_to_game_session(db_session, db_session_obj, db_user.character)
-    assert db_user.character in db_session_obj.players
+    session_service.add_character_to_game_session(db_session, db_session_obj, db_user.characters[0])
+    assert db_user.characters[0] in db_session_obj.players
 
-    session_service.remove_character_from_game_session(db_session, db_session_obj, db_user.character)
-    assert db_user.character not in db_session_obj.players
+    session_service.remove_character_from_game_session(db_session, db_session_obj, db_user.characters[0])
+    assert db_user.characters[0] not in db_session_obj.players
 
     session_update = session_schemas.GameSessionCreate(name="New Session Name", description="New description", status="Closed", session_date=datetime.now())
     updated_session = session_service.update_game_session(db_session, db_session_obj, session_update)

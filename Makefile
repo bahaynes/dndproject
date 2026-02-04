@@ -44,7 +44,7 @@ coverage-host: coverage-backend-host coverage-frontend-host
 # --- Container (your) targets ---
 
 migrate:
-	podman-compose exec backend alembic upgrade head
+	podman exec -it dnd-westmarches-dev-backend alembic upgrade head
 
 revision:
-	podman-compose exec backend alembic revision --autogenerate -m "$(m)"
+	podman exec -it dnd-westmarches-dev-backend alembic revision --autogenerate -m "$(m)"

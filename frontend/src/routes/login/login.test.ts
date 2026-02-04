@@ -8,6 +8,7 @@ vi.mock('$app/navigation', () => ({
 }));
 
 vi.mock('$lib/auth', () => ({
+    auth: { subscribe: (run: any) => { run({ isAuthenticated: false }); return () => { }; } },
     login: vi.fn(),
 }));
 

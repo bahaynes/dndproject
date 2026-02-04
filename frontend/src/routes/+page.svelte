@@ -6,9 +6,19 @@
 <div class="hero min-h-[calc(100vh-64px)] bg-base-200 pattern-grid">
   <div class="hero-content text-center p-4 md:p-10">
     <div class="max-w-3xl">
-      <h1 class="text-5xl md:text-7xl font-bold font-[var(--font-cinzel)] text-primary mb-6 drop-shadow-md tracking-tight">DnD Westmarches Hub</h1>
+      <h1 class="text-5xl md:text-7xl font-bold font-[var(--font-cinzel)] text-primary mb-6 drop-shadow-md tracking-tight">
+        {#if $auth.isAuthenticated && $auth.campaign}
+            {$auth.campaign.name}
+        {:else}
+            DnD Westmarches Hub
+        {/if}
+      </h1>
       <p class="py-6 text-xl md:text-2xl opacity-90 mb-8 font-light leading-relaxed max-w-2xl mx-auto">
-        Manage your characters, track missions, and explore the world in a persistent multi-campaign Westmarches experience.
+        {#if $auth.isAuthenticated && $auth.campaign}
+            Welcome back to the world of {$auth.campaign.name}. Your characters and missions await.
+        {:else}
+            Manage your characters, track missions, and explore the world in a persistent multi-campaign Westmarches experience.
+        {/if}
       </p>
 
       {#if $auth.isAuthenticated}

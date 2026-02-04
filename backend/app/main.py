@@ -9,6 +9,7 @@ from .modules.characters import models as char_models
 from .modules.items import models as item_models
 from .modules.missions import models as mission_models
 from .modules.sessions import models as session_models
+from .modules.maps import models as map_models
 
 # Import routers
 from .modules.auth import router as auth_router
@@ -19,6 +20,7 @@ from .modules.items import inventory_router
 from .modules.items import store_router
 from .modules.missions import router as mission_router
 from .modules.sessions import router as session_router
+from .modules.maps import router as map_router
 from .modules.admin import router as admin_router
 
 # Create tables
@@ -62,4 +64,5 @@ app.include_router(inventory_router.router, prefix="/api/characters/{character_i
 app.include_router(store_router.router, prefix="/api/store", tags=["Store"])
 app.include_router(mission_router.router, prefix="/api/missions")
 app.include_router(session_router.router, prefix="/api/sessions")
+app.include_router(map_router.router, prefix="/api/maps")
 app.include_router(admin_router.router, prefix="/api/admin")
