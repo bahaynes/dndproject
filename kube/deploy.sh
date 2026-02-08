@@ -3,8 +3,12 @@
 set -e
 cd "$(dirname "$0")"
 
+echo "==> Setting up secrets..."
+./setup_secrets.sh
+
 echo "==> Deploying production pod..."
-podman kube play --replace dnd-pod.yaml
+# Combine secrets and pod definition (ensure separator)
+{ cat secrets.yaml; echo "---"; cat dnd-pod.yaml; } | podman kube play --replace -
 
 echo ""
 echo "==> Stack deployed!"

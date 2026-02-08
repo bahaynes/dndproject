@@ -3,7 +3,7 @@
 # syntax=docker/dockerfile:1.4
 
 # ---- Stage 1: Build (Node environment) ----
-FROM node:20-alpine AS builder
+FROM docker.io/library/node:20-alpine AS builder
 WORKDIR /app
 
 # Install pnpm (alpine-friendly small image for building)
@@ -19,7 +19,7 @@ RUN pnpm build
 
 # ---- Stage 1a: Test stage (CI) ----
 # Use a Debian-based image for better compatibility with Playwright / browsers
-FROM node:20-bookworm AS test
+FROM docker.io/library/node:20-bookworm AS test
 
 ENV CI=1
 # Ensure pnpm is available via Corepack
@@ -51,7 +51,7 @@ COPY frontend/ .
 CMD ["pnpm", "run", "test:ci"]
 
 # ---- Caddy builder (to compile xcaddy with extras like cloudflare DNS) ----
-FROM caddy:2-builder-alpine AS caddy-builder
+FROM docker.io/library/caddy:2-builder-alpine AS caddy-builder
 
 # Use Docker BuildKit cache mounts to speed up builds (requires BuildKit)
 RUN --mount=type=cache,target=/go/pkg/mod \
@@ -60,7 +60,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --with github.com/caddy-dns/cloudflare
 
 # ---- Stage 2: Production image (Caddy serves static files) ----
-FROM caddy:2-alpine AS production
+FROM docker.io/library/caddy:2-alpine AS production
 
 COPY --from=caddy-builder /usr/bin/caddy /usr/bin/caddy
 
