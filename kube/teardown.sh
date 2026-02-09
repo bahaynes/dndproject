@@ -1,6 +1,14 @@
 #!/bin/bash
-# Stop and remove D&D Westmarches Hub pods
+# =============================================================================
+# teardown.sh - Stop and Remove D&D Westmarches Hub Pods
+# =============================================================================
+# Usage: ./kube/teardown.sh
+#
+# Stops both development and production pods if running.
+# Data volumes are preserved.
+# =============================================================================
 set -e
+
 cd "$(dirname "$0")"
 
 echo "==> Stopping pods..."

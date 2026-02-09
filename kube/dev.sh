@@ -1,7 +1,24 @@
 #!/bin/bash
-# Start D&D Westmarches Hub development environment
+# =============================================================================
+# dev.sh - Start D&D Westmarches Hub Development Environment
+# =============================================================================
+# Usage: ./kube/dev.sh
+#
+# This script:
+#   1. Builds development container images (backend and frontend)
+#   2. Loads environment variables from .env
+#   3. Starts the development pod with live reload
+#
+# Services:
+#   - Frontend: http://localhost:5173
+#   - Backend:  http://localhost:8000
+#
+# Stop with: ./kube/teardown.sh
+# =============================================================================
 set -e
+
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$PROJECT_DIR"
 
 echo "==> Building dev images..."
 podman build -t localhost/dnd-backend-dev:latest -f backend/Containerfile.dev .
@@ -20,15 +37,15 @@ if [ -z "$DATABASE_URL" ] || [[ "$DATABASE_URL" == *"./app.db"* ]]; then
 fi
 
 echo "==> Starting dev pod..."
-# Ensure data directory exists
-mkdir -p "$PROJECT_DIR/data"
+mkdir -p "$PROJECT_DIR/data/postgres"
 
-# Use envsubst to replace placeholders and mount absolute paths
-sed "s|\./backend|$PROJECT_DIR/backend|g; s|\./frontend|$PROJECT_DIR/frontend|g; s|\./data|$PROJECT_DIR/data|g" kube/dnd-pod-dev.yaml | envsubst | podman kube play --replace -
+# Replace relative paths with absolute paths and apply env vars
+sed "s|\\./backend|$PROJECT_DIR/backend|g; s|\\./frontend|$PROJECT_DIR/frontend|g; s|\\./data|$PROJECT_DIR/data|g" kube/dnd-pod-dev.yaml | envsubst | podman kube play --replace -
 
 echo ""
-echo "==> Dev environment running!"
+echo "==> Development environment running!"
 echo "    Frontend: http://localhost:5173"
 echo "    Backend:  http://localhost:8000"
 echo ""
 echo "    Logs: podman pod logs -f dnd-westmarches-dev"
+echo "    Stop: ./kube/teardown.sh"
