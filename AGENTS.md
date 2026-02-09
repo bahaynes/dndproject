@@ -1,45 +1,108 @@
 # AGENTS.md
 
-This repository is maintained by human and AI contributors. To ensure consistency, please follow these rules.
+This repository is maintained by human and AI contributors. Follow these rules for consistency.
 
 ---
 
-## Core Directives
+## Tech Stack
 
-* **Stack:** Use the defined stack: **SvelteKit** + **TailwindCSS** (frontend), **FastAPI** (backend), and **SQLite** / **PostgreSQL** (DB).
-* **Do not change technologies** or introduce new frameworks.
-* All code, comments, and interactions must be in **English**.
+| Component | Technology |
+|-----------|------------|
+| Frontend | SvelteKit + TailwindCSS |
+| Backend | FastAPI (Python 3.13) |
+| Database | SQLite (dev) / PostgreSQL (prod) |
+| Package Manager | UV (Python), pnpm (Node.js) |
+| Containers | Podman with Kube YAML |
+
+**Do not change core technologies** without discussion.
 
 ---
 
 ## Development Workflow
 
-This project is configured with a container-based development environment managed by a set of scripts.
+This project uses **Podman Kube** for containerized development.
 
-*   **Setup**: At the beginning of each session, the `setup.sh` script is run automatically. It builds the necessary Docker images for the development environment.
-*   **Start Environment**: Use `/app/run_dev.sh` to start the frontend and backend services in the background.
-*   **Stop Environment**: Use `/app/stop_dev.sh` to stop the services.
-*   **Run Tests**: Use `/app/run_tests_dev.sh` to run the test suite.
-    *   To run only frontend tests: `/app/run_tests_dev.sh --frontend`
-    *   To run only backend tests: `/app/run_tests_dev.sh --backend`
+### Start Development Environment
+
+```bash
+# First time: Run full setup (installs deps, builds images, starts containers)
+./setup.sh
+
+# Subsequent runs: Just start the dev environment
+./kube/dev.sh
+```
+
+- **Frontend**: http://localhost:5173
+- **Backend**: http://localhost:8000
+
+### Stop Development Environment
+
+```bash
+./kube/teardown.sh
+```
+
+### Run Tests
+
+```bash
+./run_tests.sh
+```
+
+### Database Migrations
+
+```bash
+# Apply migrations
+make migrate
+
+# Create new migration
+make revision m="Description of changes"
+```
 
 ---
 
 ## Code Quality
 
-* **Clarity over cleverness.** Favor simple, maintainable code.
-* **Use Absolute Paths.** All file system operations in tools must use absolute paths (e.g., `/app/src/main.py`) to avoid ambiguity.
-* Follow existing code style and naming conventions.
-* Write docstrings for FastAPI endpoints and Pydantic models.
+- **Clarity over cleverness.** Favor simple, maintainable code.
+- **Absolute paths.** All file operations must use absolute paths.
+- **Follow existing style.** Match naming conventions and patterns.
+- **Document APIs.** Write docstrings for FastAPI endpoints and Pydantic models.
+- **English only.** All code, comments, and commits in English.
 
 ---
 
-## Troubleshooting & Lessons Learned
+## Troubleshooting
 
-This section documents common issues and lessons learned from working on this project.
+### Common Issues
 
-*   **`docker compose` vs `docker-compose`**: The command to run Docker Compose might be `docker compose` (with a space) instead of `docker-compose` (with a hyphen). The scripts in this repository use the version with a space.
-*   **`sudo` for Docker**: The Docker daemon in the development environment requires `sudo`. All `docker` commands in the helper scripts are run with `sudo`.
-*   **Backend Healthchecks**: The backend service in `docker-compose.dev.yml` uses a `curl`-based healthcheck. This requires `curl` to be installed in the backend image.
-*   **`PYTHONPATH` for Tests**: The `tests` service runs in its own container. The `PYTHONPATH` is set explicitly in `docker-compose.dev.yml` to ensure that `pytest` can find the application modules.
-*   **Uvicorn Reload Loop**: The `uvicorn` server with `--reload` can sometimes get stuck in an infinite reload loop. This is often caused by issues with volume mounts and file system notifications. If this happens, you can try restarting the container or temporarily removing the `--reload` flag for debugging.
+| Issue | Solution |
+|-------|----------|
+| Pods won't start | Check `podman pod ps` and pod logs: `podman pod logs -f dnd-westmarches-dev` |
+| Database connection fails | Ensure `DATABASE_URL` is set correctly in `.env` |
+| Hot reload not working | Restart the pod: `./kube/teardown.sh && ./kube/dev.sh` |
+| Permission denied (rootless Podman) | Run `podman system migrate` or check `/etc/subuid` entries |
+
+### Viewing Logs
+
+```bash
+# All pod logs
+podman pod logs -f dnd-westmarches-dev
+
+# Specific container
+podman logs -f dnd-westmarches-dev-backend
+podman logs -f dnd-westmarches-dev-frontend
+```
+
+---
+
+## Project Structure
+
+```
+├── backend/           # FastAPI application
+│   ├── app/           # Main application code
+│   │   └── modules/   # Feature modules (auth, characters, etc.)
+│   └── tests/         # Backend tests
+├── frontend/          # SvelteKit application
+│   └── src/           # Frontend source code
+├── kube/              # Podman Kube manifests and scripts
+├── docs/              # MkDocs documentation
+└── data/              # Persistent data (gitignored)
+```
