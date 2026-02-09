@@ -5,19 +5,22 @@ FROM public.ecr.aws/docker/library/python:3.11-slim
 WORKDIR /app
 
 # Install system dependencies needed for python packages
-# Using the same dependencies as the production build
 RUN apt-get update && apt-get install -y \
     build-essential libpq-dev curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy only the requirements file to leverage Docker layer caching
-COPY backend/requirements.txt .
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy project definition files
+COPY pyproject.toml .
+# COPY uv.lock .
 
-# Add /usr/local/bin to the PATH
-ENV PATH="/usr/local/bin:${PATH}"
+# Install dependencies using uv
+RUN uv sync --frozen --no-cache || uv sync --no-cache
+
+# Add virtual environment to PATH
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Expose the port for the backend server
 EXPOSE 8000
