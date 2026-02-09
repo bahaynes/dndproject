@@ -1,11 +1,19 @@
+export interface GlobalUser {
+    username: string;
+    discord_id: string;
+    avatar_url?: string;
+}
+
 export interface User {
     id: number;
     username: string;
+    discord_id: string; // From backend
     email: string;
     role: 'player' | 'admin';
     is_active: boolean;
     active_character?: Character;
     characters: Character[];
+    avatar_url?: string; // Add this too since backend returns it
 }
 
 export interface Character {

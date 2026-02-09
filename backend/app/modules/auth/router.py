@@ -6,7 +6,7 @@ from typing import Optional
 from ...config import get_settings
 
 from ... import security
-from ...dependencies import get_db, get_current_user
+from ...dependencies import get_db, get_current_user, get_current_user_global
 from . import schemas, service as crud, models
 from ..campaigns import service as campaign_service
 
@@ -37,21 +37,25 @@ async def login_via_discord(
         # Simple validation: allow localhost, *.vercel.app, and the production domain
         allowed_domains = ["localhost", ".vercel.app", "westmarches.bahaynes.com"]
         is_allowed = False
-        try:
-            from urllib.parse import urlparse
-            parsed = urlparse(return_to)
-            hostname = parsed.hostname
-            if hostname:
-                for domain in allowed_domains:
-                    if domain.startswith("."): # wildcard
-                        if hostname.endswith(domain):
+        
+        if return_to.startswith("/"):
+            is_allowed = True
+        else:
+            try:
+                from urllib.parse import urlparse
+                parsed = urlparse(return_to)
+                hostname = parsed.hostname
+                if hostname:
+                    for domain in allowed_domains:
+                        if domain.startswith("."): # wildcard
+                            if hostname.endswith(domain):
+                                is_allowed = True
+                                break
+                        elif hostname == domain:
                             is_allowed = True
                             break
-                    elif hostname == domain:
-                        is_allowed = True
-                        break
-        except Exception:
-            pass
+            except Exception:
+                pass
 
         if is_allowed:
              # Set cookie for 5 minutes
@@ -122,11 +126,12 @@ async def discord_callback(code: str, request: Request, response: Response, db: 
     return_to = request.cookies.get("auth_return_to")
     base_url = settings.FRONTEND_URL
 
-    if return_to:
-        base_url = return_to
-
     # Redirect to frontend with token
     frontend_url = f"{base_url}/login/callback?token={jwt_token}&discord_token={access_token}"
+    
+    if return_to:
+        from urllib.parse import quote
+        frontend_url += f"&next={quote(return_to)}"
 
     redirect = RedirectResponse(url=frontend_url)
     if return_to:
@@ -138,3 +143,15 @@ async def discord_callback(code: str, request: Request, response: Response, db: 
 @router.get("/me", response_model=schemas.User, tags=["Users"])
 async def read_users_me(current_user: models.User = Depends(get_current_user)):
     return current_user
+
+@router.get("/me/global", tags=["Users"])
+async def read_users_me_global(payload: dict = Depends(get_current_user_global)):
+    """
+    Returns the Discord user info from the global token.
+    Used when the user is authenticated with Discord but hasn't selected a campaign yet.
+    """
+    return {
+        "username": payload.get("username"),
+        "discord_id": payload.get("sub"),
+        "avatar_url": payload.get("avatar")
+    }
