@@ -12,12 +12,12 @@ RUN apt-get update && apt-get install -y \
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
-# Copy project definition files
-COPY pyproject.toml .
-# COPY uv.lock .
+# Copy project definition files to a location that survives volume mount
+COPY pyproject.toml /pyproject.toml
 
-# Install dependencies using uv
-RUN uv sync --frozen --no-cache || uv sync --no-cache
+# Pre-install dependencies (will be re-run at startup if volume overwrites .venv)
+WORKDIR /app
+RUN uv sync --no-cache
 
 # Add virtual environment to PATH
 ENV PATH="/app/.venv/bin:$PATH"

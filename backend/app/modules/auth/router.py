@@ -150,8 +150,12 @@ async def read_users_me_global(payload: dict = Depends(get_current_user_global))
     Returns the Discord user info from the global token.
     Used when the user is authenticated with Discord but hasn't selected a campaign yet.
     """
+    discord_id = payload.get("sub")
+    avatar_hash = payload.get("avatar")
+    avatar_url = f"https://cdn.discordapp.com/avatars/{discord_id}/{avatar_hash}.png" if avatar_hash else None
+    
     return {
         "username": payload.get("username"),
-        "discord_id": payload.get("sub"),
-        "avatar_url": payload.get("avatar")
+        "discord_id": discord_id,
+        "avatar_url": avatar_url
     }
