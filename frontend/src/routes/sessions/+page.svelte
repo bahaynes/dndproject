@@ -5,6 +5,7 @@
 	import { get } from 'svelte/store';
 	import { API_BASE_URL } from '$lib/config';
 	import Modal from '$lib/components/Modal.svelte';
+	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 
 	let sessions: GameSessionWithPlayers[] = [];
 	let availableMissions: Mission[] = [];
@@ -128,7 +129,7 @@
 	<h1 class="text-2xl font-bold">Game Sessions</h1>
 
 	{#if error}
-		<div class="alert alert-error my-4">
+		<div class="my-4 alert alert-error">
 			<div class="flex-1">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -153,7 +154,7 @@
 	{:else}
 		<div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
 			{#each sessions as session}
-				<div class="card bg-base-100 border-base-content/10 border shadow-xl">
+				<div class="card border border-base-content/10 bg-base-100 shadow-xl">
 					<div class="card-body">
 						<div class="flex items-start justify-between">
 							<h2 class="card-title text-primary">{session.name}</h2>
@@ -162,18 +163,20 @@
 							</div>
 						</div>
 
-						<p class="text-sm opacity-70">{session.description || 'No description.'}</p>
-						<div class="bg-base-200 my-2 rounded p-2 text-sm">
+						<div class="mb-4 text-sm opacity-70">
+							<MarkdownRenderer content={session.description || 'No description provided.'} />
+						</div>
+						<div class="my-2 rounded bg-base-200 p-2 text-sm">
 							<span class="font-bold">📅 Date:</span>
 							{new Date(session.session_date).toLocaleString()}
 						</div>
 
 						{#if session.status === 'Confirmed' && session.confirmed_mission}
-							<div class="bg-success/10 border-success/20 mt-4 rounded-xl border p-4">
-								<h3 class="text-success font-bold">Confirmed Content</h3>
+							<div class="mt-4 rounded-xl border border-success/20 bg-success/10 p-4">
+								<h3 class="font-bold text-success">Confirmed Content</h3>
 								<p class="text-lg font-[var(--font-cinzel)]">{session.confirmed_mission.name}</p>
 								{#if session.confirmed_mission.tier}
-									<div class="badge badge-sm badge-outline mt-1">
+									<div class="mt-1 badge badge-outline badge-sm">
 										{session.confirmed_mission.tier}
 									</div>
 								{/if}
@@ -181,7 +184,7 @@
 									<span class="text-xs font-bold uppercase opacity-50">Heroes Confirmed</span>
 									<div class="mt-1 flex flex-wrap gap-1">
 										{#each session.players as player}
-											<div class="badge badge-sm badge-ghost">{player.name}</div>
+											<div class="badge badge-ghost badge-sm">{player.name}</div>
 										{/each}
 									</div>
 								</div>
@@ -192,7 +195,7 @@
 									<h3 class="text-xs font-bold uppercase opacity-50">Proposals</h3>
 									{#if session.status !== 'Completed' && session.status !== 'Cancelled'}
 										<button
-											class="btn btn-xs btn-ghost"
+											class="btn btn-ghost btn-xs"
 											on:click={() => {
 												selectedSessionId = session.id;
 												showProposeModal = true;
@@ -202,14 +205,14 @@
 								</div>
 
 								{#each session.proposals as proposal}
-									<div class="bg-base-200/50 border-base-content/5 mb-4 rounded-xl border p-3">
+									<div class="mb-4 rounded-xl border border-base-content/5 bg-base-200/50 p-3">
 										<div class="flex items-center justify-between">
 											<span class="font-bold">{proposal.mission.name}</span>
 											<span class="text-xs">{proposal.backers.length} / {session.min_players}</span>
 										</div>
 
 										<progress
-											class="progress progress-primary mt-2 w-full"
+											class="progress mt-2 w-full progress-primary"
 											value={proposal.backers.length}
 											max={session.min_players}
 										></progress>
@@ -217,9 +220,9 @@
 										<div class="mt-3 flex items-center justify-between">
 											<div class="flex -space-x-2">
 												{#each proposal.backers as backer}
-													<div class="avatar placeholder">
+													<div class="placeholder avatar">
 														<div
-															class="bg-neutral text-neutral-content border-base-100 h-6 w-6 rounded-full border-2"
+															class="h-6 w-6 rounded-full border-2 border-base-100 bg-neutral text-neutral-content"
 														>
 															<span class="text-[8px]">{backer.name.charAt(0)}</span>
 														</div>
@@ -264,7 +267,7 @@
 		<select
 			id="mission-select"
 			bind:value={selectedMissionId}
-			class="select select-bordered w-full"
+			class="select-bordered select w-full"
 		>
 			<option value={null}>-- Pick a Mission --</option>
 			{#each availableMissions as mission}
@@ -284,7 +287,7 @@
 		</p>
 	</div>
 	<div slot="action">
-		<button class="btn btn-primary w-full" on:click={proposeMission} disabled={!selectedMissionId}
+		<button class="btn w-full btn-primary" on:click={proposeMission} disabled={!selectedMissionId}
 			>Propose Now</button
 		>
 	</div>

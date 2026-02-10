@@ -7,6 +7,7 @@
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import OneshotGenerator from '$lib/components/OneshotGenerator.svelte';
+	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 	import { goto } from '$app/navigation';
 
 	let missions: Mission[] = [];
@@ -20,6 +21,7 @@
 	let editingMissionId: number | null = null;
 	let mName = '';
 	let mDescription = '';
+	let mDescriptionTab: 'write' | 'preview' = 'write';
 	let mStatus = 'Available';
 	let mTier = '';
 	let mRegion = '';
@@ -45,6 +47,7 @@
 		mRewards = [];
 		mOneshotId = null;
 		showOneshotGenerator = false;
+		mDescriptionTab = 'write';
 		showCreateMission = true;
 	}
 
@@ -66,6 +69,7 @@
 		}));
 		mOneshotId = (mission as any).oneshot_id || null;
 		showOneshotGenerator = false;
+		mDescriptionTab = 'write';
 		showCreateMission = true;
 	}
 
@@ -213,7 +217,9 @@
 									<div class="badge badge-sm">{mission.status}</div>
 									<span class="text-xs opacity-50">{mission.players.length} Heroes Enrolled</span>
 								</div>
-								<p class="mt-4 text-sm opacity-70">{mission.description || 'No description.'}</p>
+								<div class="mt-4 text-sm opacity-70">
+									<MarkdownRenderer content={mission.description || 'No description.'} />
+								</div>
 							</div>
 
 							<div class="flex min-w-[200px] flex-col gap-2">
@@ -339,7 +345,21 @@
 		{/if}
 		<div>
 			<div class="mb-2 flex items-center justify-between">
-				<label class="label"><span class="label-text">Briefing / Description</span></label>
+				<div class="flex items-center gap-4">
+					<label class="label"><span class="label-text">Briefing / Description</span></label>
+					<div class="tabs-boxed tabs tabs-xs">
+						<button
+							type="button"
+							class="tab {mDescriptionTab === 'write' ? 'tab-active' : ''}"
+							on:click={() => (mDescriptionTab = 'write')}>Write</button
+						>
+						<button
+							type="button"
+							class="tab {mDescriptionTab === 'preview' ? 'tab-active' : ''}"
+							on:click={() => (mDescriptionTab = 'preview')}>Preview</button
+						>
+					</div>
+				</div>
 				<button
 					type="button"
 					class="btn btn-ghost btn-xs"
@@ -348,7 +368,17 @@
 					{showOneshotGenerator ? '✕ Close' : '🎲 AI Generator'}
 				</button>
 			</div>
-			<textarea bind:value={mDescription} class="textarea-bordered textarea h-24 w-full"></textarea>
+			{#if mDescriptionTab === 'write'}
+				<textarea
+					bind:value={mDescription}
+					class="textarea-bordered textarea h-32 w-full font-mono text-sm"
+					placeholder="Describe the objective, threats, and flavor..."
+				></textarea>
+			{:else}
+				<div class="min-h-32 rounded-lg border border-base-content/10 bg-base-300/30 p-4">
+					<MarkdownRenderer content={mDescription || '*No content to preview*'} />
+				</div>
+			{/if}
 		</div>
 
 		{#if showOneshotGenerator}
