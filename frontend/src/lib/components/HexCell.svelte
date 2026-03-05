@@ -14,6 +14,7 @@
 	export let hexState: string = 'wilderness';
 	export let controllingFaction: string | null = null;
 	export let playerNotesCount: number = 0;
+	export let adminMode: boolean = false;
 
 	const dispatch = createEventDispatcher();
 
@@ -85,8 +86,9 @@
 >
 	<polygon
 		{points}
-		fill={isDiscovered ? getColor(terrain) : '#1a1a1a'}
-		stroke={isSelected ? '#fff' : '#333'}
+		fill={isDiscovered || adminMode ? getColor(terrain) : '#1a1a1a'}
+		opacity={adminMode && !isDiscovered ? 0.45 : 1}
+		stroke={isSelected ? '#fff' : '#444'}
 		stroke-width={isSelected ? 3 : 1}
 		class={isSelected ? 'selected-glow' : ''}
 	/>

@@ -379,6 +379,7 @@
 				hexSize={activeMap.hex_size}
 				{selectedHex}
 				showCoords={true}
+				adminMode={true}
 				on:click={handleHexClick}
 			/>
 

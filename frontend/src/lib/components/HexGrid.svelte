@@ -19,6 +19,7 @@
 	export let selectedHex: HexCoord | null = null;
 	export let showCoords: boolean = false;
 	export let showLegend: boolean = true;
+	export let adminMode: boolean = false;
 
 	let viewBox = { x: -500, y: -500, w: 2000, h: 1200 };
 	let isDragging = false;
@@ -108,6 +109,7 @@
 					controllingFaction={hex.controlling_faction || null}
 					playerNotesCount={hex.player_notes?.length || 0}
 					{showCoords}
+					{adminMode}
 					on:click
 				/>
 			{/each}

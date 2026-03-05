@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional, List, Any
 from ..missions.schemas import Mission
 
@@ -35,6 +35,11 @@ class Hex(HexBase):
     hours_to_cross: Optional[float] = None
     player_notes: List[Any] = []
     linked_mission: Optional[Mission] = None
+
+    @field_validator('player_notes', mode='before')
+    @classmethod
+    def coerce_none_to_list(cls, v: Any) -> List[Any]:
+        return v if v is not None else []
 
     class Config:
         from_attributes = True
