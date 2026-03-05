@@ -16,6 +16,10 @@
 	let selectedSessionId: number | null = null;
 	let selectedMissionId: number | null = null;
 
+	// Field report state
+	let fieldReportDraft: Record<number, string> = {};
+	let submittingFieldReport: number | null = null;
+
 	// Reactive update for character ID
 	$: myCharacterId = $auth.user?.active_character?.id;
 
@@ -91,6 +95,33 @@
 			await fetchSessions();
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';
+		}
+	}
+
+	async function submitFieldReport(sessionId: number) {
+		const text = fieldReportDraft[sessionId];
+		if (!text?.trim()) return;
+		submittingFieldReport = sessionId;
+		error = null;
+		try {
+			const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/field-report`, {
+				method: 'PATCH',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: `Bearer ${get(auth).token}`
+				},
+				body: JSON.stringify({ field_report: text })
+			});
+			if (!response.ok) {
+				const d = await response.json();
+				throw new Error(d.detail || 'Failed to submit field report');
+			}
+			fieldReportDraft[sessionId] = '';
+			await fetchSessions();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'An error occurred';
+		} finally {
+			submittingFieldReport = null;
 		}
 	}
 
@@ -171,7 +202,36 @@
 							{new Date(session.session_date).toLocaleString()}
 						</div>
 
-						{#if session.status === 'Confirmed' && session.confirmed_mission}
+						{#if session.status === 'Completed'}
+							<!-- Dispatch from the Mission Board -->
+							{#if session.field_report}
+								<div class="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+									<div class="mb-2 flex items-center gap-2">
+										<span class="text-xs font-bold uppercase tracking-widest opacity-60">Dispatch from the Field</span>
+									</div>
+									<div class="prose prose-sm max-w-none opacity-90 font-serif">
+										<MarkdownRenderer content={session.field_report} />
+									</div>
+								</div>
+							{:else if session.players.some((p) => p.id === myCharacterId)}
+								<div class="mt-4 rounded-xl border border-base-content/10 bg-base-200/50 p-4">
+									<p class="mb-2 text-xs font-bold uppercase opacity-50">File a Field Report</p>
+									<textarea
+										class="textarea textarea-bordered w-full text-sm"
+										rows="4"
+										placeholder="Write your dispatch from the mission, in the voice of your character..."
+										bind:value={fieldReportDraft[session.id]}
+									></textarea>
+									<button
+										class="btn btn-sm btn-primary mt-2 w-full"
+										disabled={!fieldReportDraft[session.id]?.trim() || submittingFieldReport === session.id}
+										on:click={() => submitFieldReport(session.id)}
+									>
+										{submittingFieldReport === session.id ? 'Submitting...' : 'Post to the Board'}
+									</button>
+								</div>
+							{/if}
+						{:else if session.status === 'Confirmed' && session.confirmed_mission}
 							<div class="mt-4 rounded-xl border border-success/20 bg-success/10 p-4">
 								<h3 class="font-bold text-success">Confirmed Content</h3>
 								<p class="text-lg font-[var(--font-cinzel)]">{session.confirmed_mission.name}</p>

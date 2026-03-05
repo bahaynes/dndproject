@@ -9,6 +9,9 @@ from .prompts.adventure import ADVENTURE_SYSTEM_PROMPT
 from ...llm_service import llm_service
 from ..campaigns.models import Campaign
 from ..missions.models import Mission
+from ..factions.models import FactionReputation
+from ..maps.models import HexMap, Hex
+from ..sessions.models import GameSession
 
 logger = logging.getLogger(__name__)
 
@@ -66,38 +69,93 @@ class OneShotService:
             self.db.commit()
 
     def _aggregate_context(self, campaign_id: int, params: dict) -> str:
-        """Collect relevant campaign data for the LLM prompt."""
+        """Collect Aphtharton-specific campaign data for the LLM prompt."""
         campaign = self.db.query(Campaign).filter(Campaign.id == campaign_id).first()
-        context_parts = [f"Campaign Name: {campaign.name}"]
-        
-        # Add selected missions if any
+        context_parts = [f"Campaign: {campaign.name}"]
+
+        # Revelation layer
+        revelation_layer = params.get("revelation_layer", "early")
+        layer_labels = {"early": "Layer One — The Frame Shifts", "mid": "Layer Two — The Council Surfaces", "late": "Layer Three — The Thing Speaks"}
+        context_parts.append(f"Revelation Layer: {layer_labels.get(revelation_layer, revelation_layer)}")
+
+        # Faction reputation levels
+        reputations = self.db.query(FactionReputation).filter(
+            FactionReputation.campaign_id == campaign_id
+        ).all()
+        if reputations:
+            rep_lines = [f"  - {r.faction_name}: {r.level:+d}" for r in reputations]
+            context_parts.append("Current Faction Standing:\n" + "\n".join(rep_lines))
+
+        # Mission inspirations
         mission_ids = params.get("mission_ids", [])
         if mission_ids:
             missions = self.db.query(Mission).filter(Mission.id.in_(mission_ids)).all()
             for m in missions:
-                context_parts.append(f"Mission Inspiration: {m.name} - {m.description}")
-        
-        # Add region info
+                context_parts.append(f"Mission Seed: {m.name} — {m.description or 'No description'}")
+
+        # Region focus
         region = params.get("hex_region")
         if region:
             context_parts.append(f"Region Focus: {region}")
-            
-        return "\n".join(context_parts)
+
+        # Discovered hexes with state/faction
+        hex_map = self.db.query(HexMap).filter(HexMap.campaign_id == campaign_id).first()
+        if hex_map:
+            discovered = self.db.query(Hex).filter(
+                Hex.map_id == hex_map.id,
+                Hex.is_discovered == True  # noqa: E712
+            ).all()
+            if discovered:
+                hex_lines = []
+                for h in discovered:
+                    line = f"  - ({h.q},{h.r}) {h.terrain}"
+                    if h.hex_state and h.hex_state != "wilderness":
+                        line += f" [{h.hex_state.replace('_', ' ')}]"
+                    if h.controlling_faction:
+                        line += f" controlled by {h.controlling_faction}"
+                    if h.linked_location_name:
+                        line += f" — {h.linked_location_name}"
+                    notes = h.player_notes or []
+                    if notes:
+                        line += f" ({len(notes)} player note(s))"
+                    hex_lines.append(line)
+                context_parts.append("Known Hex Map (discovered hexes):\n" + "\n".join(hex_lines[:30]))
+
+        # Last 3 completed session field reports
+        recent_sessions = (
+            self.db.query(GameSession)
+            .filter(
+                GameSession.campaign_id == campaign_id,
+                GameSession.status == "Completed",
+                GameSession.field_report != None  # noqa: E711
+            )
+            .order_by(GameSession.session_date.desc())
+            .limit(3)
+            .all()
+        )
+        if recent_sessions:
+            report_parts = []
+            for s in recent_sessions:
+                report_parts.append(f"  [{s.name}]: {s.field_report}")
+            context_parts.append("Recent Field Reports from the Board:\n" + "\n".join(report_parts))
+
+        return "\n\n".join(context_parts)
 
     async def _generate_adventure_outline(self, context: str, params: dict) -> dict:
         """Call LLM service to generate the 3-act structure."""
         user_prompt = f"""
-        CONTEXT:
-        {context}
+CAMPAIGN CONTEXT:
+{context}
 
-        PARAMETERS:
-        - Party Size: {params.get('party_size')}
-        - Level: {params.get('party_level')}
-        - Duration: {params.get('duration_hours')} hours
-        - Tone: {params.get('tone')}
-        
-        Generate a 3-Act adventure outline now.
-        """
+PARAMETERS:
+- Party Size: {params.get('party_size')}
+- Level: {params.get('party_level')}
+- Duration: {params.get('duration_hours')} hours
+- Tone: {params.get('tone')}
+- Revelation Layer: {params.get('revelation_layer', 'early')}
+
+Generate a 3-Act adventure outline for The Inheritors now. The session must be framed as a question, not an objective. Use proper Aphtharton nouns. Match monster tiers and revelation depth to the revelation layer provided.
+"""
         
         # Using the schema logic purely for prompt instruction in Phase 1
         # In future phases we might pass the schema object directly if LLM library supports it

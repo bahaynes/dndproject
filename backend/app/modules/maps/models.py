@@ -1,6 +1,13 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, UniqueConstraint, JSON
 from sqlalchemy.orm import relationship
 from ...database import Base
+
+HEX_STATE_HOURS: dict = {
+    "claimed_developed": 0.5,
+    "friendly": 1.0,
+    "wilderness": 2.0,
+    "contested": 3.0,
+}
 
 class HexMap(Base):
     __tablename__ = "hex_maps"
@@ -33,7 +40,14 @@ class Hex(Base):
     terrain = Column(String, default="plains")
     is_discovered = Column(Boolean, default=False)
     notes = Column(String, nullable=True) # DM Notes
-    
+    hex_state = Column(String, default="wilderness")  # claimed_developed | friendly | wilderness | contested | awakened
+    controlling_faction = Column(String, nullable=True)  # Inheritors | Kathedral | Vastarei
+    player_notes = Column(JSON, default=list)
+
+    @property
+    def hours_to_cross(self):
+        return HEX_STATE_HOURS.get(self.hex_state)  # None for "awakened" (DM-set variable)
+
     # Content
     linked_mission_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
     linked_location_name = Column(String, nullable=True)

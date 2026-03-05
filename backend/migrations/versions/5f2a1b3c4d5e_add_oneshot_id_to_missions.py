@@ -19,12 +19,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Add oneshot_id column to missions table
+    # Add oneshot_id column to missions table.
+    # FK constraint omitted — SQLite does not support ALTER TABLE ADD CONSTRAINT.
+    # The relationship is enforced at the ORM level.
     op.add_column('missions', sa.Column('oneshot_id', sa.Integer(), nullable=True))
-    op.create_foreign_key('fk_missions_oneshot_id', 'missions', 'generated_oneshots', ['oneshot_id'], ['id'])
 
 
 def downgrade() -> None:
-    # Remove oneshot_id column from missions table
-    op.drop_constraint('fk_missions_oneshot_id', 'missions', type_='foreignkey')
     op.drop_column('missions', 'oneshot_id')

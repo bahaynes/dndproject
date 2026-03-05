@@ -1,4 +1,6 @@
 from sqlalchemy.orm import Session
+from datetime import datetime
+from typing import Optional
 from . import models, schemas
 
 def get_maps(db: Session, campaign_id: int):
@@ -70,6 +72,33 @@ def update_hex(db: Session, map_id: int, q: int, r: int, hex_update: schemas.Hex
     db.commit()
     db.refresh(db_hex)
     return db_hex
+
+def add_player_note(
+    db: Session,
+    map_id: int,
+    q: int,
+    r: int,
+    character_id: int,
+    text: str,
+    session_id: Optional[int] = None
+):
+    db_hex = get_hex(db, map_id, q, r)
+    if not db_hex:
+        return None, "Hex not found"
+    if not db_hex.is_discovered:
+        return None, "Cannot add notes to undiscovered hexes"
+
+    notes = list(db_hex.player_notes or [])
+    notes.append({
+        "author_character_id": character_id,
+        "text": text,
+        "session_id": session_id,
+        "created_at": datetime.utcnow().isoformat()
+    })
+    db_hex.player_notes = notes
+    db.commit()
+    db.refresh(db_hex)
+    return db_hex, None
 
 def bulk_update_hexes(db: Session, map_id: int, hexes: list[schemas.HexBase]):
     # Optimized implementation would use bulk_save_objects or raw SQL

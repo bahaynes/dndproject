@@ -141,6 +141,26 @@ def veto_proposal(
         raise HTTPException(status_code=400, detail=error)
     return proposal
 
+@router.patch("/{session_id}/field-report", response_model=schemas.GameSessionWithPlayers, tags=["Game Sessions"])
+def submit_field_report(
+    session_id: int,
+    report: schemas.FieldReportUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    db_session = crud.get_game_session(db, session_id=session_id)
+    if not db_session or db_session.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Game session not found")
+
+    character = current_user.active_character
+    if not character:
+        raise HTTPException(status_code=400, detail="User has no active character selected")
+
+    if character not in db_session.players:
+        raise HTTPException(status_code=403, detail="Only players who participated in this session can submit a field report")
+
+    return crud.update_field_report(db, session=db_session, field_report=report.field_report)
+
 @router.delete("/{session_id}/kick/{character_id}", response_model=schemas.GameSessionWithPlayers, tags=["Admin"])
 def kick_player(
     session_id: int,

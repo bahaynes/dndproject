@@ -10,14 +10,21 @@
 
 	let generating = false;
 	let error = '';
-	let generationId: string | null = null;
+	let jobId: number | null = null;
 	let pollInterval: number | null = null;
 	let progress = '';
+	let revelationLayer: 'early' | 'mid' | 'late' = 'early';
+
+	const layerLabels = {
+		early: 'Early — The Frame Shifts',
+		mid: 'Mid — The Council Surfaces',
+		late: 'Late — The Thing Speaks'
+	};
 
 	async function generateOneshot() {
 		generating = true;
 		error = '';
-		progress = 'Initializing generation...';
+		progress = 'Initiating generation...';
 
 		try {
 			const res = await fetch(`${API_BASE_URL}/oneshot/generate`, {
@@ -27,9 +34,12 @@
 					Authorization: `Bearer ${get(auth).token}`
 				},
 				body: JSON.stringify({
-					tier: missionTier || 'Tier 1',
-					region: missionRegion || 'Unknown Region',
-					theme: 'adventure'
+					party_size: 4,
+					party_level: 3,
+					duration_hours: 4.0,
+					tone: 'heroic',
+					hex_region: missionRegion || undefined,
+					revelation_layer: revelationLayer
 				})
 			});
 
@@ -39,10 +49,9 @@
 			}
 
 			const data = await res.json();
-			generationId = data.generation_id;
+			jobId = data.id;
 			progress = 'Generation started...';
 
-			// Start polling for status
 			startPolling();
 		} catch (e: any) {
 			error = e.message || 'Failed to generate one-shot';
@@ -54,10 +63,10 @@
 		if (pollInterval) clearInterval(pollInterval);
 
 		pollInterval = window.setInterval(async () => {
-			if (!generationId) return;
+			if (!jobId) return;
 
 			try {
-				const res = await fetch(`${API_BASE_URL}/oneshot/status/${generationId}`, {
+				const res = await fetch(`${API_BASE_URL}/oneshot/${jobId}`, {
 					headers: { Authorization: `Bearer ${get(auth).token}` }
 				});
 
@@ -69,10 +78,10 @@
 				if (data.status === 'completed') {
 					stopPolling();
 					generating = false;
-					onOneshotGenerated(data.oneshot_id, data.narrative || 'Generated adventure');
+					onOneshotGenerated(data.id, data.summary || 'Generated adventure');
 				} else if (data.status === 'failed') {
 					stopPolling();
-					error = data.error || 'Generation failed';
+					error = 'Generation failed';
 					generating = false;
 				}
 			} catch (e: any) {
@@ -80,7 +89,7 @@
 				stopPolling();
 				generating = false;
 			}
-		}, 2000); // Poll every 2 seconds
+		}, 2000);
 	}
 
 	function stopPolling() {
@@ -93,23 +102,40 @@
 	function cancel() {
 		stopPolling();
 		generating = false;
-		generationId = null;
+		jobId = null;
 		progress = '';
 	}
 </script>
 
 <div class="rounded-lg border border-base-300 bg-base-100 p-4">
 	<div class="mb-3 flex items-center justify-between">
-		<h4 class="text-sm font-bold">🎲 AI One-Shot Generator</h4>
+		<h4 class="text-sm font-bold">AI One-Shot Generator</h4>
 		{#if generating}
 			<button class="btn btn-xs btn-ghost" on:click={cancel}>Cancel</button>
 		{/if}
 	</div>
 
 	<p class="mb-4 text-xs opacity-70">
-		Generate an AI-powered adventure narrative based on the mission tier and region. This will create
-		a detailed one-shot adventure that can be exported to FoundryVTT.
+		Generate an Aphtharton adventure framed as a question for the Inheritors. Grounded in the
+		campaign's faction state and field reports.
 	</p>
+
+	{#if !generating}
+		<div class="form-control mb-4">
+			<label class="label" for="revelation-layer">
+				<span class="label-text text-xs">Campaign Layer</span>
+			</label>
+			<select
+				id="revelation-layer"
+				bind:value={revelationLayer}
+				class="select select-bordered select-sm w-full"
+			>
+				{#each Object.entries(layerLabels) as [value, label]}
+					<option {value}>{label}</option>
+				{/each}
+			</select>
+		</div>
+	{/if}
 
 	{#if error}
 		<div class="alert alert-error mb-4 text-xs">

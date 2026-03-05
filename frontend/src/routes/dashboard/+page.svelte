@@ -3,6 +3,7 @@
     import type { User } from '$lib/auth';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
+    import FactionReputationTracker from '$lib/components/FactionReputationTracker.svelte';
 
     let user: User | null = null;
     let campaign = null;
@@ -54,7 +55,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="bg-white rounded-lg shadow p-6">
                 <h2 class="text-xl font-semibold mb-4">Characters & Inventory</h2>
                 <ul class="space-y-2">
@@ -70,6 +71,10 @@
                      <li><a href="/sessions" class="block p-2 hover:bg-gray-50 rounded text-indigo-600 font-medium">Game Sessions</a></li>
                      <li><a href="/store" class="block p-2 hover:bg-gray-50 rounded text-indigo-600 font-medium">Store</a></li>
                 </ul>
+            </div>
+
+            <div class="bg-base-100 rounded-lg shadow p-6 border border-base-content/10">
+                <FactionReputationTracker isAdmin={user.role === 'admin'} />
             </div>
         </div>
 

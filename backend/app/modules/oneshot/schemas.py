@@ -30,13 +30,14 @@ class OneShotGenerateRequest(BaseModel):
     # Context
     mission_ids: List[int] = []
     hex_region: Optional[str] = None
-    
+    revelation_layer: str = "early"  # early | mid | late
+
     # Parameters
     party_size: int = 4
     party_level: int = 3
     duration_hours: float = 4.0
     tone: str = "heroic"  # heroic, grimdark, comedic, etc.
-    
+
     # Feature flags for phases
     generate_dungeon: bool = False
     generate_visuals: bool = False

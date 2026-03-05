@@ -10,6 +10,7 @@ from .modules.items import models as item_models
 from .modules.missions import models as mission_models
 from .modules.sessions import models as session_models
 from .modules.maps import models as map_models
+from .modules.factions import models as faction_models
 
 # Import routers
 from .modules.auth import router as auth_router
@@ -23,6 +24,7 @@ from .modules.sessions import router as session_router
 from .modules.maps import router as map_router
 from .modules.admin import router as admin_router
 from .modules.oneshot import router as oneshot_router
+from .modules.factions import router as faction_router
 
 # Create tables
 Base.metadata.create_all(bind=engine)
@@ -68,3 +70,4 @@ app.include_router(session_router.router, prefix="/api/sessions")
 app.include_router(map_router.router, prefix="/api/maps")
 app.include_router(admin_router.router, prefix="/api/admin")
 app.include_router(oneshot_router.router, prefix="/api/oneshot")
+app.include_router(faction_router.router, prefix="/api/factions")

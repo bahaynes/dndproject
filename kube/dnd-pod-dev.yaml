@@ -36,6 +36,9 @@ spec:
       image: localhost/dnd-frontend-dev:latest
       # Ensure metadata is generated and dependencies are ready when volume is mounted
       command: ["sh", "-c", "pnpm install && pnpm svelte-kit sync && pnpm run dev --host"]
+      env:
+        - name: CI
+          value: "true"
       ports:
         - containerPort: 5173
           hostPort: 5173

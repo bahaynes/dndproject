@@ -119,6 +119,7 @@ export interface GameSessionWithPlayers {
     session_date: string;
     status: string;
     after_action_report?: string;
+    field_report?: string;
     min_players: number;
     max_players: number;
     players: CharacterInGameSession[];

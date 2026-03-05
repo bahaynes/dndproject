@@ -29,6 +29,12 @@ def remove_character_from_game_session(db: Session, session: models.GameSession,
     db.refresh(session)
     return session
 
+def update_field_report(db: Session, session: models.GameSession, field_report: str):
+    session.field_report = field_report
+    db.commit()
+    db.refresh(session)
+    return session
+
 def update_game_session(db: Session, session: models.GameSession, session_update: schemas.GameSessionCreate):
     update_data = session_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
