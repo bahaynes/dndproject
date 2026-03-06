@@ -53,14 +53,18 @@ def create_mission(db: Session, mission: schemas.MissionCreate, campaign_id: int
         prerequisite_id=mission.prerequisite_id
     )
     db.add(db_mission)
-    db.commit()
+    db.flush()
     # Now that the mission has an ID, create the rewards
+    rewards = []
     for reward_in in mission.rewards:
         db_reward = models.MissionReward(
             mission_id=db_mission.id,
             **reward_in.model_dump()
         )
-        db.add(db_reward)
+        rewards.append(db_reward)
+
+    if rewards:
+        db.add_all(rewards)
     db.commit()
     db.refresh(db_mission)
     return db_mission

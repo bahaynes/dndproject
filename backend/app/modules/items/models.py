@@ -11,7 +11,7 @@ class Item(Base):
     description = Column(String, nullable=True)
 
     # Scoping
-    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False, index=True)
     campaign = relationship("Campaign", back_populates="items")
 
     inventory_items = relationship("InventoryItem", back_populates="item")

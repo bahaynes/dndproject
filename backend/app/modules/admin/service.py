@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from ..auth import models as auth_models
 from ..characters import models as char_models
 from ..items import models as item_models
@@ -7,7 +7,7 @@ from ..sessions import models as session_models
 from . import schemas
 
 def export_game_data(db: Session) -> schemas.GameDataExport:
-    users = db.query(auth_models.User).all()
+    users = db.query(auth_models.User).options(joinedload(auth_models.User.campaign)).all()
     items = db.query(item_models.Item).all()
     store_items = db.query(item_models.StoreItem).all()
     missions = db.query(mission_models.Mission).all()

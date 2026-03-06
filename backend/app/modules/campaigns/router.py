@@ -25,15 +25,11 @@ async def get_my_campaigns(
     """
     discord_id = current_user_payload.get("sub")
 
-    # This query joins Users and Campaigns
-    # Find all user records for this discord_id
+    # Efficiently query for campaigns by joining User and Campaign tables
     from ..auth import models as auth_models
-    user_records = db.query(auth_models.User).filter(auth_models.User.discord_id == discord_id).all()
+    from . import models as campaign_models
 
-    campaigns = []
-    for record in user_records:
-        if record.campaign:
-            campaigns.append(record.campaign)
+    campaigns = db.query(campaign_models.Campaign).join(auth_models.User).filter(auth_models.User.discord_id == discord_id).all()
 
     return campaigns
 
@@ -87,22 +83,18 @@ async def get_available_campaigns(
     user_guilds = response.json()
     user_guild_ids = [g["id"] for g in user_guilds]
 
-    # 2. Get all active campaigns from DB
-    all_campaigns = crud.get_all_campaigns(db)
+    # 2. Get campaigns from DB that match the user's guilds
+    potential_campaigns = crud.get_campaigns_by_guild_ids(db, user_guild_ids)
 
-    # 3. Filter: Campaign Must be in User's Guilds AND User must NOT be in Campaign DB
+    # 3. Filter out campaigns the user has already joined
     discord_id = current_user_payload.get("sub")
+    from ..auth import models as auth_models
     existing_memberships = db.query(auth_models.User).filter(auth_models.User.discord_id == discord_id).all()
-    joined_campaign_ids = [u.campaign_id for u in existing_memberships]
+    joined_campaign_ids = {u.campaign_id for u in existing_memberships}
 
-    available = []
-    for campaign in all_campaigns:
-        if campaign.discord_guild_id in user_guild_ids and campaign.id not in joined_campaign_ids:
-            available.append(campaign)
+    available = [c for c in potential_campaigns if c.id not in joined_campaign_ids]
 
     return available
-
-from ..auth import models as auth_models # Import here to avoid early import issues if any
 
 @router.post("/join", tags=["Campaigns"])
 async def join_campaign(
@@ -233,6 +225,7 @@ async def get_admin_discord_guilds(
         raise HTTPException(status_code=403, detail="You are not authorized to view admin guilds.")
 
     async with httpx.AsyncClient() as client:
+        # Use httpx to make Discord API calls
         response = await client.get(
             "https://discord.com/api/users/@me/guilds",
             headers={"Authorization": f"Bearer {discord_token}"}
@@ -244,11 +237,6 @@ async def get_admin_discord_guilds(
     guilds = response.json()
 
     # Filter for Manage Guild permission (0x20)
-    # Permissions are a bit string.
-    # We can simplified and just return all, or do the bitwise check.
-    # Javascript handles bitwise fine, but let's do it here.
-    # Permission integer is in "permissions" (string).
-
     admin_guilds = []
     for g in guilds:
         perms = int(g.get("permissions", "0"))

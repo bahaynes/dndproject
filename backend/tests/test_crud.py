@@ -163,9 +163,6 @@ def test_store_crud(db_session, campaign):
     assert retrieved_store_item.id == db_store_item.id
     assert retrieved_store_item.price == 100
 
-    # Updated get_store_items to require campaign_id (or I added get_store_items_by_campaign)
-    # The service might have just one method or I updated signature?
-    # I updated get_store_items_by_campaign in previous step.
     store_items = item_service.get_store_items_by_campaign(db_session, campaign_id=campaign.id)
     assert len(store_items) == 1
 
