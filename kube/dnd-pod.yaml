@@ -17,11 +17,48 @@ spec:
           value: "/app"
         - name: MODE
           value: "prod"
+        - name: ONESHOT_OUTPUT_DIR
+          value: "/data/oneshots"
+        - name: LLM_API_BASE
+          value: "https://openrouter.ai/api/v1"
+        - name: LLM_MODEL
+          value: "deepseek/deepseek-chat"
+        - name: LLM_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-api-key
+              key: token
+        - name: PORT
+          value: "8000"
+        - name: DISCORD_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: discord-client-id
+              key: id
+        - name: DISCORD_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: discord-client-secret
+              key: secret
+        - name: DISCORD_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: discord-bot-token
+              key: token
+        - name: DISCORD_REDIRECT_URI
+          value: "http://localhost:9080/api/auth/discord/callback"
+        - name: ADMIN_DISCORD_IDS
+          valueFrom:
+            secretKeyRef:
+              name: admin-discord-ids
+              key: ids
+      imagePullPolicy: Never
       volumeMounts:
         - name: backend-data
           mountPath: /data
     - name: frontend
       image: localhost/dnd-frontend:latest
+      imagePullPolicy: Never
       ports:
         - containerPort: 80
           hostPort: 9080

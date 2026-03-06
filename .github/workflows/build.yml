@@ -18,16 +18,17 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.13'
-          cache: 'pip'
+
+      - name: Install uv
+        run: pip install uv
 
       - name: Install dependencies
-        run: |
-          pip install -r backend/requirements.txt
-          pip install pytest httpx
+        working-directory: backend
+        run: uv sync --group dev
 
       - name: Run tests
-        run: |
-          PYTHONPATH=backend python -m pytest backend/tests
+        working-directory: backend
+        run: uv run pytest tests/
 
   test-frontend-native:
     name: Frontend Tests (Native)

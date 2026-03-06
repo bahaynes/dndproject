@@ -5,6 +5,7 @@
 	import { API_BASE_URL } from '$lib/config';
 	import type { Mission } from '$lib/types';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 
 	let missions: Mission[] = [];
 	let loading = true;
@@ -70,13 +71,13 @@
 </script>
 
 <div class="container mx-auto max-w-5xl p-4">
-	<div class="border-base-content/10 mb-8 flex items-center justify-between border-b pb-4">
-		<h1 class="text-primary text-4xl font-[var(--font-cinzel)] font-bold">Mission Board</h1>
+	<div class="mb-8 flex items-center justify-between border-b border-base-content/10 pb-4">
+		<h1 class="text-4xl font-[var(--font-cinzel)] font-bold text-primary">Mission Board</h1>
 		<button class="btn btn-ghost btn-sm" on:click={fetchMissions}>Refresh</button>
 	</div>
 
 	{#if error}
-		<div class="alert alert-error mb-6 shadow-lg">
+		<div class="mb-6 alert alert-error shadow-lg">
 			<div>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -105,7 +106,7 @@
 	{:else}
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
 			{#each missions as mission}
-				<div class="card bg-base-100 border-base-content/10 flex h-full flex-col border shadow-xl">
+				<div class="card flex h-full flex-col border border-base-content/10 bg-base-100 shadow-xl">
 					<div class="card-body">
 						<div class="mb-2 flex items-start justify-between">
 							<h2 class="card-title font-[var(--font-cinzel)]">{mission.name}</h2>
@@ -118,12 +119,12 @@
 							</div>
 						</div>
 
-						<p class="mb-4 line-clamp-3 text-sm">
-							{mission.description || 'No mission brief available.'}
-						</p>
+						<div class="mb-4 line-clamp-3 text-sm">
+							<MarkdownRenderer content={mission.description || 'No mission brief available.'} />
+						</div>
 
 						<!-- Rewards section -->
-						<div class="bg-base-200 mb-4 rounded-lg p-3">
+						<div class="mb-4 rounded-lg bg-base-200 p-3">
 							<span class="mb-2 block text-[10px] font-bold uppercase opacity-50"
 								>Potential Rewards</span
 							>
@@ -133,12 +134,12 @@
 										<div class="badge badge-outline badge-xs">+{reward.xp} XP</div>
 									{/if}
 									{#if reward.scrip}
-										<div class="badge badge-outline badge-primary badge-xs">
+										<div class="badge badge-outline badge-xs badge-primary">
 											+{reward.scrip} Scrip
 										</div>
 									{/if}
 									{#if reward.item}
-										<div class="badge badge-secondary badge-xs">{reward.item.name}</div>
+										<div class="badge badge-xs badge-secondary">{reward.item.name}</div>
 									{/if}
 								{/each}
 							</div>
@@ -148,18 +149,18 @@
 							<div class="mb-4 flex items-center gap-2">
 								<div class="avatar-group -space-x-3 rtl:space-x-reverse">
 									{#each mission.players.slice(0, 3) as player}
-										<div class="avatar placeholder border-base-100">
+										<div class="placeholder avatar border-base-100">
 											<div
-												class="bg-primary text-primary-content w-6 rounded-full text-[8px] font-bold"
+												class="w-6 rounded-full bg-primary text-[8px] font-bold text-primary-content"
 											>
 												{player.name.charAt(0)}
 											</div>
 										</div>
 									{/each}
 									{#if mission.players.length > 3}
-										<div class="avatar placeholder border-base-100">
+										<div class="placeholder avatar border-base-100">
 											<div
-												class="bg-neutral text-neutral-content w-6 rounded-full text-[8px] font-bold"
+												class="w-6 rounded-full bg-neutral text-[8px] font-bold text-neutral-content"
 											>
 												+{mission.players.length - 3}
 											</div>
@@ -175,17 +176,17 @@
 
 							<div class="card-actions justify-end">
 								{#if isUserInMission(mission)}
-									<button class="btn btn-sm btn-disabled w-full">Already Signed Up</button>
+									<button class="btn btn-disabled w-full btn-sm">Already Signed Up</button>
 								{:else if mission.status === 'Available'}
 									<button
-										class="btn btn-sm btn-primary w-full"
+										class="btn w-full btn-sm btn-primary"
 										on:click={() => handleSignup(mission.id)}
 										disabled={!myCharacterId}
 									>
 										{!myCharacterId ? 'No Character Found' : 'Sign Up'}
 									</button>
 								{:else}
-									<button class="btn btn-sm btn-disabled w-full">Mission {mission.status}</button>
+									<button class="btn btn-disabled w-full btn-sm">Mission {mission.status}</button>
 								{/if}
 							</div>
 						</div>

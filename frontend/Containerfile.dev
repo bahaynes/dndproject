@@ -11,7 +11,10 @@ RUN npm install -g pnpm
 COPY frontend/package.json frontend/pnpm-lock.yaml* ./
 
 # Install dependencies using pnpm
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile \
+    && chown -R node:node /app
+
+USER node
 
 # Expose the port for the SvelteKit dev server
 EXPOSE 5173

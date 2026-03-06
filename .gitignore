@@ -62,6 +62,7 @@ coverage.xml
 
 # Env files
 .env*
+kube/secrets.yaml
 !.env.example
 
 # DB files
@@ -77,6 +78,7 @@ run_app.sh.log
 
 # Virtualenv
 /backend/venv/
+.venv/
 
 # Temporary verification files
 jules-scratch/

@@ -16,6 +16,7 @@ class GameSessionBase(BaseModel):
     session_date: datetime.datetime
     status: str = "Scheduled"
     after_action_report: Optional[str] = None
+    field_report: Optional[str] = None
     min_players: int = 4
     max_players: int = 6
     confirmed_mission_id: Optional[int] = None
@@ -28,6 +29,9 @@ class GameSession(GameSessionBase):
     players: List[CharacterInGameSession] = []
     class Config:
         from_attributes = True
+
+class FieldReportUpdate(BaseModel):
+    field_report: str
 
 class SessionProposalBase(BaseModel):
     session_id: int

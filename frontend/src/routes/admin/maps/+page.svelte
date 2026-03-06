@@ -36,6 +36,9 @@
 		is_discovered: boolean;
 		linked_location_name?: string;
 		linked_mission_id?: number;
+		hex_state?: string;
+		controlling_faction?: string | null;
+		player_notes?: any[];
 	}
 
 	interface MapData {
@@ -58,6 +61,14 @@
 	let dirtyHexes: Set<string> = new Set();
 
 	const TERRAIN_TYPES = ['Plains', 'Forest', 'Mountain', 'Water', 'Desert', 'Swamp'];
+	const HEX_STATES = [
+		{ value: 'wilderness', label: 'Wilderness (2h)' },
+		{ value: 'claimed_developed', label: 'Claimed & Developed (0.5h)' },
+		{ value: 'friendly', label: 'Friendly Controlled (1h)' },
+		{ value: 'contested', label: 'Contested (3h)' },
+		{ value: 'awakened', label: 'Awakened (variable)' }
+	];
+	const FACTIONS = ['None', 'Inheritors', 'Kathedral', 'Vastarei'];
 
 	onMount(async () => {
 		// Check admin
@@ -169,7 +180,9 @@
 						is_discovered: hex.is_discovered,
 						linked_location_name: hex.linked_location_name,
 						linked_mission_id: hex.linked_mission_id,
-						notes: (hex as any).notes
+						notes: (hex as any).notes,
+						hex_state: hex.hex_state,
+						controlling_faction: hex.controlling_faction ?? null
 					})
 				});
 
@@ -297,6 +310,38 @@
 						{/each}
 					</select>
 				</div>
+
+				<div class="form-control">
+					<label class="label" for="hex-state-select"
+						><span class="label-text">Hex State</span></label
+					>
+					<select
+						id="hex-state-select"
+						bind:value={selectedHex.hex_state}
+						on:change={updateSelectedHex}
+						class="select select-bordered select-sm"
+					>
+						{#each HEX_STATES as s}
+							<option value={s.value}>{s.label}</option>
+						{/each}
+					</select>
+				</div>
+
+				<div class="form-control">
+					<label class="label" for="faction-select"
+						><span class="label-text">Controlling Faction</span></label
+					>
+					<select
+						id="faction-select"
+						bind:value={selectedHex.controlling_faction}
+						on:change={updateSelectedHex}
+						class="select select-bordered select-sm"
+					>
+						{#each FACTIONS as f}
+							<option value={f === 'None' ? null : f}>{f}</option>
+						{/each}
+					</select>
+				</div>
 			</div>
 		{/if}
 
@@ -334,6 +379,7 @@
 				hexSize={activeMap.hex_size}
 				{selectedHex}
 				showCoords={true}
+				adminMode={true}
 				on:click={handleHexClick}
 			/>
 

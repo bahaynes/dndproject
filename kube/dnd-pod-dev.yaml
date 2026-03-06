@@ -9,13 +9,17 @@ spec:
   containers:
     - name: backend
       image: localhost/dnd-backend-dev:latest
-      command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+      command: ["sh", "-c", "cp /pyproject.toml . 2>/dev/null || true; uv sync --no-cache && while ! python -c \"import socket; socket.create_connection(('localhost', 5432))\" >/dev/null 2>&1; do echo 'Waiting for Postgres...'; sleep 1; done; alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
       ports:
         - containerPort: 8000
           hostPort: 8000
       env:
         - name: DATABASE_URL
-          value: "${DATABASE_URL}"
+          value: "postgresql://postgres:postgres@localhost:5432/dnd_westmarches"
         - name: PYTHONPATH
           value: "/app"
         - name: DISCORD_CLIENT_ID
@@ -35,14 +39,36 @@ spec:
           mountPath: /data
     - name: frontend
       image: localhost/dnd-frontend-dev:latest
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
       # Ensure metadata is generated and dependencies are ready when volume is mounted
       command: ["sh", "-c", "pnpm install && pnpm svelte-kit sync && pnpm run dev --host"]
+      env:
+        - name: CI
+          value: "true"
       ports:
         - containerPort: 5173
           hostPort: 5173
       volumeMounts:
         - name: frontend-src
           mountPath: /app
+    - name: postgres
+      image: docker.io/library/postgres:15-alpine
+      env:
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "postgres"
+        - name: POSTGRES_DB
+          value: "dnd_westmarches"
+      ports:
+        - containerPort: 5432
+          hostPort: 5432
+      volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
   volumes:
     - name: backend-src
       hostPath:
@@ -55,4 +81,8 @@ spec:
     - name: backend-data
       hostPath:
         path: ./data
+        type: Directory
+    - name: postgres-data
+      hostPath:
+        path: ./data/postgres
         type: Directory

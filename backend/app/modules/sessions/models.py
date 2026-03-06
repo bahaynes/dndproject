@@ -21,6 +21,7 @@ class GameSession(Base):
     session_date = Column(DateTime, nullable=False)
     status = Column(String, default="Scheduled", nullable=False) # e.g., Open, Contested, Confirmed, Completed, Cancelled
     after_action_report = Column(String, nullable=True)
+    field_report = Column(String, nullable=True)
     
     min_players = Column(Integer, default=4)
     max_players = Column(Integer, default=6)

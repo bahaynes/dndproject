@@ -1,0 +1,59 @@
+site_name: DnD West Marches
+dev_addr: '127.0.0.1:8001'
+site_url: https://westmarches.bahaynes.com
+repo_url: https://github.com/bahaynes/dndproject
+repo_name: bahaynes/dndproject
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - content.code.annotate
+    - navigation.expand
+    - navigation.indexes
+    - navigation.top
+    - search.suggest
+    - search.highlight
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [backend]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+
+nav:
+  - Home: index.md
+  - Architecture:
+      - Frontend Routes: FRONTEND_ROUTES_PLAN.md
+  - Backend API:
+      - App:
+          - Main: reference/app/main.md
+          - Config: reference/app/config.md
+          - Dependencies: reference/app/dependencies.md
+      - Modules:
+          - Admin: reference/app/modules/admin.md
+          - Auth: reference/app/modules/auth.md
+          - Campaigns: reference/app/modules/campaigns.md
+          - Characters: reference/app/modules/characters.md
+          - Items: reference/app/modules/items.md
+          - Maps: reference/app/modules/maps.md
+          - Missions: reference/app/modules/missions.md
+          - Oneshot: reference/app/modules/oneshot.md
+          - Sessions: reference/app/modules/sessions.md

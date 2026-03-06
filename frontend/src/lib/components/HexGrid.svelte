@@ -9,12 +9,17 @@
 		terrain: string;
 		is_discovered: boolean;
 		linked_location_name?: string;
+		hex_state?: string;
+		controlling_faction?: string | null;
+		player_notes?: any[];
 	}
 
 	export let hexes: HexData[] = [];
 	export let hexSize: number = 60;
 	export let selectedHex: HexCoord | null = null;
 	export let showCoords: boolean = false;
+	export let showLegend: boolean = true;
+	export let adminMode: boolean = false;
 
 	let viewBox = { x: -500, y: -500, w: 2000, h: 1200 };
 	let isDragging = false;
@@ -100,7 +105,11 @@
 					isDiscovered={hex.is_discovered}
 					label={hex.linked_location_name || ''}
 					isSelected={selectedHex?.q === hex.q && selectedHex?.r === hex.r}
+					hexState={hex.hex_state || 'wilderness'}
+					controllingFaction={hex.controlling_faction || null}
+					playerNotesCount={hex.player_notes?.length || 0}
 					{showCoords}
+					{adminMode}
 					on:click
 				/>
 			{/each}
@@ -112,4 +121,33 @@
 	>
 		Scroll to Zoom • Drag to Pan
 	</div>
+
+	{#if showLegend}
+		<div
+			class="bg-base-100/90 border-base-content/10 pointer-events-none absolute bottom-4 left-4 rounded-lg border p-3 text-xs shadow backdrop-blur"
+		>
+			<div class="mb-2 font-bold uppercase opacity-50 tracking-widest">Legend</div>
+			<div class="flex flex-col gap-1">
+				<div class="flex items-center gap-2">
+					<span class="inline-block h-3 w-3 rounded-sm" style="background:rgba(59,130,246,0.5)"></span>
+					<span>Kathedral League</span>
+				</div>
+				<div class="flex items-center gap-2">
+					<span class="inline-block h-3 w-3 rounded-sm" style="background:rgba(245,158,11,0.5)"></span>
+					<span>Vastarei</span>
+				</div>
+				<div class="flex items-center gap-2">
+					<span class="inline-block h-3 w-3 rounded-sm" style="background:rgba(34,197,94,0.4)"></span>
+					<span>Inheritors</span>
+				</div>
+				<div class="mt-1 border-t border-base-content/10 pt-1 flex flex-col gap-1 opacity-70">
+					<span>⚑ Claimed &amp; Developed (0.5h)</span>
+					<span>≡ Friendly Controlled (1h)</span>
+					<span>⚔ Contested (3h)</span>
+					<span>~ Awakened (variable)</span>
+					<span>✎ Has player notes</span>
+				</div>
+			</div>
+		</div>
+	{/if}
 </div>

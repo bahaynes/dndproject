@@ -1,5 +1,20 @@
 #!/bin/bash
-# Install Quadlet files for systemd user service
+# =============================================================================
+# install-quadlet.sh - Install SystemD Service for Auto-Start
+# =============================================================================
+# Usage: ./kube/install-quadlet.sh
+#
+# Installs Podman Quadlet files for automatic service management.
+# After installation, enable with:
+#   systemctl --user enable --now dnd-westmarches.service
+#
+# Prerequisites:
+#   - Podman 4.4+ (Quadlet support)
+#   - Production images built (run ./kube/build.sh first)
+#
+# For rootless Podman to work after logout:
+#   loginctl enable-linger $USER
+# =============================================================================
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -17,12 +32,14 @@ echo "==> Reloading systemd..."
 systemctl --user daemon-reload
 
 echo ""
-echo "==> Quadlet installed!"
-echo "    Enable and start with:"
-echo "      systemctl --user enable --now dnd-westmarches.service"
+echo "==> Quadlet installed successfully!"
 echo ""
-echo "    Check status with:"
-echo "      systemctl --user status dnd-westmarches.service"
+echo "Next steps:"
+echo "  1. Enable and start the service:"
+echo "     systemctl --user enable --now dnd-westmarches.service"
 echo ""
-echo "    View logs with:"
-echo "      journalctl --user -u dnd-westmarches.service -f"
+echo "  2. Check status:"
+echo "     systemctl --user status dnd-westmarches.service"
+echo ""
+echo "  3. View logs:"
+echo "     journalctl --user -u dnd-westmarches.service -f"

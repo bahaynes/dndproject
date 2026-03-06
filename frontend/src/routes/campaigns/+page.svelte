@@ -235,7 +235,20 @@
 		<!-- Joinable Campaigns -->
 		<div class="mb-8">
 			<h2 class="mb-4 text-xl font-semibold">Available to Join</h2>
-			{#if availableCampaigns.length === 0}
+			{#if !discordToken}
+				<div class="alert flex items-center justify-between alert-info shadow-lg">
+					<div>
+						<span class="font-bold">Discord connection refreshed required.</span>
+						<span class="block text-sm"
+							>To see campaigns from your Discord servers, we need to check your current guilds.</span
+						>
+					</div>
+					<a
+						href="{API_BASE_URL}/auth/discord/login?return_to=/campaigns"
+						class="btn btn-sm btn-primary">Connect Discord</a
+					>
+				</div>
+			{:else if availableCampaigns.length === 0}
 				<p class="text-gray-500">No new campaigns found that match your Discord servers.</p>
 			{:else}
 				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">

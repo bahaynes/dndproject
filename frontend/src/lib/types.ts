@@ -1,11 +1,19 @@
+export interface GlobalUser {
+    username: string;
+    discord_id: string;
+    avatar_url?: string;
+}
+
 export interface User {
     id: number;
     username: string;
+    discord_id: string; // From backend
     email: string;
     role: 'player' | 'admin';
     is_active: boolean;
     active_character?: Character;
     characters: Character[];
+    avatar_url?: string; // Add this too since backend returns it
 }
 
 export interface Character {
@@ -111,6 +119,7 @@ export interface GameSessionWithPlayers {
     session_date: string;
     status: string;
     after_action_report?: string;
+    field_report?: string;
     min_players: number;
     max_players: number;
     players: CharacterInGameSession[];

@@ -11,6 +11,10 @@
 	export let isSelected: boolean = false;
 	export let showCoords: boolean = false;
 	export let label: string = '';
+	export let hexState: string = 'wilderness';
+	export let controllingFaction: string | null = null;
+	export let playerNotesCount: number = 0;
+	export let adminMode: boolean = false;
 
 	const dispatch = createEventDispatcher();
 
@@ -36,9 +40,40 @@
 		}
 	}
 
-	function handleClick() {
-		dispatch('click', { q, r, terrain, isDiscovered, label });
+	function getFactionOverlay(faction: string | null): string | null {
+		switch (faction) {
+			case 'Kathedral':
+				return 'rgba(59,130,246,0.35)';
+			case 'Vastarei':
+				return 'rgba(245,158,11,0.35)';
+			case 'Inheritors':
+				return 'rgba(34,197,94,0.25)';
+			default:
+				return null;
+		}
 	}
+
+	function getStateIcon(state: string): string {
+		switch (state) {
+			case 'claimed_developed':
+				return '⚑';
+			case 'friendly':
+				return '≡';
+			case 'contested':
+				return '⚔';
+			case 'awakened':
+				return '~';
+			default:
+				return '';
+		}
+	}
+
+	function handleClick() {
+		dispatch('click', { q, r, terrain, isDiscovered, label, hexState, controllingFaction, playerNotesCount });
+	}
+
+	$: factionOverlay = getFactionOverlay(controllingFaction);
+	$: stateIcon = getStateIcon(hexState);
 </script>
 
 <g
@@ -51,11 +86,16 @@
 >
 	<polygon
 		{points}
-		fill={isDiscovered ? getColor(terrain) : '#1a1a1a'}
-		stroke={isSelected ? '#fff' : '#333'}
+		fill={isDiscovered || adminMode ? getColor(terrain) : '#1a1a1a'}
+		opacity={adminMode && !isDiscovered ? 0.45 : 1}
+		stroke={isSelected ? '#fff' : '#444'}
 		stroke-width={isSelected ? 3 : 1}
 		class={isSelected ? 'selected-glow' : ''}
 	/>
+
+	{#if isDiscovered && factionOverlay}
+		<polygon {points} fill={factionOverlay} stroke="none" pointer-events="none" />
+	{/if}
 
 	{#if label && (isDiscovered || showCoords)}
 		<text
@@ -70,6 +110,34 @@
 			class="drop-shadow-md"
 		>
 			{label}
+		</text>
+	{/if}
+
+	{#if isDiscovered && stateIcon}
+		<text
+			x={size * 0.45}
+			y={-(size * 0.45)}
+			text-anchor="middle"
+			alignment-baseline="middle"
+			font-size="10"
+			fill="rgba(255,255,255,0.85)"
+			pointer-events="none"
+		>
+			{stateIcon}
+		</text>
+	{/if}
+
+	{#if isDiscovered && playerNotesCount > 0}
+		<text
+			x={-(size * 0.45)}
+			y={-(size * 0.45)}
+			text-anchor="middle"
+			alignment-baseline="middle"
+			font-size="9"
+			fill="rgba(255,200,100,0.9)"
+			pointer-events="none"
+		>
+			✎
 		</text>
 	{/if}
 

@@ -37,6 +37,7 @@ class MissionBase(BaseModel):
     is_retired: bool = False
     is_discoverable: bool = True
     prerequisite_id: Optional[int] = None
+    oneshot_id: Optional[int] = None
 
 class MissionCreate(MissionBase):
     rewards: List[MissionRewardCreate] = []

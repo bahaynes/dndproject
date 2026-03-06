@@ -22,6 +22,19 @@ class Settings(BaseSettings):
     DISCORD_BOT_TOKEN: str = os.getenv("DISCORD_BOT_TOKEN", "")
     DISCORD_REDIRECT_URI: str = os.getenv("DISCORD_REDIRECT_URI", "http://localhost:5173/api/auth/discord/callback")
 
+    # LLM Configuration
+    LLM_API_BASE: str = os.getenv("LLM_API_BASE", "https://openrouter.ai/api/v1")
+    LLM_API_KEY: str = os.getenv("LLM_API_KEY", "")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "deepseek/deepseek-chat")
+
+    # ComfyUI Configuration
+    COMFYUI_URL: str = os.getenv("COMFYUI_URL", "http://localhost:8188")
+    COMFYUI_TIMEOUT: int = int(os.getenv("COMFYUI_TIMEOUT", 300))
+
+    # One-Shot Generator Configuration
+    ONESHOT_OUTPUT_DIR: str = os.getenv("ONESHOT_OUTPUT_DIR", "/app/data/oneshots")
+    ONESHOT_MAX_CONCURRENT: int = int(os.getenv("ONESHOT_MAX_CONCURRENT", 2))
+
     # Comma-separated list of Discord User IDs allowed to setup campaigns
     ADMIN_DISCORD_IDS: str = os.getenv("ADMIN_DISCORD_IDS", "")
 

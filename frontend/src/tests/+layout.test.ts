@@ -9,6 +9,27 @@ vi.mock('$app/navigation', () => ({
   goto: vi.fn(),
 }));
 
+// Mock localStorage
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
+      store[key] = value.toString();
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete store[key];
+    }),
+    clear: vi.fn(() => {
+      store = {};
+    }),
+  };
+})();
+
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+});
+
 vi.mock('$lib/auth', async () => {
   let value = { isAuthenticated: false, user: null };
   const subscribers = new Set<any>();
@@ -26,7 +47,10 @@ vi.mock('$lib/auth', async () => {
   return {
     auth,
     login: vi.fn((user) => auth.set({ isAuthenticated: true, user })),
-    logout: vi.fn(() => auth.set({ isAuthenticated: false, user: null })),
+    logout: vi.fn(() => {
+      localStorage.removeItem('accessToken');
+      auth.set({ isAuthenticated: false, user: null });
+    }),
   };
 });
 
@@ -35,9 +59,10 @@ describe('Layout', () => {
   beforeEach(() => {
     // Reset mocks before each test
     vi.clearAllMocks();
+    window.localStorage.clear();
 
     // Set initial state to logged-in for these tests
-    auth.set({
+    (auth as any).set({
       isAuthenticated: true,
       user: { username: 'testuser' },
     });
@@ -55,7 +80,6 @@ describe('Layout', () => {
   });
 
   test('calls logout and redirects when logout button is clicked', async () => {
-    const removeItemSpy = vi.spyOn(Storage.prototype, 'removeItem');
     render(Layout, {});
 
     // Click the first available logout button (likely the desktop one or mobile one, doesn't matter logic is same)
@@ -66,7 +90,7 @@ describe('Layout', () => {
     expect(logout).toHaveBeenCalled();
 
     // Check that localStorage was cleared
-    expect(removeItemSpy).toHaveBeenCalledWith('accessToken');
+    expect(window.localStorage.removeItem).toHaveBeenCalledWith('accessToken');
 
     // Check that user was redirected
     expect(goto).toHaveBeenCalledWith('/login');

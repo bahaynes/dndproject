@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 from sqlalchemy.orm import Session
 
-from ...dependencies import get_db, get_current_user, get_current_active_admin_user
+from ...dependencies import get_db, get_current_user, get_current_active_admin_user, get_current_active_user
 from ..auth.schemas import User
 from . import schemas, service as crud
 
@@ -60,3 +60,33 @@ def update_hex(
         raise HTTPException(status_code=404, detail="Map not found")
         
     return crud.update_hex(db, map_id=map_id, q=q, r=r, hex_update=hex_update)
+
+@router.post("/{map_id}/hexes/{q}/{r}/notes", response_model=schemas.Hex, tags=["Maps"])
+def add_hex_note(
+    map_id: int,
+    q: int,
+    r: int,
+    note: schemas.PlayerNoteCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    db_map = crud.get_map(db, map_id=map_id)
+    if not db_map or db_map.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Map not found")
+
+    character = current_user.active_character
+    if not character:
+        raise HTTPException(status_code=400, detail="User has no active character selected")
+
+    db_hex, error = crud.add_player_note(
+        db,
+        map_id=map_id,
+        q=q,
+        r=r,
+        character_id=character.id,
+        text=note.text,
+        session_id=note.session_id
+    )
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    return db_hex
