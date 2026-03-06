@@ -24,11 +24,11 @@ jobs:
 
       - name: Install dependencies
         working-directory: backend
-        run: uv sync
+        run: uv sync --group dev
 
       - name: Run tests
         working-directory: backend
-        run: uv run --with pytest --with pytest-asyncio pytest tests/
+        run: uv run pytest tests/
 
   test-frontend-native:
     name: Frontend Tests (Native)
