@@ -1,14 +1,17 @@
 from pydantic import BaseModel, field_validator
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Literal
 from ..missions.schemas import Mission
+
+HexState = Literal["wilderness", "claimed_developed", "friendly", "contested", "awakened"]
+ControllingFaction = Literal["Inheritors", "Kathedral", "Vastarei"]
 
 class HexBase(BaseModel):
     q: int
     r: int
     terrain: str = "plains"
     is_discovered: bool = False
-    hex_state: str = "wilderness"
-    controlling_faction: Optional[str] = None
+    hex_state: HexState = "wilderness"
+    controlling_faction: Optional[ControllingFaction] = None
     linked_location_name: Optional[str] = None
     linked_mission_id: Optional[int] = None
 
@@ -21,8 +24,8 @@ class HexUpdate(BaseModel):
     linked_location_name: Optional[str] = None
     linked_mission_id: Optional[int] = None
     notes: Optional[str] = None  # DM only
-    hex_state: Optional[str] = None  # Admin only
-    controlling_faction: Optional[str] = None  # Admin only
+    hex_state: Optional[HexState] = None  # Admin only
+    controlling_faction: Optional[ControllingFaction] = None  # Admin only
 
 class PlayerNoteCreate(BaseModel):
     text: str

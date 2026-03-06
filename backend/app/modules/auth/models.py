@@ -23,7 +23,6 @@ class User(Base):
 
     # Relationships
     campaign = relationship("Campaign", back_populates="users")
-    campaign = relationship("Campaign", back_populates="users")
     
     # Active character for the current session context
     active_character_id = Column(Integer, ForeignKey("characters.id"), nullable=True)

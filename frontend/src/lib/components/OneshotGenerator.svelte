@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import { API_BASE_URL } from '$lib/config';
 	import { auth } from '$lib/auth';
 	import { get } from 'svelte/store';
@@ -105,6 +106,8 @@
 		jobId = null;
 		progress = '';
 	}
+
+	onDestroy(stopPolling);
 </script>
 
 <div class="rounded-lg border border-base-300 bg-base-100 p-4">

@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import logging
 
@@ -25,7 +25,7 @@ class OneShotService:
             campaign_id=campaign_id,
             status="pending",
             generation_params=request.model_dump(),
-            created_at=datetime.utcnow()
+            created_at=datetime.now(timezone.utc)
         )
         self.db.add(db_job)
         self.db.commit()
@@ -58,7 +58,7 @@ class OneShotService:
             job.title = adventure_json.get("title", "Untitled Adventure")
             job.summary = adventure_json.get("hook", "")
             job.status = "completed"
-            job.completed_at = datetime.utcnow()
+            job.completed_at = datetime.now(timezone.utc)
             
             self.db.commit()
             logger.info(f"Job {job_id} completed successfully")
@@ -167,7 +167,6 @@ Generate a 3-Act adventure outline for The Inheritors now. The session must be f
         )
         
         if isinstance(response, str):
-            import json
             # Attempt to parse if returned as string (fallback)
             return json.loads(response)
         return response

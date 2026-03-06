@@ -60,7 +60,9 @@
 				headers: { Authorization: `Bearer ${get(auth).token}` }
 			});
 			if (res.ok) availableMissions = await res.json();
-		} catch (e) {}
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Failed to load missions';
+		}
 	}
 
 	function isBacking(proposalId: number): boolean {

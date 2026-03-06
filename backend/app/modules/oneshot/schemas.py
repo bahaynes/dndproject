@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional, Literal, Dict, Any
 from datetime import datetime
 
@@ -30,7 +30,7 @@ class OneShotGenerateRequest(BaseModel):
     # Context
     mission_ids: List[int] = []
     hex_region: Optional[str] = None
-    revelation_layer: str = "early"  # early | mid | late
+    revelation_layer: Literal["early", "mid", "late"] = "early"
 
     # Parameters
     party_size: int = 4
