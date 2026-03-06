@@ -1,20 +1,28 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # =============================================================================
 # run_tests.sh - Run Backend and Frontend Tests
 # =============================================================================
 # Usage: ./run_tests.sh
 #
-# Runs the test suite inside the development containers.
-# The dev environment must be running (./kube/dev.sh).
+# Runs the test suites natively (no containers required).
+# This matches the CI pipeline exactly.
+#
+# Prerequisites: uv (backend), pnpm (frontend)
 # =============================================================================
 set -e
 
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 echo "==> Running Backend Tests..."
-podman exec dnd-westmarches-dev-backend python -m pytest tests/ -v
+cd "$PROJECT_DIR/backend"
+uv sync --group dev
+uv run pytest tests/
 
 echo ""
 echo "==> Running Frontend Tests..."
-podman exec dnd-westmarches-dev-frontend pnpm test:ci
+cd "$PROJECT_DIR/frontend"
+pnpm install
+pnpm run test:ci
 
 echo ""
 echo "==> All tests passed!"

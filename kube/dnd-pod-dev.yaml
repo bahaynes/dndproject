@@ -9,6 +9,10 @@ spec:
   containers:
     - name: backend
       image: localhost/dnd-backend-dev:latest
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
       command: ["sh", "-c", "cp /pyproject.toml . 2>/dev/null || true; uv sync --no-cache && while ! python -c \"import socket; socket.create_connection(('localhost', 5432))\" >/dev/null 2>&1; do echo 'Waiting for Postgres...'; sleep 1; done; alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
       ports:
         - containerPort: 8000
@@ -35,6 +39,10 @@ spec:
           mountPath: /data
     - name: frontend
       image: localhost/dnd-frontend-dev:latest
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
       # Ensure metadata is generated and dependencies are ready when volume is mounted
       command: ["sh", "-c", "pnpm install && pnpm svelte-kit sync && pnpm run dev --host"]
       env:

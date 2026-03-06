@@ -66,6 +66,11 @@ if [ ! -f "$HOME/.config/containers/containers.conf" ] || ! grep -q "seccomp_pro
 fi
 
 echo ""
+echo "==> Installing Git Hooks..."
+git config core.hooksPath .githooks
+echo "  ✓ pre-push hook installed (tests run before every push)"
+
+echo ""
 echo "==> Environment Setup..."
 
 # Ensure .env exists
@@ -85,5 +90,5 @@ echo ""
 echo "==> Setup Complete!"
 echo ""
 echo "Verify status:  podman pod ps"
-echo "Run tests:      ./run_tests.sh"
+echo "Run tests:      ./run_tests.sh  (native, no containers required)"
 echo "Stop:           ./kube/teardown.sh"

@@ -1,4 +1,4 @@
-FROM public.ecr.aws/docker/library/python:3.13-slim
+FROM public.ecr.aws/docker/library/python:3.12-slim
 
 WORKDIR /app
 
@@ -7,16 +7,26 @@ RUN apt-get update && apt-get install -y \
     build-essential libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python deps
-COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+# Copy dependency files first for layer caching
+COPY backend/pyproject.toml backend/uv.lock* backend/uv.toml* ./
+
+# Install production dependencies only
+RUN uv sync --no-dev --no-cache
 
 # Copy the app
-COPY alembic.ini .
 COPY backend/ .
 
-# Make sure Python can find the app module
+# Create non-root user and transfer ownership
+RUN useradd -u 1000 -r -s /bin/false -d /app appuser \
+    && chown -R appuser:appuser /app
+
+ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH=/app
+
+USER appuser
 
 # Expose backend port
 EXPOSE 10000
