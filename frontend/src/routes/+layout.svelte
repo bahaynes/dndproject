@@ -24,18 +24,16 @@
 						const user = await response.json();
 						login(user, token, user.campaign);
 					} else {
-						// Token invalid, clear it
+						// Token invalid — clear it and fall through to check the global token.
+						// Do NOT navigate here: a concurrent /login/callback flow may be in
+						// progress and forcing a goto('/login') would discard fresh OAuth tokens.
 						localStorage.removeItem('accessToken');
-						// Fall through to check global token? Or just logout fully?
-						// Usually if access token is bad, we might still have a valid global token?
-						// Let's just logout for safety/simplicity
-						handleLogout();
-						return;
+						logout();
 					}
 				} catch (e) {
 					console.error('Failed to fetch user profile', e);
-					handleLogout();
-					return;
+					localStorage.removeItem('accessToken');
+					logout();
 				}
 			}
 

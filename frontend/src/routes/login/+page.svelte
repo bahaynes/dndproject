@@ -6,9 +6,11 @@
   import { API_BASE_URL } from '$lib/config';
 
   onMount(() => {
-    const { isAuthenticated } = get(auth);
+    const { isAuthenticated, isGlobalAuthenticated } = get(auth);
     if (isAuthenticated) {
       goto('/dashboard');
+    } else if (isGlobalAuthenticated) {
+      goto('/campaigns');
     }
   });
 

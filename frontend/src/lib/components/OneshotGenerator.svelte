@@ -15,12 +15,26 @@
 	let pollInterval: number | null = null;
 	let progress = '';
 	let revelationLayer: 'early' | 'mid' | 'late' = 'early';
+	let tone = 'heroic';
+	let partySize = 4;
+	let partyLevel = 3;
+	let durationHours = 4.0;
+	let hexRegion = missionRegion;
 
 	const layerLabels = {
 		early: 'Early — The Frame Shifts',
 		mid: 'Mid — The Council Surfaces',
 		late: 'Late — The Thing Speaks'
 	};
+
+	const toneOptions = [
+		{ value: 'heroic', label: 'Heroic' },
+		{ value: 'exploration', label: 'Exploration' },
+		{ value: 'combat-heavy', label: 'Combat-Heavy' },
+		{ value: 'social', label: 'Social / Intrigue' },
+		{ value: 'mystery', label: 'Mystery' },
+		{ value: 'grimdark', label: 'Grimdark' }
+	];
 
 	async function generateOneshot() {
 		generating = true;
@@ -35,11 +49,11 @@
 					Authorization: `Bearer ${get(auth).token}`
 				},
 				body: JSON.stringify({
-					party_size: 4,
-					party_level: 3,
-					duration_hours: 4.0,
-					tone: 'heroic',
-					hex_region: missionRegion || undefined,
+					party_size: partySize,
+					party_level: partyLevel,
+					duration_hours: durationHours,
+					tone,
+					hex_region: hexRegion || undefined,
 					revelation_layer: revelationLayer
 				})
 			});
@@ -124,19 +138,92 @@
 	</p>
 
 	{#if !generating}
-		<div class="form-control mb-4">
-			<label class="label" for="revelation-layer">
-				<span class="label-text text-xs">Campaign Layer</span>
-			</label>
-			<select
-				id="revelation-layer"
-				bind:value={revelationLayer}
-				class="select select-bordered select-sm w-full"
-			>
-				{#each Object.entries(layerLabels) as [value, label]}
-					<option {value}>{label}</option>
-				{/each}
-			</select>
+		<div class="grid grid-cols-2 gap-3 mb-4">
+			<div class="form-control col-span-2">
+				<label class="label" for="revelation-layer">
+					<span class="label-text text-xs">Campaign Layer</span>
+				</label>
+				<select
+					id="revelation-layer"
+					bind:value={revelationLayer}
+					class="select select-bordered select-sm w-full"
+				>
+					{#each Object.entries(layerLabels) as [value, label]}
+						<option {value}>{label}</option>
+					{/each}
+				</select>
+			</div>
+
+			<div class="form-control col-span-2">
+				<label class="label" for="oneshot-tone">
+					<span class="label-text text-xs">Tone / Threat</span>
+				</label>
+				<select
+					id="oneshot-tone"
+					bind:value={tone}
+					class="select select-bordered select-sm w-full"
+				>
+					{#each toneOptions as opt}
+						<option value={opt.value}>{opt.label}</option>
+					{/each}
+				</select>
+			</div>
+
+			<div class="form-control">
+				<label class="label" for="party-size">
+					<span class="label-text text-xs">Party Size</span>
+				</label>
+				<input
+					id="party-size"
+					type="number"
+					bind:value={partySize}
+					min="2"
+					max="8"
+					class="input input-bordered input-sm w-full"
+				/>
+			</div>
+
+			<div class="form-control">
+				<label class="label" for="party-level">
+					<span class="label-text text-xs">Party Level</span>
+				</label>
+				<input
+					id="party-level"
+					type="number"
+					bind:value={partyLevel}
+					min="1"
+					max="20"
+					class="input input-bordered input-sm w-full"
+				/>
+			</div>
+
+			<div class="form-control">
+				<label class="label" for="duration-hours">
+					<span class="label-text text-xs">Duration (hrs)</span>
+				</label>
+				<input
+					id="duration-hours"
+					type="number"
+					bind:value={durationHours}
+					min="1"
+					max="12"
+					step="0.5"
+					class="input input-bordered input-sm w-full"
+				/>
+			</div>
+
+			<div class="form-control">
+				<label class="label" for="hex-region">
+					<span class="label-text text-xs">Region / District</span>
+				</label>
+				<input
+					id="hex-region"
+					type="text"
+					bind:value={hexRegion}
+					placeholder="e.g. The Ashen Quarter"
+					class="input input-bordered input-sm w-full"
+				/>
+			</div>
 		</div>
 	{/if}
 

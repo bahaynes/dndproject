@@ -3,9 +3,10 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from ...dependencies import get_db, get_current_user
+from ...database import SessionLocal
 from ...modules.auth.models import User
 from .schemas import OneShotGenerateRequest, OneShotResponse, OneShotDetailResponse
-from .service import OneShotService
+from .service import OneShotService, run_generation_background
 
 router = APIRouter(
     prefix="/oneshot",
@@ -44,8 +45,9 @@ async def generate_oneshot(
     service = OneShotService(db)
     job = service.create_generation_job(current_user.campaign_id, request)
 
-    # Launch background processing
-    background_tasks.add_task(service.process_generation, job.id)
+    # Launch background processing with its own DB session so the request
+    # session being closed after response does not kill the task.
+    background_tasks.add_task(run_generation_background, job.id, SessionLocal)
 
     return job
 

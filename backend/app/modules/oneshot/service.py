@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timezone
 import json
 import logging
@@ -14,6 +15,46 @@ from ..maps.models import HexMap, Hex
 from ..sessions.models import GameSession
 
 logger = logging.getLogger(__name__)
+
+
+async def run_generation_background(job_id: int, SessionLocal: sessionmaker):
+    """
+    Standalone background task for one-shot generation.
+
+    Creates its own database session so it is not affected by the request
+    session being closed after the response is sent.
+    """
+    logger.info(f"Starting generation job {job_id}")
+    db = SessionLocal()
+    try:
+        job = db.query(GeneratedOneShot).filter(GeneratedOneShot.id == job_id).first()
+        if not job:
+            logger.error(f"Job {job_id} not found")
+            return
+
+        service = OneShotService(db)
+        try:
+            job.status = "processing"
+            db.commit()
+
+            context = service._aggregate_context(job.campaign_id, job.generation_params)
+            adventure_json = await service._generate_adventure_outline(context, job.generation_params)
+
+            job.content = adventure_json
+            job.title = adventure_json.get("title", "Untitled Adventure")
+            job.summary = adventure_json.get("hook", "")
+            job.status = "completed"
+            job.completed_at = datetime.now(timezone.utc)
+            db.commit()
+            logger.info(f"Job {job_id} completed successfully")
+
+        except Exception as e:
+            logger.error(f"Job {job_id} failed: {str(e)}", exc_info=True)
+            job.status = "failed"
+            db.commit()
+    finally:
+        db.close()
+
 
 class OneShotService:
     def __init__(self, db: Session):
@@ -31,42 +72,6 @@ class OneShotService:
         self.db.commit()
         self.db.refresh(db_job)
         return db_job
-
-    async def process_generation(self, job_id: int):
-        """
-        Background task to run the generation pipeline.
-        Phase 1: Generate Adventure Outline.
-        """
-        logger.info(f"Starting generation job {job_id}")
-        job = self.db.query(GeneratedOneShot).filter(GeneratedOneShot.id == job_id).first()
-        if not job:
-            logger.error(f"Job {job_id} not found")
-            return
-
-        try:
-            job.status = "processing"
-            self.db.commit()
-            
-            # 1. Aggregate Context
-            context = self._aggregate_context(job.campaign_id, job.generation_params)
-            
-            # 2. Generate Adventure via LLM
-            adventure_json = await self._generate_adventure_outline(context, job.generation_params)
-            
-            # 3. Save Results
-            job.content = adventure_json
-            job.title = adventure_json.get("title", "Untitled Adventure")
-            job.summary = adventure_json.get("hook", "")
-            job.status = "completed"
-            job.completed_at = datetime.now(timezone.utc)
-            
-            self.db.commit()
-            logger.info(f"Job {job_id} completed successfully")
-            
-        except Exception as e:
-            logger.error(f"Job {job_id} failed: {str(e)}", exc_info=True)
-            job.status = "failed"
-            self.db.commit()
 
     def _aggregate_context(self, campaign_id: int, params: dict) -> str:
         """Collect Aphtharton-specific campaign data for the LLM prompt."""

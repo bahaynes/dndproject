@@ -21,11 +21,7 @@
 					});
 					if (response.ok) {
 						const globalUser = await response.json();
-						// Import globalLogin dynamically or use the one from $lib/auth
-						// We imported auth, need to import globalLogin
-						// For now, rely on module import
-						const { globalLogin } = await import('$lib/auth');
-						globalLogin(globalUser, token);
+						auth.globalLogin(globalUser, token);
 					}
 				} catch (e) {
 					console.error('Failed to fetch global profile in callback', e);
