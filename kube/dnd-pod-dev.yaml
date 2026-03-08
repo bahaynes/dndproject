@@ -66,9 +66,7 @@ spec:
       ports:
         - containerPort: 5432
           hostPort: 5432
-      volumeMounts:
-        - name: postgres-data
-          mountPath: /var/lib/postgresql/data
+      # No volume mount - data lives in container overlay (ephemeral, recreated by Alembic on startup)
   volumes:
     - name: backend-src
       hostPath:
@@ -81,8 +79,4 @@ spec:
     - name: backend-data
       hostPath:
         path: ./data
-        type: Directory
-    - name: postgres-data
-      hostPath:
-        path: ./data/postgres
         type: Directory

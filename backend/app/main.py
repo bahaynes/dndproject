@@ -1,6 +1,8 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from .config import get_settings, validate_settings
 from .database import engine, Base
 
 # Import all models to ensure they are registered with Base
@@ -29,7 +31,14 @@ from .modules.factions import router as faction_router
 # Create tables
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    validate_settings(get_settings())
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 # CORS Middleware
 origins = [

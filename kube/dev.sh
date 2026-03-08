@@ -58,7 +58,7 @@ echo "==> Starting dev pod..."
 mkdir -p "$PROJECT_DIR/data/postgres"
 
 # Replace relative paths with absolute paths, apply env vars, and filter YAML if needed
-sed "s|\./backend|$PROJECT_DIR/backend|g; s|\./frontend|$PROJECT_DIR/frontend|g; s|\./data|$PROJECT_DIR/data|g" kube/dnd-pod-dev.yaml | envsubst | eval "$YAML_FILTER" | podman kube play --replace -
+sed "s|\./backend|$PROJECT_DIR/backend|g; s|\./frontend|$PROJECT_DIR/frontend|g; s|\./data|$PROJECT_DIR/data|g" kube/dnd-pod-dev.yaml | envsubst | eval "$YAML_FILTER" | podman kube play --replace --userns=keep-id -
 
 echo ""
 echo "==> Development environment running!"

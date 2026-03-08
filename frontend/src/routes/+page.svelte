@@ -1,6 +1,18 @@
 <script lang="ts">
+    import { onMount } from 'svelte';
     import { auth } from '$lib/auth';
     import { API_BASE_URL } from '$lib/config';
+
+    let backendStatus: 'checking' | 'online' | 'offline' = 'checking';
+
+    onMount(async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/v1/health`, { signal: AbortSignal.timeout(3000) });
+            backendStatus = res.ok ? 'online' : 'offline';
+        } catch {
+            backendStatus = 'offline';
+        }
+    });
 </script>
 
 <div class="hero min-h-[calc(100vh-64px)] bg-base-200 pattern-grid">
@@ -43,6 +55,18 @@
              </div>
         </div>
       {/if}
+      <div class="mt-8 flex items-center justify-center gap-2 text-xs opacity-50">
+        {#if backendStatus === 'checking'}
+          <span class="loading loading-ring loading-xs"></span>
+          <span>Connecting to server...</span>
+        {:else if backendStatus === 'online'}
+          <span class="inline-block w-2 h-2 rounded-full bg-success"></span>
+          <span>Server online</span>
+        {:else}
+          <span class="inline-block w-2 h-2 rounded-full bg-error animate-pulse"></span>
+          <span>Server offline — some features unavailable</span>
+        {/if}
+      </div>
     </div>
   </div>
 </div>
