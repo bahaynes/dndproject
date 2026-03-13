@@ -15,19 +15,26 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 # Copy project definition files to a location that survives volume mount
 COPY pyproject.toml /pyproject.toml
 
-# Pre-install dependencies (will be re-run at startup if volume overwrites .venv)
+# Put the venv at /app-venv (outside /app) so the volume mount at /app
+# never shadows or permission-conflicts with it in rootless Podman.
+ENV UV_PROJECT_ENVIRONMENT=/app-venv
+
+# Pre-install dependencies into /app-venv
 RUN uv sync --no-cache
 
-# Create non-root user and transfer ownership
+# Create non-root user and transfer ownership of both dirs
 RUN useradd -u 1000 -r -s /bin/false -d /app appuser \
-    && chown -R appuser:appuser /app
+    && chown -R appuser:appuser /app /app-venv
 
 # Add virtual environment to PATH
-ENV PATH="/app/.venv/bin:$PATH"
+ENV PATH="/app-venv/bin:$PATH"
 
 USER appuser
 
 # Expose the port for the backend server
 EXPOSE 8000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
+    CMD curl -f http://localhost:8000/api/v1/health || exit 1
 
 # The command will be provided by docker-compose.dev.yml to allow for --reload

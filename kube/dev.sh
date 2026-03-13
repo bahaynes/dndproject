@@ -34,7 +34,7 @@ podman pull "$TEST_IMAGE" >/dev/null 2>&1 || true
 if ! podman run --rm "$TEST_IMAGE" true >/dev/null 2>&1; then
     echo "    Standard networking failed. Enabling host network mode (nested environment detected)."
     POD_BUILD_ARGS="--security-opt seccomp=unconfined --network host"
-    export POD_HOST_NETWORK="hostNetwork: true"
+    export POD_HOST_NETWORK="true"
     # Remove ports when using host network to avoid conflicts
     YAML_FILTER="sed '/ports:/d; /containerPort:/d; /hostPort:/d'"
 fi

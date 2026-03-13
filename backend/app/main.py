@@ -1,5 +1,11 @@
-from fastapi import FastAPI
+import uuid
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+
+# Configure structured JSON logging before any other app imports so that
+# module-level startup code (e.g. Settings validation) uses the JSON formatter.
+from .logging_config import configure_logging, request_id_var
+configure_logging()
 
 from .database import engine, Base
 
@@ -25,11 +31,21 @@ from .modules.maps import router as map_router
 from .modules.admin import router as admin_router
 from .modules.oneshot import router as oneshot_router
 from .modules.factions import router as faction_router
+from .modules.debug import router as debug_router
 
 # Create tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+# Request ID middleware — injects a UUID into every request and all downstream log lines.
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    req_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+    request_id_var.set(req_id)
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = req_id
+    return response
 
 # CORS Middleware
 origins = [
@@ -58,8 +74,7 @@ async def root():
     return {"status": "ok", "message": "DnD West Marches API"}
 
 # Include routers
-# Mount auth under /api so /token becomes /api/token, consistent with other routes
-app.include_router(auth_router.router, prefix="/api/auth") # Changed prefix to /api/auth for clarity
+app.include_router(auth_router.router, prefix="/api/auth")
 app.include_router(campaign_router.router, prefix="/api/campaigns")
 app.include_router(char_router.router, prefix="/api/characters", tags=["Characters"])
 app.include_router(item_router.router, prefix="/api/items", tags=["Items"])
@@ -71,3 +86,4 @@ app.include_router(map_router.router, prefix="/api/maps")
 app.include_router(admin_router.router, prefix="/api/admin")
 app.include_router(oneshot_router.router, prefix="/api/oneshot")
 app.include_router(faction_router.router, prefix="/api/factions")
+app.include_router(debug_router.router, prefix="/api/debug")

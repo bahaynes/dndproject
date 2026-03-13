@@ -5,7 +5,7 @@ metadata:
   labels:
     app: dnd-westmarches-dev
 spec:
-  ${POD_HOST_NETWORK}
+  hostNetwork: ${POD_HOST_NETWORK:-false}
   containers:
     - name: backend
       image: localhost/dnd-backend-dev:latest
@@ -54,6 +54,8 @@ spec:
       volumeMounts:
         - name: frontend-src
           mountPath: /app
+        - name: frontend-node-modules
+          mountPath: /app/node_modules
     - name: postgres
       image: docker.io/library/postgres:15-alpine
       env:
@@ -81,8 +83,10 @@ spec:
     - name: backend-data
       hostPath:
         path: ./data
-        type: Directory
+        type: DirectoryOrCreate
     - name: postgres-data
       hostPath:
         path: ./data/postgres
-        type: Directory
+        type: DirectoryOrCreate
+    - name: frontend-node-modules
+      emptyDir: {}

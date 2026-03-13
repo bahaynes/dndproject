@@ -1,13 +1,17 @@
 import os
+import logging
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 from dotenv import load_dotenv
 
 load_dotenv()
 
+_DEFAULT_SECRET_KEY = "a_very_secret_key_that_should_be_in_env_file"
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = "DnD West Marches"
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "a_very_secret_key_that_should_be_in_env_file")
+    SECRET_KEY: str = os.getenv("SECRET_KEY", _DEFAULT_SECRET_KEY)
     ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
 
@@ -38,8 +42,51 @@ class Settings(BaseSettings):
     # Comma-separated list of Discord User IDs allowed to setup campaigns
     ADMIN_DISCORD_IDS: str = os.getenv("ADMIN_DISCORD_IDS", "")
 
+    # Debug token for the /api/debug/* endpoints. Leave empty to disable those endpoints.
+    DEBUG_TOKEN: str = os.getenv("DEBUG_TOKEN", "")
+
     class Config:
         case_sensitive = True
+
+    @model_validator(mode="after")
+    def validate_and_log_startup_config(self) -> "Settings":
+        logger = logging.getLogger("app.config")
+
+        # Missing critical secrets
+        missing = []
+        if not self.DISCORD_CLIENT_ID:
+            missing.append("DISCORD_CLIENT_ID")
+        if not self.DISCORD_CLIENT_SECRET:
+            missing.append("DISCORD_CLIENT_SECRET")
+        if missing:
+            logger.error("Missing required env vars — Discord OAuth will not work: %s", missing)
+
+        # Insecure default secret key
+        if self.SECRET_KEY == _DEFAULT_SECRET_KEY:
+            logger.warning(
+                "SECRET_KEY is using the insecure default value — set SECRET_KEY in your .env"
+            )
+
+        # Effective redirect URI — this is the most common source of Discord OAuth failures.
+        # Compare this value against what is registered in the Discord Developer Portal.
+        if not self.DISCORD_REDIRECT_URI:
+            logger.error("DISCORD_REDIRECT_URI is not set — Discord OAuth callback will fail")
+        else:
+            logger.info(
+                "Discord OAuth redirect URI: %s",
+                self.DISCORD_REDIRECT_URI,
+                extra={"discord_redirect_uri": self.DISCORD_REDIRECT_URI},
+            )
+            if ":5173" in self.DISCORD_REDIRECT_URI:
+                logger.warning(
+                    "DISCORD_REDIRECT_URI contains port 5173 (the frontend dev server). "
+                    "Discord calls back to the backend — the URI should point at the backend "
+                    "port (8000 in dev, 80/443 in prod via the reverse proxy).",
+                    extra={"discord_redirect_uri": self.DISCORD_REDIRECT_URI},
+                )
+
+        return self
+
 
 @lru_cache()
 def get_settings():
