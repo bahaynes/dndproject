@@ -24,7 +24,7 @@ echo "==> Building dev images..."
 
 # Detect environment constraints (e.g., nested containers)
 POD_BUILD_ARGS=""
-export POD_HOST_NETWORK=""
+export POD_HOST_NETWORK="false"
 YAML_FILTER="cat"
 TEST_IMAGE="public.ecr.aws/docker/library/python:3.11-slim"
 

@@ -52,12 +52,13 @@ spec:
               name: discord-bot-token
               key: token
         - name: DISCORD_REDIRECT_URI
-          value: "http://localhost:9080/api/auth/discord/callback"
+          value: "https://westmarches.bahaynes.com/api/auth/discord/callback"
         - name: ADMIN_DISCORD_IDS
           valueFrom:
             secretKeyRef:
               name: admin-discord-ids
               key: ids
+      command: ["sh", "-c", "alembic upgrade head && gunicorn -c gunicorn_conf.py app.main:app"]
       imagePullPolicy: Never
       volumeMounts:
         - name: backend-data
