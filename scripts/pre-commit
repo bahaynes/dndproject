@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# =============================================================================
+# pre-commit hook — run smoke e2e tests if the dev pod is up.
+#
+# Install: symlinked into .git/hooks/ by kube/dev.sh automatically.
+# Manual:  ln -sf ../../scripts/pre-commit .git/hooks/pre-commit
+# Skip:    git commit --no-verify  (use sparingly)
+# =============================================================================
+set -e
+
+PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+
+# If the pod isn't running, skip rather than block the commit.
+if ! curl -sf --max-time 2 http://localhost:5173 > /dev/null 2>&1; then
+    echo "pre-commit: pod not running — skipping smoke tests"
+    exit 0
+fi
+
+echo "pre-commit: pod is up, running smoke tests..."
+
+if ! "$PROJECT_DIR/run_e2e.sh" tests/smoke.spec.ts --reporter=line; then
+    echo ""
+    echo "pre-commit: smoke tests FAILED — fix before committing."
+    echo "            (bypass with: git commit --no-verify)"
+    exit 1
+fi
+
+echo "pre-commit: smoke tests passed."

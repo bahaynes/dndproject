@@ -20,6 +20,14 @@ set -e
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
+# Install pre-commit hook (idempotent)
+HOOK="$PROJECT_DIR/.git/hooks/pre-commit"
+SCRIPT="$PROJECT_DIR/scripts/pre-commit"
+if [ ! -L "$HOOK" ] || [ "$(readlink "$HOOK")" != "$SCRIPT" ]; then
+    ln -sf "$SCRIPT" "$HOOK"
+    echo "==> Installed pre-commit hook (smoke tests when pod is up)"
+fi
+
 echo "==> Building dev images..."
 
 # Detect environment constraints (e.g., nested containers)
