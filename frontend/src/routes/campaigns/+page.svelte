@@ -14,9 +14,9 @@
 	let error = '';
 
 	onMount(async () => {
-		// Check for temp tokens (initial login flow)
-		const tempGlobal = localStorage.getItem('tempGlobalToken');
-		const tempDiscord = localStorage.getItem('tempDiscordToken');
+		// Check for pending tokens (set by /login/callback after Discord OAuth)
+		const tempGlobal = localStorage.getItem('pendingToken');
+		const tempDiscord = localStorage.getItem('pendingDiscordToken');
 
 		if (tempGlobal) {
 			globalToken = tempGlobal;
@@ -33,7 +33,7 @@
 				// If we want to join *new* campaigns, we might need a re-auth flow or backend support.
 				// For now, let's assume switching implies selecting from "My Campaigns" or public ones.
 			} else {
-				goto('/login');
+				window.location.replace('/login');
 				return;
 			}
 		}
@@ -121,8 +121,8 @@
 				login(user, token, user.campaign);
 
 				// Cleanup temp
-				localStorage.removeItem('tempGlobalToken');
-				localStorage.removeItem('tempDiscordToken');
+				localStorage.removeItem('pendingToken');
+				localStorage.removeItem('pendingDiscordToken');
 
 				goto('/dashboard');
 			} else {
@@ -154,8 +154,8 @@
 				const user = await userRes.json();
 				login(user, token, data.campaign);
 
-				localStorage.removeItem('tempGlobalToken');
-				localStorage.removeItem('tempDiscordToken');
+				localStorage.removeItem('pendingToken');
+				localStorage.removeItem('pendingDiscordToken');
 				goto('/dashboard');
 			} else {
 				const err = await res.json();
@@ -186,8 +186,8 @@
 				login(user, token, data.campaign);
 
 				// Cleanup temp
-				localStorage.removeItem('tempGlobalToken');
-				localStorage.removeItem('tempDiscordToken');
+				localStorage.removeItem('pendingToken');
+				localStorage.removeItem('pendingDiscordToken');
 
 				goto('/dashboard');
 			} else {
