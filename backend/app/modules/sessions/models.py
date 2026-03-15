@@ -25,7 +25,13 @@ class GameSession(Base):
     
     min_players = Column(Integer, default=4)
     max_players = Column(Integer, default=6)
-    
+
+    # Session result (set when completed)
+    result = Column(String, nullable=True)  # "success" | "failure"
+    fuel_burned = Column(Integer, default=0, nullable=False)
+    crystals_earned = Column(Integer, default=0, nullable=False)
+    credits_earned = Column(Integer, default=0, nullable=False)
+
     confirmed_mission_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
     confirmed_mission = relationship("Mission")
 

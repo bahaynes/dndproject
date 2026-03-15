@@ -13,6 +13,17 @@
 	let error = '';
 	let success = '';
 
+	// Complete session modal
+	let showComplete = false;
+	let completingSession: GameSessionWithPlayers | null = null;
+	let cResult: 'success' | 'failure' = 'success';
+	let cFuelBurned = 0;
+	let cCrystalsEarned = 0;
+	let cCreditsEarned = 0;
+	let cAfterAction = '';
+	let cCasualties: number[] = [];
+	let completing = false;
+
 	// Create Session Form
 	let sName = '';
 	let sDescription = '';
@@ -77,20 +88,55 @@
 		}
 	}
 
-	async function completeSession(id: number) {
+	function openCompleteModal(session: GameSessionWithPlayers) {
+		completingSession = session;
+		cResult = 'success';
+		cFuelBurned = 0;
+		cCrystalsEarned = 0;
+		cCreditsEarned = 0;
+		cAfterAction = '';
+		cCasualties = [];
+		showComplete = true;
+	}
+
+	function toggleCasualty(charId: number) {
+		if (cCasualties.includes(charId)) {
+			cCasualties = cCasualties.filter(id => id !== charId);
+		} else {
+			cCasualties = [...cCasualties, charId];
+		}
+	}
+
+	async function submitComplete() {
+		if (!completingSession) return;
+		completing = true;
+		error = '';
 		try {
-			const res = await fetch(`${API_BASE_URL}/sessions/${id}`, {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${get(auth).token}`
-				},
+			const res = await fetch(`${API_BASE_URL}/sessions/${completingSession.id}/complete`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${get(auth).token}` },
 				body: JSON.stringify({
-					status: 'Completed'
-				})
+					result: cResult,
+					fuel_burned: cFuelBurned,
+					crystals_earned: cCrystalsEarned,
+					credits_earned: cCreditsEarned,
+					after_action_report: cAfterAction || null,
+					casualties: cCasualties,
+				}),
 			});
-			if (res.ok) await fetchSessions();
-		} catch (e) {}
+			if (res.ok) {
+				success = 'Session completed and ledger updated!';
+				showComplete = false;
+				await fetchSessions();
+			} else {
+				const data = await res.json();
+				error = data.detail ?? 'Failed to complete session.';
+			}
+		} catch (e) {
+			error = 'Failed to complete session.';
+		} finally {
+			completing = false;
+		}
 	}
 
 	async function forceConfirm(proposalId: number) {
@@ -222,7 +268,7 @@
 									{#if session.status === 'Confirmed'}
 										<button
 											class="btn btn-sm btn-success"
-											on:click={() => completeSession(session.id)}>Finalize & Complete</button
+											on:click={() => openCompleteModal(session)}>Finalize & Complete</button
 										>
 									{/if}
 									<button class="btn btn-sm btn-ghost text-error">Cancel Slot</button>
@@ -288,5 +334,75 @@
 	</div>
 	<div slot="action">
 		<button class="btn btn-primary w-full" on:click={createSession}>Schedule Session</button>
+	</div>
+</Modal>
+
+<!-- Complete Session Modal -->
+<Modal show={showComplete} title="Complete Session" onClose={() => (showComplete = false)}>
+	{#if completingSession}
+	<div class="form-control gap-4">
+		<!-- Result -->
+		<div>
+			<label class="label"><span class="label-text font-semibold">Mission Result</span></label>
+			<div class="flex gap-4">
+				<label class="flex items-center gap-2 cursor-pointer">
+					<input type="radio" class="radio radio-success" bind:group={cResult} value="success" />
+					<span class="text-success font-medium">✅ Success</span>
+				</label>
+				<label class="flex items-center gap-2 cursor-pointer">
+					<input type="radio" class="radio radio-error" bind:group={cResult} value="failure" />
+					<span class="text-error font-medium">❌ Failure</span>
+				</label>
+			</div>
+		</div>
+
+		<!-- Resources -->
+		<div class="grid grid-cols-3 gap-3">
+			<div>
+				<label class="label"><span class="label-text">⛽ Fuel Burned</span></label>
+				<input type="number" min="0" class="input input-bordered input-sm w-full" bind:value={cFuelBurned} />
+			</div>
+			<div>
+				<label class="label"><span class="label-text">💎 Crystals Earned</span></label>
+				<input type="number" min="0" class="input input-bordered input-sm w-full" bind:value={cCrystalsEarned} />
+			</div>
+			<div>
+				<label class="label"><span class="label-text">💰 Credits Earned</span></label>
+				<input type="number" min="0" class="input input-bordered input-sm w-full" bind:value={cCreditsEarned} />
+			</div>
+		</div>
+
+		<!-- Casualties -->
+		{#if completingSession.players.length > 0}
+		<div>
+			<label class="label"><span class="label-text">💀 Casualties (mark as Dead)</span></label>
+			<div class="flex flex-wrap gap-2">
+				{#each completingSession.players as p}
+				<label class="flex items-center gap-2 cursor-pointer border border-base-content/20 rounded px-3 py-1 {cCasualties.includes(p.id) ? 'bg-error/20 border-error/40' : ''}">
+					<input type="checkbox" class="checkbox checkbox-sm checkbox-error"
+						checked={cCasualties.includes(p.id)}
+						on:change={() => toggleCasualty(p.id)} />
+					<span class="text-sm">{p.name}</span>
+				</label>
+				{/each}
+			</div>
+		</div>
+		{/if}
+
+		<!-- After-Action Report -->
+		<div>
+			<label class="label"><span class="label-text">After-Action Report (optional)</span></label>
+			<textarea class="textarea textarea-bordered w-full h-20" bind:value={cAfterAction} placeholder="What happened? How did it go?"></textarea>
+		</div>
+
+		{#if error}
+		<div class="alert alert-error text-sm">{error}</div>
+		{/if}
+	</div>
+	{/if}
+	<div slot="action">
+		<button class="btn btn-success w-full" on:click={submitComplete} disabled={completing}>
+			{completing ? 'Processing...' : 'Log Session Result'}
+		</button>
 	</div>
 </Modal>

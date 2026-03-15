@@ -40,9 +40,8 @@ spec:
     - name: frontend
       image: localhost/dnd-frontend-dev:latest
       securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        runAsNonRoot: true
+        runAsUser: 0
+        runAsGroup: 0
       # Ensure metadata is generated and dependencies are ready when volume is mounted
       command: ["sh", "-c", "pnpm install && pnpm svelte-kit sync && pnpm run dev --host"]
       env:

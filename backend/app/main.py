@@ -7,8 +7,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from .logging_config import configure_logging, request_id_var
 configure_logging()
 
-from .database import engine, Base
-
 # Import all models to ensure they are registered with Base
 from .modules.auth import models as auth_models
 from .modules.characters import models as char_models
@@ -17,6 +15,8 @@ from .modules.missions import models as mission_models
 from .modules.sessions import models as session_models
 from .modules.maps import models as map_models
 from .modules.factions import models as faction_models
+from .modules.ship import models as ship_models
+from .modules.ledger import models as ledger_models
 
 # Import routers
 from .modules.auth import router as auth_router
@@ -32,9 +32,8 @@ from .modules.admin import router as admin_router
 from .modules.oneshot import router as oneshot_router
 from .modules.factions import router as faction_router
 from .modules.debug import router as debug_router
-
-# Create tables
-Base.metadata.create_all(bind=engine)
+from .modules.ship import router as ship_router
+from .modules.ledger import router as ledger_router
 
 app = FastAPI()
 
@@ -87,3 +86,5 @@ app.include_router(admin_router.router, prefix="/api/admin")
 app.include_router(oneshot_router.router, prefix="/api/oneshot")
 app.include_router(faction_router.router, prefix="/api/factions")
 app.include_router(debug_router.router, prefix="/api/debug")
+app.include_router(ship_router.router, prefix="/api/ship")
+app.include_router(ledger_router.router, prefix="/api/ledger")

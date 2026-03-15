@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from datetime import datetime
 from . import models, schemas
 from ..characters import models as char_models
 
@@ -125,6 +126,87 @@ def veto_proposal(db: Session, proposal_id: int):
     db.commit()
     db.refresh(db_proposal)
     return db_proposal, None
+
+def complete_session(
+    db: Session,
+    session: models.GameSession,
+    data: schemas.SessionCompleteRequest,
+    campaign_id: int,
+):
+    """
+    Mark session Completed, record result, distribute rewards, adjust ship,
+    create ledger entry, and handle casualties.
+    """
+    from ..missions import service as mission_service
+    from ..ship import service as ship_service
+    from ..ledger import service as ledger_service
+
+    if session.status == "Completed":
+        return None, "Session is already completed"
+    if data.result not in ("success", "failure"):
+        return None, "result must be 'success' or 'failure'"
+
+    session.status = "Completed"
+    session.result = data.result
+    session.fuel_burned = data.fuel_burned
+    session.crystals_earned = data.crystals_earned
+    session.credits_earned = data.credits_earned
+    if data.after_action_report:
+        session.after_action_report = data.after_action_report
+
+    # Distribute mission rewards (XP + scrip + items) on success
+    total_xp = 0
+    if data.result == "success" and session.confirmed_mission_id:
+        mission = mission_service.get_mission(db, session.confirmed_mission_id)
+        if mission:
+            mission.status = "Completed"
+            db.flush()
+            for character in session.players:
+                for reward in mission.rewards:
+                    if reward.xp:
+                        character.stats.xp += reward.xp
+                        total_xp += reward.xp
+                    if reward.scrip:
+                        character.stats.scrip += reward.scrip
+                    if reward.item_id:
+                        from ..items import service as item_service
+                        item_service.add_item_to_inventory(
+                            db, character_id=character.id, item_id=reward.item_id, quantity=1
+                        )
+            # Increment missions_completed for participants
+            for character in session.players:
+                character.missions_completed = (character.missions_completed or 0) + 1
+
+    # Handle casualties
+    for char_id in data.casualties:
+        char = db.query(char_models.Character).filter(char_models.Character.id == char_id).first()
+        if char:
+            char.status = "Dead"
+            if char.date_of_death is None:
+                char.date_of_death = datetime.utcnow()
+
+    db.flush()
+
+    # Adjust ship resources and auto-create ledger entry
+    event_type = "MissionCompleted" if data.result == "success" else "MissionFailed"
+    mission_name = session.confirmed_mission.name if session.confirmed_mission else session.name
+    description = f"{event_type}: {mission_name}"
+
+    ship = ship_service.adjust_resources(
+        db,
+        campaign_id=campaign_id,
+        description=description,
+        fuel_delta=-data.fuel_burned,
+        crystal_delta=data.crystals_earned,
+        credit_delta=data.credits_earned,
+        session_id=session.id,
+        event_type=event_type,
+    )
+
+    db.commit()
+    db.refresh(session)
+    return session, None
+
 
 def remove_character_from_session(db: Session, session_id: int, character_id: int):
     session = get_game_session(db, session_id)

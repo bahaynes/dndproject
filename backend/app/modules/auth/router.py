@@ -1,6 +1,7 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import httpx
 from typing import Optional
@@ -195,3 +196,65 @@ async def read_users_me_global(payload: dict = Depends(get_current_user_global))
         "discord_id": discord_id,
         "avatar_url": avatar_url
     }
+
+
+class DevTokenRequest(BaseModel):
+    discord_id: str = "e2e_player_001"
+    username: str = "E2E Player"
+    role: str = "player"
+    campaign_guild_id: str = "e2e-test-guild"
+    campaign_name: str = "E2E Test Campaign"
+
+
+@router.post("/dev-token", include_in_schema=False)
+async def dev_token(
+    request: DevTokenRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Dev-only endpoint for e2e testing. Returns a valid campaign-scoped JWT,
+    creating the campaign and user in the database if they don't exist.
+    Disabled (404) when APP_ENV=production.
+    """
+    if settings.APP_ENV == "production":
+        raise HTTPException(status_code=404, detail="Not found")
+
+    from ..campaigns import schemas as campaign_schemas
+    from ..characters import models as char_models
+
+    # Get or create campaign
+    campaign = campaign_service.get_campaign_by_guild_id(db, request.campaign_guild_id)
+    if not campaign:
+        campaign = campaign_service.create_campaign(
+            db,
+            campaign_schemas.CampaignCreate(
+                name=request.campaign_name,
+                discord_guild_id=request.campaign_guild_id,
+            ),
+        )
+
+    # Get or create user
+    user = crud.get_user_by_discord_id(db, request.discord_id, campaign.id)
+    if not user:
+        user = crud.create_user(
+            db,
+            schemas.UserCreate(
+                discord_id=request.discord_id,
+                username=request.username,
+                campaign_id=campaign.id,
+                role=request.role,
+            ),
+        )
+        # create_user builds a character but doesn't set active_character_id
+        if user.characters and not user.active_character_id:
+            user.active_character_id = user.characters[0].id
+            db.commit()
+            db.refresh(user)
+    elif user.role != request.role:
+        user.role = request.role
+        db.commit()
+
+    token = security.create_access_token(
+        data={"sub": request.discord_id, "campaign_id": campaign.id, "role": request.role}
+    )
+    return {"access_token": token, "token_type": "bearer", "campaign_id": campaign.id}

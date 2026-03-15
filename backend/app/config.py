@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     # Debug token for the /api/debug/* endpoints. Leave empty to disable those endpoints.
     DEBUG_TOKEN: str = os.getenv("DEBUG_TOKEN", "")
 
+    # Environment name — set to "production" to disable dev-only endpoints like /api/auth/dev-token.
+    APP_ENV: str = os.getenv("APP_ENV", "development")
+
     class Config:
         case_sensitive = True
 

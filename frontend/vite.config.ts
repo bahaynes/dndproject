@@ -10,6 +10,9 @@ export default defineConfig({
 		sveltekit(),
         svelteTesting(),
 	],
+	optimizeDeps: {
+		exclude: ['**/*.svelte'],
+	},
 	server: {
 		host: true,
 		proxy: {
