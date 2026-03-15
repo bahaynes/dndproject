@@ -17,14 +17,14 @@
   }
 </script>
 
-<div class="flex items-center justify-center min-h-screen bg-gray-100">
-  <div class="p-8 bg-white shadow-md rounded-lg text-center">
+<div class="flex items-center justify-center min-h-screen bg-base-200">
+  <div class="p-8 bg-base-100 shadow-md rounded-lg text-center">
     <h1 class="text-2xl font-bold mb-6">Login to DnD Westmarches</h1>
-    <p class="mb-4 text-gray-600">Please sign in using your Discord account.</p>
+    <p class="mb-4 text-base-content/70">Please sign in using your Discord account.</p>
 
     <button
       on:click={handleLogin}
-      class="flex items-center justify-center w-full px-4 py-2 text-white bg-indigo-600 rounded hover:bg-indigo-700 focus:outline-none"
+      class="btn btn-primary flex items-center justify-center w-full"
     >
       <!-- Discord Logo SVG -->
       <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

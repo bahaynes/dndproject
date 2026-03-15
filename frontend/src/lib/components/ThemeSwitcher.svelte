@@ -2,13 +2,13 @@
   import { onMount } from 'svelte';
 
   const themes = [
-    { name: 'Dark (Forest)', value: 'forest' },
-    { name: 'Abyss (Halloween)', value: 'halloween' },
-    { name: 'Neutral (Business)', value: 'business' },
-    { name: 'Light (Fantasy)', value: 'fantasy' }
+    { name: 'Frontier (Dark)', value: 'halloween' },
+    { name: 'Outpost (Green)', value: 'forest' },
+    { name: 'Neutral', value: 'business' },
+    { name: 'Light', value: 'fantasy' }
   ];
 
-  let currentTheme = 'forest';
+  let currentTheme = 'halloween';
 
   onMount(() => {
     const savedTheme = localStorage.getItem('theme');

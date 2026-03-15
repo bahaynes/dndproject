@@ -204,7 +204,7 @@
 	<h1 class="mb-8 text-3xl font-bold">Select Campaign</h1>
 
 	{#if error}
-		<div class="mb-4 rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700">
+		<div role="alert" class="alert alert-error mb-4">
 			{error}
 		</div>
 	{/if}
@@ -216,13 +216,13 @@
 		<div class="mb-8">
 			<h2 class="mb-4 text-xl font-semibold">My Campaigns</h2>
 			{#if myCampaigns.length === 0}
-				<p class="text-gray-500">You are not part of any campaigns yet.</p>
+				<p class="text-base-content/60">You are not part of any campaigns yet.</p>
 			{:else}
 				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 					{#each myCampaigns as camp}
 						<button
 							on:click={() => selectCampaign(camp.id)}
-							class="block w-full rounded bg-white p-6 text-left shadow transition hover:shadow-md"
+							class="block w-full rounded bg-base-100 p-6 text-left shadow transition hover:shadow-md"
 						>
 							<h3 class="text-lg font-bold">{camp.name}</h3>
 							<p class="text-sm text-gray-500">Click to Play</p>
@@ -249,16 +249,16 @@
 					>
 				</div>
 			{:else if availableCampaigns.length === 0}
-				<p class="text-gray-500">No new campaigns found that match your Discord servers.</p>
+				<p class="text-base-content/60">No new campaigns found that match your Discord servers.</p>
 			{:else}
 				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 					{#each availableCampaigns as camp}
 						<button
 							on:click={() => joinCampaign(camp.discord_guild_id)}
-							class="block w-full rounded border border-blue-200 bg-blue-50 p-6 text-left shadow transition hover:shadow-md"
+							class="block w-full rounded border border-primary/40 bg-base-100 p-6 text-left shadow transition hover:shadow-md"
 						>
-							<h3 class="text-lg font-bold text-blue-800">{camp.name}</h3>
-							<p class="text-sm text-blue-600">Click to Join</p>
+							<h3 class="text-lg font-bold text-primary">{camp.name}</h3>
+							<p class="text-sm text-primary/70">Click to Join</p>
 						</button>
 					{/each}
 				</div>
@@ -269,17 +269,17 @@
 		{#if adminGuilds.length > 0}
 			<div class="mb-8 border-t pt-8">
 				<h2 class="mb-4 text-xl font-semibold">Setup New Campaign</h2>
-				<p class="mb-4 text-sm text-gray-600">You have admin rights on these Discord servers.</p>
+				<p class="mb-4 text-sm text-base-content/60">You have admin rights on these Discord servers.</p>
 				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 					{#each adminGuilds as guild}
 						<!-- Filter out already setup guilds -->
 						{#if !myCampaigns.find((c) => c.discord_guild_id === guild.id) && !availableCampaigns.find((c) => c.discord_guild_id === guild.id)}
 							<button
 								on:click={() => setupCampaign(guild.id, guild.name)}
-								class="dashed block w-full rounded border border-gray-200 bg-gray-50 p-6 text-left shadow transition hover:shadow-md"
+								class="dashed block w-full rounded border border-base-300 bg-base-200 p-6 text-left shadow transition hover:shadow-md"
 							>
-								<h3 class="text-lg font-bold text-gray-700">{guild.name}</h3>
-								<p class="text-sm text-gray-500">Initialize Campaign</p>
+								<h3 class="text-lg font-bold text-base-content">{guild.name}</h3>
+								<p class="text-sm text-base-content/60">Initialize Campaign</p>
 							</button>
 						{/if}
 					{/each}
