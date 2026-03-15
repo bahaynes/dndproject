@@ -8,7 +8,6 @@ const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:8000';
  */
 test.describe('Smoke', () => {
   test('backend is reachable', async ({ request }) => {
-    // Any non-5xx response means the backend is up
     const response = await request.get(`${BACKEND_URL}/`);
     expect(response.status()).toBeLessThan(500);
   });
@@ -21,12 +20,14 @@ test.describe('Smoke', () => {
 
   test('unauthenticated visit to /dashboard redirects to /login', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.waitForURL(/\/login/);
+    // dashboard/+page.svelte uses window.location for the redirect
+    await page.waitForURL(/\/login/, { timeout: 10_000 });
     await expect(page).toHaveURL(/\/login/);
   });
 
   test('nav shows Login link when not authenticated', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByRole('link', { name: 'Login' })).toBeVisible();
+    // Use the nav Login button specifically (not the "Login with Discord" button on the login page)
+    await expect(page.locator('nav').getByRole('link', { name: 'Login' })).toBeVisible();
   });
 });

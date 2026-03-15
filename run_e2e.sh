@@ -48,6 +48,7 @@ fi
 # ---- Run tests --------------------------------------------------------------
 echo ""
 echo "==> Running E2E tests..."
+echo "    (If tests fail with JS module errors, restart the pod: ./kube/teardown.sh && ./kube/dev.sh)"
 npx playwright test "$@"
 
 echo ""

@@ -9,6 +9,7 @@ import { defineConfig, devices } from '@playwright/test';
  *   BACKEND_URL  - Backend URL  (default: http://localhost:8000)
  */
 export default defineConfig({
+  globalSetup: './global-setup.ts',
   testDir: './tests',
   timeout: 30_000,
   expect: { timeout: 10_000 },
