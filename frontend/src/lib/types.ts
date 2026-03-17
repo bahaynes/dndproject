@@ -22,11 +22,56 @@ export interface Character {
     description?: string;
     image_url?: string;
     character_sheet_url?: string;
+    class_name?: string;
+    level: number;
+    status: 'Active' | 'Dead' | 'Benched';
+    date_of_death?: string;
+    missions_completed: number;
     owner_id: number;
     stats: CharacterStats;
     inventory: InventoryItem[];
     missions: Mission[];
     game_sessions: GameSession[];
+}
+
+export interface CharacterRosterEntry {
+    id: number;
+    name: string;
+    class_name?: string;
+    level: number;
+    status: 'Active' | 'Dead' | 'Benched';
+    date_of_death?: string;
+    missions_completed: number;
+    owner_id: number;
+    owner_username?: string;
+}
+
+export interface Ship {
+    id: number;
+    campaign_id: number;
+    name: string;
+    level: number;
+    fuel: number;
+    max_fuel: number;
+    crystals: number;
+    credits: number;
+    motd?: string;
+    status: 'nominal' | 'low_fuel' | 'critical';
+    created_at: string;
+}
+
+export interface LedgerEntry {
+    id: number;
+    campaign_id: number;
+    session_id?: number;
+    event_type: string;
+    description: string;
+    fuel_delta: number;
+    crystal_delta: number;
+    credit_delta: number;
+    xp_delta: number;
+    ship_snapshot?: Record<string, number>;
+    created_at: string;
 }
 
 export interface CharacterStats {
@@ -120,6 +165,10 @@ export interface GameSessionWithPlayers {
     status: string;
     after_action_report?: string;
     field_report?: string;
+    result?: string;
+    fuel_burned: number;
+    crystals_earned: number;
+    credits_earned: number;
     min_players: number;
     max_players: number;
     players: CharacterInGameSession[];

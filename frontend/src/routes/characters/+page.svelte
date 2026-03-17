@@ -16,6 +16,8 @@
 	let editName = '';
 	let editDescription = '';
 	let editCharacterSheetUrl = '';
+	let editClassName = '';
+	let editLevel = 1;
 
 	// Creation state
 	let isCreating = false;
@@ -71,6 +73,8 @@
 			editName = viewCharacter.name;
 			editDescription = viewCharacter.description || '';
 			editCharacterSheetUrl = viewCharacter.character_sheet_url || '';
+			editClassName = viewCharacter.class_name || '';
+			editLevel = viewCharacter.level ?? 1;
 		}
 	}
 
@@ -152,7 +156,9 @@
 				body: JSON.stringify({
 					name: editName,
 					description: editDescription,
-					character_sheet_url: editCharacterSheetUrl
+					character_sheet_url: editCharacterSheetUrl,
+					class_name: editClassName || null,
+					level: editLevel,
 				})
 			});
 
@@ -235,7 +241,7 @@
 							</div>
 							<div class="min-w-0 flex-1">
 								<div class="truncate text-sm font-bold">{char.name}</div>
-								<div class="text-[10px] opacity-60">Lvl 1 Adventurer</div>
+								<div class="text-[10px] opacity-60">Lvl {char.level} {char.class_name || 'Adventurer'}</div>
 							</div>
 							{#if activeCharacterId === char.id}
 								<div class="badge badge-success badge-xs">Active</div>
@@ -277,11 +283,21 @@
 													class="input input-bordered input-lg w-full max-w-xs font-[var(--font-cinzel)]"
 													bind:value={editName}
 												/>
+												<div class="flex gap-2 mt-2">
+													<input type="text" class="input input-bordered input-sm w-32" placeholder="Class" bind:value={editClassName} />
+													<input type="number" class="input input-bordered input-sm w-20" min="1" max="20" placeholder="Lvl" bind:value={editLevel} />
+												</div>
 											{:else}
 												<h1 class="text-primary text-3xl font-[var(--font-cinzel)] font-bold">
 													{viewCharacter.name}
 												</h1>
-												<p class="text-sm opacity-70">Level 1 Adventurer</p>
+												<p class="text-sm opacity-70">Level {viewCharacter.level} {viewCharacter.class_name || 'Adventurer'}</p>
+												<div class="flex gap-2 mt-1">
+													<span class="badge badge-sm {viewCharacter.status === 'Active' ? 'badge-success' : viewCharacter.status === 'Dead' ? 'badge-error' : 'badge-ghost'}">{viewCharacter.status}</span>
+													{#if viewCharacter.missions_completed > 0}
+														<span class="badge badge-sm badge-outline">{viewCharacter.missions_completed} missions</span>
+													{/if}
+												</div>
 											{/if}
 										</div>
 									</div>

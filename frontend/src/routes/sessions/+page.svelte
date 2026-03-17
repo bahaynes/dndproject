@@ -207,7 +207,7 @@
 						{#if session.status === 'Completed'}
 							<!-- Dispatch from the Mission Board -->
 							{#if session.field_report}
-								<div class="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+								<div class="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
 									<div class="mb-2 flex items-center gap-2">
 										<span class="text-xs font-bold uppercase tracking-widest opacity-60">Dispatch from the Field</span>
 									</div>

@@ -161,6 +161,25 @@ def submit_field_report(
 
     return crud.update_field_report(db, session=db_session, field_report=report.field_report)
 
+@router.post("/{session_id}/complete", response_model=schemas.GameSessionWithPlayers, tags=["Admin"])
+def complete_session(
+    session_id: int,
+    data: schemas.SessionCompleteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_admin_user),
+):
+    db_session = crud.get_game_session(db, session_id=session_id)
+    if not db_session or db_session.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Game session not found")
+
+    session, error = crud.complete_session(
+        db, session=db_session, data=data, campaign_id=current_user.campaign_id
+    )
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    return session
+
+
 @router.delete("/{session_id}/kick/{character_id}", response_model=schemas.GameSessionWithPlayers, tags=["Admin"])
 def kick_player(
     session_id: int,

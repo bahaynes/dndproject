@@ -8,6 +8,10 @@
 		<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap" rel="stylesheet">
 		%sveltekit.head%
 	</head>
+	<script>
+		const t = localStorage.getItem('theme');
+		document.documentElement.setAttribute('data-theme', t || 'halloween');
+	</script>
 	<body data-sveltekit-preload-data="hover">
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>

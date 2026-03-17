@@ -33,6 +33,15 @@ class GameSession(GameSessionBase):
 class FieldReportUpdate(BaseModel):
     field_report: str
 
+
+class SessionCompleteRequest(BaseModel):
+    result: str  # "success" | "failure"
+    fuel_burned: int = 0
+    crystals_earned: int = 0
+    credits_earned: int = 0
+    after_action_report: Optional[str] = None
+    casualties: List[int] = []  # character IDs to mark as Dead
+
 class SessionProposalBase(BaseModel):
     session_id: int
     mission_id: int

@@ -8,3 +8,5 @@ from .modules.campaigns import models as campaign_models
 from .modules.maps import models as map_models
 from .modules.oneshot import models as oneshot_models
 from .modules.factions import models as faction_models
+from .modules.ship import models as ship_models
+from .modules.ledger import models as ledger_models

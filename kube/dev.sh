@@ -20,11 +20,19 @@ set -e
 PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_DIR"
 
+# Install pre-commit hook (idempotent)
+HOOK="$PROJECT_DIR/.git/hooks/pre-commit"
+SCRIPT="$PROJECT_DIR/scripts/pre-commit"
+if [ ! -L "$HOOK" ] || [ "$(readlink "$HOOK")" != "$SCRIPT" ]; then
+    ln -sf "$SCRIPT" "$HOOK"
+    echo "==> Installed pre-commit hook (smoke tests when pod is up)"
+fi
+
 echo "==> Building dev images..."
 
 # Detect environment constraints (e.g., nested containers)
 POD_BUILD_ARGS=""
-export POD_HOST_NETWORK=""
+export POD_HOST_NETWORK="false"
 YAML_FILTER="cat"
 TEST_IMAGE="public.ecr.aws/docker/library/python:3.11-slim"
 
@@ -34,7 +42,7 @@ podman pull "$TEST_IMAGE" >/dev/null 2>&1 || true
 if ! podman run --rm "$TEST_IMAGE" true >/dev/null 2>&1; then
     echo "    Standard networking failed. Enabling host network mode (nested environment detected)."
     POD_BUILD_ARGS="--security-opt seccomp=unconfined --network host"
-    export POD_HOST_NETWORK="hostNetwork: true"
+    export POD_HOST_NETWORK="true"
     # Remove ports when using host network to avoid conflicts
     YAML_FILTER="sed '/ports:/d; /containerPort:/d; /hostPort:/d'"
 fi

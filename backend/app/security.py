@@ -1,12 +1,9 @@
-import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import bcrypt
 from jose import JWTError, jwt
-from dotenv import load_dotenv
 
-load_dotenv()
 
 # Password Hashing (Re-implemented using bcrypt directly to support Python 3.13)
 def verify_password(plain_password, hashed_password):
@@ -27,18 +24,16 @@ def get_password_hash(password):
     return bcrypt.hashpw(password, bcrypt.gensalt()).decode('utf-8')
 
 
-# JWT Handling
-SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_that_should_be_in_env_file")
-ALGORITHM = os.getenv("ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 30))
-
-
+# JWT Handling — reads key/algorithm from settings so creation and verification always use the same values.
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    from .config import get_settings
+    settings = get_settings()
+
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt

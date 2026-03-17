@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from ...database import Base
 
@@ -10,6 +10,12 @@ class Character(Base):
     description = Column(String, nullable=True)
     image_url = Column(String, nullable=True)
     character_sheet_url = Column(String, nullable=True)
+
+    class_name = Column(String, nullable=True)
+    level = Column(Integer, default=1, nullable=False)
+    status = Column(String, default="Active", nullable=False)  # Active | Dead | Benched
+    date_of_death = Column(DateTime, nullable=True)
+    missions_completed = Column(Integer, default=0, nullable=False)
 
     # Scoping
     campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)

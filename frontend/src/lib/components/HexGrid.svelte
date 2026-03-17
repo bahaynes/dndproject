@@ -72,7 +72,7 @@
 >
 	<svg
 		bind:this={svgElement}
-		class="h-full w-full cursor-move bg-[#111]"
+		class="h-full w-full cursor-move bg-base-300"
 		viewBox="{viewBox.x} {viewBox.y} {viewBox.w} {viewBox.h}"
 		role="application"
 		on:mousedown={handleMouseDown}

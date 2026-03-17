@@ -1,5 +1,7 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 import httpx
 from typing import Optional
@@ -9,6 +11,8 @@ from ... import security
 from ...dependencies import get_db, get_current_user, get_current_user_global
 from . import schemas, service as crud, models
 from ..campaigns import service as campaign_service
+
+logger = logging.getLogger("app.auth")
 
 router = APIRouter()
 settings = get_settings()
@@ -30,6 +34,14 @@ async def login_via_discord(
         f"&scope={scope}"
     )
 
+    logger.info(
+        "Initiating Discord OAuth redirect",
+        extra={
+            "discord_client_id": settings.DISCORD_CLIENT_ID,
+            "redirect_uri": settings.DISCORD_REDIRECT_URI,
+        },
+    )
+
     response = RedirectResponse(url=discord_auth_url)
 
     # Validate and store return_to in a cookie if provided
@@ -37,7 +49,7 @@ async def login_via_discord(
         # Simple validation: allow localhost, *.vercel.app, and the production domain
         allowed_domains = ["localhost", ".vercel.app", "westmarches.bahaynes.com"]
         is_allowed = False
-        
+
         if return_to.startswith("/"):
             is_allowed = True
         else:
@@ -77,6 +89,8 @@ async def discord_callback(code: str, request: Request, response: Response, db: 
     Handles the callback from Discord, exchanges code for token, and gets user info.
     Returns a temporary token that allows the user to list/select campaigns.
     """
+    logger.info("Discord OAuth callback received", extra={"code_present": bool(code)})
+
     # Exchange code for token
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
@@ -92,10 +106,21 @@ async def discord_callback(code: str, request: Request, response: Response, db: 
         )
 
     if token_response.status_code != 200:
+        logger.error(
+            "Discord token exchange failed",
+            extra={
+                "status_code": token_response.status_code,
+                # Discord returns a JSON body with error + error_description — this is the key diagnostic.
+                # e.g. {"error": "invalid_grant", "error_description": "Invalid \"redirect_uri\" in request."}
+                "discord_error": token_response.text,
+                "redirect_uri_used": settings.DISCORD_REDIRECT_URI,
+            },
+        )
         raise HTTPException(status_code=400, detail="Failed to retrieve token from Discord")
 
     token_data = token_response.json()
     access_token = token_data.get("access_token")
+    logger.info("Discord token exchange succeeded")
 
     # Get User Info
     async with httpx.AsyncClient() as client:
@@ -105,12 +130,24 @@ async def discord_callback(code: str, request: Request, response: Response, db: 
         )
 
     if user_response.status_code != 200:
+        logger.error(
+            "Discord user info fetch failed",
+            extra={
+                "status_code": user_response.status_code,
+                "discord_error": user_response.text,
+            },
+        )
         raise HTTPException(status_code=400, detail="Failed to retrieve user info from Discord")
 
     discord_user = user_response.json()
     discord_id = discord_user.get("id")
     username = discord_user.get("username")
     avatar = discord_user.get("avatar")
+
+    logger.info(
+        "Discord user info retrieved",
+        extra={"discord_id": discord_id, "username": username},
+    )
 
     # We construct a special token payload
     token_payload = {
@@ -128,7 +165,7 @@ async def discord_callback(code: str, request: Request, response: Response, db: 
 
     # Redirect to frontend with token
     frontend_url = f"{base_url}/login/callback?token={jwt_token}&discord_token={access_token}"
-    
+
     if return_to:
         from urllib.parse import quote
         frontend_url += f"&next={quote(return_to)}"
@@ -153,9 +190,71 @@ async def read_users_me_global(payload: dict = Depends(get_current_user_global))
     discord_id = payload.get("sub")
     avatar_hash = payload.get("avatar")
     avatar_url = f"https://cdn.discordapp.com/avatars/{discord_id}/{avatar_hash}.png" if avatar_hash else None
-    
+
     return {
         "username": payload.get("username"),
         "discord_id": discord_id,
         "avatar_url": avatar_url
     }
+
+
+class DevTokenRequest(BaseModel):
+    discord_id: str = "e2e_player_001"
+    username: str = "E2E Player"
+    role: str = "player"
+    campaign_guild_id: str = "e2e-test-guild"
+    campaign_name: str = "E2E Test Campaign"
+
+
+@router.post("/dev-token", include_in_schema=False)
+async def dev_token(
+    request: DevTokenRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Dev-only endpoint for e2e testing. Returns a valid campaign-scoped JWT,
+    creating the campaign and user in the database if they don't exist.
+    Disabled (404) when APP_ENV=production.
+    """
+    if settings.APP_ENV == "production":
+        raise HTTPException(status_code=404, detail="Not found")
+
+    from ..campaigns import schemas as campaign_schemas
+    from ..characters import models as char_models
+
+    # Get or create campaign
+    campaign = campaign_service.get_campaign_by_guild_id(db, request.campaign_guild_id)
+    if not campaign:
+        campaign = campaign_service.create_campaign(
+            db,
+            campaign_schemas.CampaignCreate(
+                name=request.campaign_name,
+                discord_guild_id=request.campaign_guild_id,
+            ),
+        )
+
+    # Get or create user
+    user = crud.get_user_by_discord_id(db, request.discord_id, campaign.id)
+    if not user:
+        user = crud.create_user(
+            db,
+            schemas.UserCreate(
+                discord_id=request.discord_id,
+                username=request.username,
+                campaign_id=campaign.id,
+                role=request.role,
+            ),
+        )
+        # create_user builds a character but doesn't set active_character_id
+        if user.characters and not user.active_character_id:
+            user.active_character_id = user.characters[0].id
+            db.commit()
+            db.refresh(user)
+    elif user.role != request.role:
+        user.role = request.role
+        db.commit()
+
+    token = security.create_access_token(
+        data={"sub": request.discord_id, "campaign_id": campaign.id, "role": request.role}
+    )
+    return {"access_token": token, "token_type": "bearer", "campaign_id": campaign.id}

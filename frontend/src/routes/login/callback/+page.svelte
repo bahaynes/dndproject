@@ -1,45 +1,27 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
-	import { auth } from '$lib/auth';
 	import { browser } from '$app/environment';
 
-	onMount(async () => {
-		if (browser) {
-			const token = $page.url.searchParams.get('token');
-			const discordToken = $page.url.searchParams.get('discord_token');
+	// No network calls. Stash the OAuth tokens and hard-redirect to /campaigns.
+	// Must use window.location (not goto) because adapter-static serves a pre-rendered
+	// shell and SvelteKit's router isn't ready for goto() on first load.
+	onMount(() => {
+		if (!browser) return;
 
-			if (token && discordToken) {
-				localStorage.setItem('tempGlobalToken', token);
-				localStorage.setItem('tempDiscordToken', discordToken);
+		const params = new URLSearchParams(window.location.search);
+		const token = params.get('token');
+		const discordToken = params.get('discord_token');
 
-				// Fetch Global User Info immediately to update Store
-				try {
-					const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/auth/me/global`, {
-						headers: { Authorization: `Bearer ${token}` }
-					});
-					if (response.ok) {
-						const globalUser = await response.json();
-						// Import globalLogin dynamically or use the one from $lib/auth
-						// We imported auth, need to import globalLogin
-						// For now, rely on module import
-						const { globalLogin } = await import('$lib/auth');
-						globalLogin(globalUser, token);
-					}
-				} catch (e) {
-					console.error('Failed to fetch global profile in callback', e);
-				}
-
-				const next = $page.url.searchParams.get('next');
-				goto(next || '/campaigns');
-			} else {
-				goto('/login');
-			}
+		if (token && discordToken) {
+			localStorage.setItem('pendingToken', token);
+			localStorage.setItem('pendingDiscordToken', discordToken);
+			window.location.replace('/campaigns');
+		} else {
+			window.location.replace('/login');
 		}
 	});
 </script>
 
 <div class="flex min-h-screen items-center justify-center">
-	<p class="text-xl">Authenticating...</p>
+	<p class="text-xl">Redirecting...</p>
 </div>

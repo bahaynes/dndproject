@@ -1,72 +1,44 @@
 <script lang="ts">
 	import '../app.css';
-	import { auth, login, globalLogin, logout } from '$lib/auth';
+	import { auth, login, logout } from '$lib/auth';
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
-	import { get } from 'svelte/store';
 	import { API_BASE_URL } from '$lib/config';
 	import ThemeSwitcher from '$lib/components/ThemeSwitcher.svelte';
 
+	// Rehydrate auth from localStorage on every page load.
+	// Only ever looks at accessToken — nothing else.
 	onMount(async () => {
-		if (browser) {
-			const token = localStorage.getItem('accessToken');
-			const tempGlobalToken = localStorage.getItem('tempGlobalToken');
-			const currentAuth = get(auth);
+		if (!browser) return;
 
-			// 1. Try Full Campaign Login first
-			if (token && !currentAuth.isAuthenticated) {
-				try {
-					const response = await fetch(`${API_BASE_URL}/auth/me`, {
-						headers: { Authorization: `Bearer ${token}` }
-					});
-					if (response.ok) {
-						const user = await response.json();
-						login(user, token, user.campaign);
-					} else {
-						// Token invalid, clear it
-						localStorage.removeItem('accessToken');
-						// Fall through to check global token? Or just logout fully?
-						// Usually if access token is bad, we might still have a valid global token?
-						// Let's just logout for safety/simplicity
-						handleLogout();
-						return;
-					}
-				} catch (e) {
-					console.error('Failed to fetch user profile', e);
-					handleLogout();
-					return;
-				}
-			}
+		const token = localStorage.getItem('accessToken');
+		if (!token || $auth.isAuthenticated) return;
 
-			// 2. If not fully authenticated, check for Global Token (Discord Auth only)
-			// We re-check currentAuth because the above block might have set it.
-			if (!get(auth).isAuthenticated && tempGlobalToken && !get(auth).isGlobalAuthenticated) {
-				try {
-					const response = await fetch(`${API_BASE_URL}/auth/me/global`, {
-						headers: { Authorization: `Bearer ${tempGlobalToken}` }
-					});
-					if (response.ok) {
-						const globalUser = await response.json();
-						globalLogin(globalUser, tempGlobalToken);
-					} else {
-						// Global Token invalid
-						localStorage.removeItem('tempGlobalToken');
-						localStorage.removeItem('tempDiscordToken');
-					}
-				} catch (e) {
-					console.error('Failed to fetch global profile', e);
-					localStorage.removeItem('tempGlobalToken');
-				}
+		try {
+			const controller = new AbortController();
+			const timer = setTimeout(() => controller.abort(), 8000);
+			const response = await fetch(`${API_BASE_URL}/auth/me`, {
+				headers: { Authorization: `Bearer ${token}` },
+				signal: controller.signal
+			});
+			clearTimeout(timer);
+
+			if (response.ok) {
+				const user = await response.json();
+				login(user, token, user.campaign);
+			} else {
+				localStorage.removeItem('accessToken');
 			}
+		} catch (e) {
+			console.error('Auth rehydration failed', e);
+			localStorage.removeItem('accessToken');
 		}
 	});
 
 	function handleLogout() {
 		logout();
-		if (browser) {
-			goto('/login');
-		}
+		if (browser) goto('/login');
 	}
 </script>
 
@@ -97,10 +69,6 @@
 						<li><a href="/campaigns">Switch Campaign</a></li>
 						<li><hr class="my-1 opacity-10" /></li>
 						<li><button on:click={handleLogout} class="text-error">Logout</button></li>
-					{:else if $auth.isGlobalAuthenticated}
-						<li><a href="/campaigns">Select Campaign</a></li>
-						<li><hr class="my-1 opacity-10" /></li>
-						<li><button on:click={handleLogout} class="text-error">Logout</button></li>
 					{:else}
 						<li><a href="/login">Login</a></li>
 					{/if}
@@ -117,8 +85,6 @@
 					<li><a href="/dashboard" class="font-semibold">Dashboard</a></li>
 					<li><a href="/maps" class="font-semibold">World Map</a></li>
 					<li><a href="/campaigns" class="font-semibold">Switch Campaign</a></li>
-				{:else if $auth.isGlobalAuthenticated}
-					<li><a href="/campaigns" class="font-semibold">Select Campaign</a></li>
 				{/if}
 			</ul>
 		</div>
@@ -165,11 +131,6 @@
 							<li><button on:click={handleLogout} class="font-bold text-error">Logout</button></li>
 						</ul>
 					</div>
-				</div>
-			{:else if $auth.isGlobalAuthenticated}
-				<div class="flex items-center gap-3">
-					<span class="hidden text-sm font-bold md:inline">{$auth.globalUser?.username}</span>
-					<button on:click={handleLogout} class="btn btn-ghost btn-sm">Logout</button>
 				</div>
 			{:else}
 				<a href="/login" class="btn px-6 btn-sm btn-primary">Login</a>
