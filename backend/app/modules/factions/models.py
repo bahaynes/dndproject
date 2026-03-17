@@ -9,8 +9,10 @@ class FactionReputation(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
-    faction_name = Column(String, nullable=False)  # "Kathedral" | "Vastarei"
+    faction_name = Column(String, nullable=False)
     level = Column(Integer, default=0, nullable=False)  # -5 to +5
+    color = Column(String, nullable=True)        # hex color e.g. "#3b82f6"
+    description = Column(String, nullable=True)  # one-line flavor text
 
     __table_args__ = (
         CheckConstraint("level >= -5 AND level <= 5", name="reputation_level_range"),

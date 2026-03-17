@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from typing import List
 from sqlalchemy.orm import Session
 
@@ -17,19 +17,31 @@ def get_reputations(
     return service.get_all_reputations(db, campaign_id=current_user.campaign_id)
 
 
-@router.post(
-    "/{faction_name}/adjust",
-    response_model=schemas.FactionReputation,
-    tags=["Factions"],
-)
+@router.post("/", response_model=schemas.FactionReputation, tags=["Factions"])
+def create_faction(
+    data: schemas.FactionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_admin_user),
+):
+    return service.create_faction(db, campaign_id=current_user.campaign_id, data=data)
+
+
+@router.delete("/{faction_name}", status_code=204, tags=["Factions"])
+def delete_faction(
+    faction_name: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_admin_user),
+):
+    service.delete_faction(db, campaign_id=current_user.campaign_id, faction_name=faction_name)
+
+
+@router.post("/{faction_name}/adjust", response_model=schemas.FactionReputation, tags=["Factions"])
 def adjust_reputation(
     faction_name: str,
     adjust: schemas.ReputationAdjust,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_admin_user),
 ):
-    if faction_name not in schemas.VALID_FACTIONS:
-        raise HTTPException(status_code=400, detail=f"Unknown faction: {faction_name}")
     return service.adjust_reputation(
         db,
         campaign_id=current_user.campaign_id,
