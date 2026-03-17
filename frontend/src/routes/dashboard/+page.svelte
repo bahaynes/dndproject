@@ -249,6 +249,7 @@
                             <li><a href="/sessions" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">📅 Sessions</a></li>
                             <li><a href="/store" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">🛒 Store</a></li>
                             <li><a href="/maps" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">🗺️ Maps</a></li>
+                            <li><a href="/factions" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">⚖️ Factions</a></li>
                             <li><a href="/ledger" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">📖 Ledger</a></li>
                             <li><a href="/roster" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">👥 Crew Roster</a></li>
                         </ul>
@@ -257,7 +258,7 @@
 
                 <div class="card bg-base-100 shadow-md border border-base-content/10">
                     <div class="card-body p-4">
-                        <FactionReputationTracker isAdmin={user.role === 'admin'} />
+                        <FactionReputationTracker />
                     </div>
                 </div>
             </div>
