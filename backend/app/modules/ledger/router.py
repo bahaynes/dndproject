@@ -46,10 +46,7 @@ def create_ledger_entry(
         campaign_id=current_user.campaign_id,
         event_type=data.event_type,
         description=data.description,
-        fuel_delta=data.fuel_delta,
-        crystal_delta=data.crystal_delta,
-        credit_delta=data.credit_delta,
-        xp_delta=data.xp_delta,
+        essence_delta=data.essence_delta,
         session_id=data.session_id,
         ship_snapshot=snapshot,
     )

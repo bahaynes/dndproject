@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from ...dependencies import get_db, get_current_user, get_current_active_admin_user
@@ -35,8 +35,6 @@ def adjust_ship(
         db,
         campaign_id=current_user.campaign_id,
         description=data.description,
-        fuel_delta=data.fuel_delta,
-        crystal_delta=data.crystal_delta,
-        credit_delta=data.credit_delta,
+        essence_delta=data.essence_delta,
         event_type="AdminAdjustment",
     )

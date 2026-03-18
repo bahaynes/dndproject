@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 from typing import Optional, List
-from datetime import datetime
 
 from . import models, schemas
 
@@ -11,10 +10,7 @@ def create_entry(
     campaign_id: int,
     event_type: str,
     description: str,
-    fuel_delta: int = 0,
-    crystal_delta: int = 0,
-    credit_delta: int = 0,
-    xp_delta: int = 0,
+    essence_delta: int = 0,
     session_id: Optional[int] = None,
     ship_snapshot: Optional[dict] = None,
 ) -> models.LedgerEntry:
@@ -23,10 +19,7 @@ def create_entry(
         session_id=session_id,
         event_type=event_type,
         description=description,
-        fuel_delta=fuel_delta,
-        crystal_delta=crystal_delta,
-        credit_delta=credit_delta,
-        xp_delta=xp_delta,
+        essence_delta=essence_delta,
         ship_snapshot=ship_snapshot,
     )
     db.add(entry)

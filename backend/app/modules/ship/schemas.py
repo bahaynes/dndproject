@@ -6,27 +6,24 @@ from datetime import datetime
 class ShipBase(BaseModel):
     name: str = "The Ship"
     level: int = 1
-    fuel: int = 100
-    max_fuel: int = 100
-    crystals: int = 0
-    credits: int = 0
+    essence: int = 0
     motd: Optional[str] = None
 
 
 class ShipUpdate(BaseModel):
     name: Optional[str] = None
     level: Optional[int] = None
-    fuel: Optional[int] = None
-    max_fuel: Optional[int] = None
-    crystals: Optional[int] = None
-    credits: Optional[int] = None
+    essence: Optional[int] = None
     motd: Optional[str] = None
 
 
 class ShipOut(ShipBase):
     id: int
     campaign_id: int
-    status: str  # "nominal" | "low_fuel" | "critical"
+    status: str  # "nominal" | "low" | "critical"
+    long_rest_cost: int
+    next_threshold: Optional[int]
+    essence_to_next_level: int
     created_at: datetime
 
     class Config:
@@ -34,7 +31,5 @@ class ShipOut(ShipBase):
 
 
 class ShipAdjust(BaseModel):
-    fuel_delta: int = 0
-    crystal_delta: int = 0
-    credit_delta: int = 0
+    essence_delta: int = 0
     description: str
