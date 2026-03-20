@@ -148,9 +148,7 @@ def complete_session(
 
     session.status = "Completed"
     session.result = data.result
-    session.fuel_burned = data.fuel_burned
-    session.crystals_earned = data.crystals_earned
-    session.credits_earned = data.credits_earned
+    session.essence_earned = data.essence_earned
     if data.after_action_report:
         session.after_action_report = data.after_action_report
 
@@ -196,9 +194,7 @@ def complete_session(
         db,
         campaign_id=campaign_id,
         description=description,
-        fuel_delta=-data.fuel_burned,
-        crystal_delta=data.crystals_earned,
-        credit_delta=data.credits_earned,
+        essence_delta=data.essence_earned,
         session_id=session.id,
         event_type=event_type,
     )

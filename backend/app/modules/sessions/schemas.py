@@ -36,9 +36,7 @@ class FieldReportUpdate(BaseModel):
 
 class SessionCompleteRequest(BaseModel):
     result: str  # "success" | "failure"
-    fuel_burned: int = 0
-    crystals_earned: int = 0
-    credits_earned: int = 0
+    essence_earned: int = 0
     after_action_report: Optional[str] = None
     casualties: List[int] = []  # character IDs to mark as Dead
 
@@ -59,5 +57,7 @@ class SessionProposal(SessionProposalBase):
         from_attributes = True
 
 class GameSessionWithPlayers(GameSession):
+    result: Optional[str] = None
+    essence_earned: Optional[int] = None
     proposals: List[SessionProposal] = []
     confirmed_mission: Optional[Mission] = None

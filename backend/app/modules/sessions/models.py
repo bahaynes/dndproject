@@ -28,9 +28,7 @@ class GameSession(Base):
 
     # Session result (set when completed)
     result = Column(String, nullable=True)  # "success" | "failure"
-    fuel_burned = Column(Integer, default=0, nullable=False)
-    crystals_earned = Column(Integer, default=0, nullable=False)
-    credits_earned = Column(Integer, default=0, nullable=False)
+    essence_earned = Column(Integer, default=0, nullable=True)
 
     confirmed_mission_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
     confirmed_mission = relationship("Mission")
