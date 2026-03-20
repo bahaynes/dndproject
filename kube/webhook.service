@@ -1,0 +1,34 @@
+# =============================================================================
+# webhook.service — GitHub webhook listener (systemd user unit)
+# =============================================================================
+# Install:
+#   mkdir -p ~/.config/systemd/user
+#   cp kube/webhook.service ~/.config/systemd/user/webhook.service
+#   # Edit WorkingDirectory and ExecStart below to match your repo path
+#   systemctl --user daemon-reload
+#   systemctl --user enable --now webhook.service
+# =============================================================================
+
+[Unit]
+Description=GitHub webhook listener for DnD Westmarches auto-deploy
+After=network.target
+
+[Service]
+Type=simple
+
+# --- EDIT THIS PATH to point at your local clone of the repo ---
+WorkingDirectory=%h/git/hub/dndproject
+
+# start-webhook.sh derives the repo root from its own location, so this
+# path must point at the real start-webhook.sh in your checkout.
+ExecStart=%h/git/hub/dndproject/kube/start-webhook.sh
+
+Restart=on-failure
+RestartSec=10
+
+# Keep stdout/stderr visible via: journalctl --user -u webhook.service -f
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=default.target
