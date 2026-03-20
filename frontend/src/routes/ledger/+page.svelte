@@ -91,10 +91,7 @@
                         <th>Date</th>
                         <th>Event</th>
                         <th>Description</th>
-                        <th class="text-right">⛽ Fuel</th>
-                        <th class="text-right">💎 Crystal</th>
-                        <th class="text-right">💰 Credits</th>
-                        <th class="text-right">⭐ XP</th>
+                        <th class="text-right">⚡ Essence</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -103,10 +100,7 @@
                         <td class="text-xs opacity-60 whitespace-nowrap">{formatDate(entry.created_at)}</td>
                         <td><span class="badge badge-sm badge-outline">{EVENT_LABELS[entry.event_type] ?? entry.event_type}</span></td>
                         <td class="max-w-xs truncate text-sm">{entry.description}</td>
-                        <td class="text-right text-sm {deltaClass(entry.fuel_delta)}">{deltaCell(entry.fuel_delta)}</td>
-                        <td class="text-right text-sm {deltaClass(entry.crystal_delta)}">{deltaCell(entry.crystal_delta)}</td>
-                        <td class="text-right text-sm {deltaClass(entry.credit_delta)}">{deltaCell(entry.credit_delta)}</td>
-                        <td class="text-right text-sm {deltaClass(entry.xp_delta)}">{deltaCell(entry.xp_delta)}</td>
+                        <td class="text-right text-sm {deltaClass(entry.essence_delta)}">{deltaCell(entry.essence_delta)}</td>
                     </tr>
                     {/each}
                 </tbody>
