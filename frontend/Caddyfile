@@ -11,6 +11,13 @@
         reverse_proxy localhost:8000
     }
 
+    # GitHub webhook → host webhook listener (127.0.0.1:9000 on the host)
+    # Caddy rewrites /webhook to /hooks/deploy so GitHub only needs one URL.
+    handle /webhook {
+        rewrite * /hooks/deploy
+        reverse_proxy host.containers.internal:9000
+    }
+
     # All other requests (frontend)
     handle {
         root * /srv
