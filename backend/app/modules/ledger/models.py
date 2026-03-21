@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, JSON
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from ...database import Base
 
 
@@ -22,7 +22,7 @@ class LedgerEntry(Base):
     # Ship state snapshot at time of entry: {"level": 1, "essence": 42}
     ship_snapshot = Column(JSON, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     campaign = relationship("Campaign")
     session = relationship("GameSession")

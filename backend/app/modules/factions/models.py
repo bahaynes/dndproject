@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, CheckConstraint
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, CheckConstraint, UniqueConstraint
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from ...database import Base
 
 
@@ -15,6 +15,7 @@ class FactionReputation(Base):
     description = Column(String, nullable=True)  # one-line flavor text
 
     __table_args__ = (
+        UniqueConstraint("campaign_id", "faction_name", name="uq_faction_per_campaign"),
         CheckConstraint("level >= -5 AND level <= 5", name="reputation_level_range"),
     )
 
@@ -35,7 +36,7 @@ class FactionReputationEvent(Base):
     delta = Column(Integer, nullable=False)  # positive or negative change
     description = Column(String, nullable=False)
     session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     reputation = relationship("FactionReputation", back_populates="events")
     session = relationship("GameSession")

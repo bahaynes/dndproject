@@ -269,6 +269,7 @@ def upgrade() -> None:
         sa.Column('color', sa.String(), nullable=True),
         sa.Column('description', sa.String(), nullable=True),
         sa.CheckConstraint('level >= -5 AND level <= 5', name='reputation_level_range'),
+        sa.UniqueConstraint('campaign_id', 'faction_name', name='uq_faction_per_campaign'),
         sa.ForeignKeyConstraint(['campaign_id'], ['campaigns.id']),
         sa.PrimaryKeyConstraint('id'),
     )

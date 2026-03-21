@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from ...database import Base
 
 LEVEL_THRESHOLDS = [0, 5, 10, 15, 20, 36, 52, 68, 84, 100, 116, 156, 196, 236, 276, 316, 356, 496, 636, 776]
@@ -18,7 +18,7 @@ class Ship(Base):
 
     motd = Column(String, nullable=True)  # Message of the day / GM announcement
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     campaign = relationship("Campaign")
 
