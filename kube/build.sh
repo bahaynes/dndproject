@@ -20,8 +20,11 @@ podman build -t localhost/dnd-backend:latest -f backend/Containerfile .
 echo "==> Building frontend image..."
 podman build -t localhost/dnd-frontend:latest -f frontend/Containerfile --target production .
 
+echo "==> Building webhook image..."
+podman build -t localhost/dnd-webhook:latest -f kube/Containerfile.webhook .
+
 echo ""
 echo "==> Done! Production images ready."
-podman images | grep -E "dnd-(backend|frontend)"
+podman images | grep -E "dnd-(backend|frontend|webhook)"
 echo ""
 echo "Deploy with: ./kube/deploy.sh"
