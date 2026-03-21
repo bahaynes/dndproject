@@ -8,58 +8,48 @@ Pushing to `main` automatically rebuilds and redeploys the production pod — no
 GitHub push to main
   └─► POST https://westmarches.bahaynes.com/webhook
         └─► Caddy (container) proxies to localhost:9000 on the host
-              └─► webhook binary validates HMAC-SHA256 + ref=refs/heads/main
+              └─► dnd-webhook container validates HMAC-SHA256 + ref=refs/heads/main
                     └─► scripts/deploy.sh  (git pull → build → deploy)
 ```
 
+The webhook listener runs as its own Podman container (`dnd-webhook`) managed by a Quadlet systemd unit. It lives in a **separate pod** from the app so it survives app pod restarts triggered by deploys.
+
+`deploy.sh` calls `podman build` and `podman kube play` through the host's Podman socket, which is bind-mounted into the container.
+
 ## One-time setup
 
-### 1. Install the `webhook` binary
-
-Download the latest release from <https://github.com/adnanh/webhook/releases> and place it on your `PATH`:
+### 1. Add `WEBHOOK_SECRET` to `.env`
 
 ```bash
-# Example for Linux amd64 — check the releases page for the current version
-curl -Lo /usr/local/bin/webhook \
-  https://github.com/adnanh/webhook/releases/download/2.8.1/webhook-linux-amd64
-chmod +x /usr/local/bin/webhook
-```
-
-### 2. Generate a webhook secret
-
-```bash
+# Generate a strong random secret
 openssl rand -hex 32
 ```
 
-Add the output to your `.env` file:
+Add the output to `.env`:
 
 ```
 WEBHOOK_SECRET=<the output from openssl>
 ```
 
-### 3. Install the systemd user unit
+Set the same value in GitHub → repo **Settings** → **Webhooks** → **Secret**.
+
+### 2. Build images and install the webhook service
 
 ```bash
-mkdir -p ~/.config/systemd/user
-
-cp kube/webhook.service ~/.config/systemd/user/webhook.service
+./kube/build.sh           # builds dnd-webhook:latest (and app images)
+./kube/install-webhook.sh # generates secret, installs quadlet, reloads systemd
 ```
 
-If your repo is **not** at `~/git/hub/dndproject`, edit the two path lines in the unit file before installing:
+`install-webhook.sh` templates `webhook-pod.yaml` with your actual repo path and UID, writes the rendered file to `kube/webhook-pod-rendered.yaml` (gitignored), and installs the `dnd-webhook.kube` Quadlet unit.
 
-```ini
-WorkingDirectory=/your/path/to/dndproject
-ExecStart=/your/path/to/dndproject/kube/start-webhook.sh
-```
-
-Then enable and start the service:
+### 3. Enable and start the service
 
 ```bash
-systemctl --user daemon-reload
-systemctl --user enable --now webhook.service
+systemctl --user enable --now dnd-webhook.service
 
 # Verify it is running
-systemctl --user status webhook.service
+systemctl --user status dnd-webhook.service
+podman logs dnd-webhook-webhook
 ```
 
 Enable lingering so the unit survives logout:
@@ -85,16 +75,27 @@ GitHub will send a ping; the listener will log `Hook rules were not satisfied` (
 # Live-follow the deploy log
 tail -f data/logs/deploy.log
 
-# Or view the systemd journal for the listener itself
-journalctl --user -u webhook.service -f
+# Or view the systemd journal for the webhook container itself
+journalctl --user -u dnd-webhook.service -f
+
+# Or podman logs directly
+podman logs -f dnd-webhook-webhook
 ```
 
 The log rotates automatically when it exceeds 10 MB (`deploy.log.1.gz` is kept alongside the current log).
 
+## Rebuilding after changes to the webhook container
+
+```bash
+podman build -t localhost/dnd-webhook:latest -f kube/Containerfile.webhook .
+systemctl --user restart dnd-webhook.service
+```
+
 ## Security notes
 
-- The listener binds only to `127.0.0.1:9000` — it is not reachable directly from the internet.
+- The container's port 9000 is bound to `hostIP: 127.0.0.1` — not reachable directly from the internet.
 - All traffic enters through Caddy over HTTPS, which terminates TLS before forwarding.
-- Requests with a missing or invalid `X-Hub-Signature-256` header are rejected by the `webhook` binary with a 400 response; `deploy.sh` is never called.
-- `deploy.sh` refuses to run as root (`id -u` check at the top of the script).
-- `WEBHOOK_SECRET` lives only in `.env` (which is gitignored) and the rendered `/tmp/dnd-webhook-hooks.json` (deleted on reboot).
+- Requests with a missing or invalid `X-Hub-Signature-256` header are rejected by the `webhook` binary; `deploy.sh` is never called.
+- `deploy.sh` refuses to run as root.
+- `WEBHOOK_SECRET` is stored as a Kubernetes Secret (base64 in `kube/secrets.yaml`, which is gitignored) and injected as an env var at runtime.
+- The Podman socket is bind-mounted read-write into the container — this gives the webhook the ability to manage containers on the host, which is intentional for the auto-deploy use case.
