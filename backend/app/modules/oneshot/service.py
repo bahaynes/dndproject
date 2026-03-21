@@ -66,6 +66,7 @@ class OneShotService:
         except Exception as e:
             logger.error(f"Job {job_id} failed: {str(e)}", exc_info=True)
             job.status = "failed"
+            job.content = {"error": str(e)}
             self.db.commit()
 
     def _aggregate_context(self, campaign_id: int, params: dict) -> str:

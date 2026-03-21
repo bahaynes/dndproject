@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dnd-webhook
+  labels:
+    app: dnd-webhook
+spec:
+  securityContext:
+    fsGroup: 1000
+  containers:
+    - name: webhook
+      image: localhost/dnd-webhook:latest
+      imagePullPolicy: Never
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+      ports:
+        # Bind to loopback only — Caddy is the sole entry point
+        - containerPort: 9000
+          hostPort: 9000
+          hostIP: 127.0.0.1
+      env:
+        - name: WEBHOOK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: webhook-secret
+              key: secret
+        # Tell podman commands inside the container to use the host daemon
+        - name: CONTAINER_HOST
+          value: unix:///run/podman/podman.sock
+        # Repo root as seen from inside the container
+        - name: REPO_DIR
+          value: /repo
+        # Bind webhook to all interfaces inside the container;
+        # hostIP: 127.0.0.1 above limits external exposure.
+        - name: WEBHOOK_BIND_IP
+          value: "0.0.0.0"
+      volumeMounts:
+        # Repo checkout — deploy.sh runs git pull and kicks off builds here
+        - name: repo
+          mountPath: /repo
+        # Host podman socket — lets deploy.sh call podman build / kube play
+        - name: podman-socket
+          mountPath: /run/podman/podman.sock
+        # SSH keys for git pull (read-only)
+        - name: ssh-keys
+          mountPath: /home/appuser/.ssh
+          readOnly: true
+  volumes:
+    - name: repo
+      hostPath:
+        # Path updated by install-webhook.sh
+        path: /home/USER/git/hub/dndproject
+        type: Directory
+    - name: podman-socket
+      hostPath:
+        # Path updated by install-webhook.sh (depends on host UID)
+        path: /run/user/PUID/podman/podman.sock
+        type: Socket
+    - name: ssh-keys
+      hostPath:
+        # Path updated by install-webhook.sh
+        path: /home/USER/.ssh
+        type: Directory

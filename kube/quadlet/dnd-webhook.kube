@@ -1,0 +1,15 @@
+[Unit]
+Description=D&D Westmarches Webhook Listener
+After=network-online.target
+Wants=network-online.target
+
+[Kube]
+# Path will be updated by install-webhook.sh
+Yaml=/home/USER/git/hub/dndproject/kube/webhook-pod.yaml
+
+[Service]
+Restart=always
+TimeoutStartSec=120
+
+[Install]
+WantedBy=default.target

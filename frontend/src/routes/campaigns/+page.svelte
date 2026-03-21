@@ -115,6 +115,10 @@
 				const userRes = await fetch(`${API_BASE_URL}/auth/me`, {
 					headers: { Authorization: `Bearer ${token}` }
 				});
+				if (!userRes.ok) {
+					error = 'Failed to load user profile.';
+					return;
+				}
 				const user = await userRes.json();
 
 				// Final Login
