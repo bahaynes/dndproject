@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, timezone
 from . import models, schemas
 from ..characters import models as char_models
 
@@ -155,7 +155,7 @@ def complete_session(
     # Distribute mission rewards (XP + scrip + items) on success
     total_xp = 0
     if data.result == "success" and session.confirmed_mission_id:
-        mission = mission_service.get_mission(db, session.confirmed_mission_id)
+        mission = mission_service.get_mission(db, session.confirmed_mission_id, campaign_id=campaign_id)
         if mission:
             mission.status = "Completed"
             db.flush()
@@ -177,11 +177,14 @@ def complete_session(
 
     # Handle casualties
     for char_id in data.casualties:
-        char = db.query(char_models.Character).filter(char_models.Character.id == char_id).first()
+        char = db.query(char_models.Character).filter(
+            char_models.Character.id == char_id,
+            char_models.Character.campaign_id == campaign_id,
+        ).first()
         if char:
             char.status = "Dead"
             if char.date_of_death is None:
-                char.date_of_death = datetime.utcnow()
+                char.date_of_death = datetime.now(timezone.utc)
 
     db.flush()
 

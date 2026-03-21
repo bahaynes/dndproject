@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from typing import List
 from sqlalchemy.orm import Session
 
-from ...dependencies import get_db, get_current_user, get_current_active_admin_user
+from ...dependencies import get_db, get_current_active_user, get_current_active_admin_user
 from ..auth.schemas import User
 from . import schemas, service
 
@@ -12,7 +12,7 @@ router = APIRouter()
 @router.get("/", response_model=List[schemas.FactionReputation], tags=["Factions"])
 def get_reputations(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
 ):
     return service.get_all_reputations(db, campaign_id=current_user.campaign_id)
 
@@ -23,7 +23,10 @@ def create_faction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_admin_user),
 ):
-    return service.create_faction(db, campaign_id=current_user.campaign_id, data=data)
+    rep = service.create_faction(db, campaign_id=current_user.campaign_id, data=data)
+    db.commit()
+    db.refresh(rep)
+    return rep
 
 
 @router.delete("/{faction_name}", status_code=204, tags=["Factions"])
@@ -33,6 +36,7 @@ def delete_faction(
     current_user: User = Depends(get_current_active_admin_user),
 ):
     service.delete_faction(db, campaign_id=current_user.campaign_id, faction_name=faction_name)
+    db.commit()
 
 
 @router.post("/{faction_name}/adjust", response_model=schemas.FactionReputation, tags=["Factions"])
@@ -42,9 +46,12 @@ def adjust_reputation(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_admin_user),
 ):
-    return service.adjust_reputation(
+    rep = service.adjust_reputation(
         db,
         campaign_id=current_user.campaign_id,
         faction_name=faction_name,
         adjust=adjust,
     )
+    db.commit()
+    db.refresh(rep)
+    return rep

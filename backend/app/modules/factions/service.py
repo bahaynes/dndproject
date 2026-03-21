@@ -42,15 +42,14 @@ def create_faction(
         level=0,
     )
     db.add(rep)
-    db.commit()
-    db.refresh(rep)
+    db.flush()
     return rep
 
 
 def delete_faction(db: Session, campaign_id: int, faction_name: str) -> None:
     rep = get_reputation(db, campaign_id, faction_name)
     db.delete(rep)
-    db.commit()
+    db.flush()
 
 
 def adjust_reputation(
@@ -71,6 +70,5 @@ def adjust_reputation(
         session_id=adjust.session_id,
     )
     db.add(event)
-    db.commit()
-    db.refresh(rep)
+    db.flush()
     return rep

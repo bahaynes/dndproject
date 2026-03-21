@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from typing import Optional
 
 from . import models, schemas
@@ -20,8 +21,11 @@ def get_or_create_ship(db: Session, campaign_id: int) -> models.Ship:
     if not ship:
         ship = models.Ship(campaign_id=campaign_id)
         db.add(ship)
-        db.commit()
-        db.refresh(ship)
+        try:
+            db.flush()
+        except IntegrityError:
+            db.rollback()
+            ship = db.query(models.Ship).filter(models.Ship.campaign_id == campaign_id).first()
     return ship
 
 
@@ -65,8 +69,7 @@ def adjust_resources(
         session_id=session_id,
         ship_snapshot=snapshot,
     )
-    db.commit()
-    db.refresh(ship)
+    db.flush()
     return ship
 
 
