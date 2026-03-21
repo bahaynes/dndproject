@@ -15,11 +15,21 @@
 	let pollInterval: number | null = null;
 	let progress = '';
 	let revelationLayer: 'early' | 'mid' | 'late' = 'early';
+	let tone: string = 'heroic';
+	let regionOverride: string = '';
 
 	const layerLabels = {
 		early: 'Early — The Frame Shifts',
 		mid: 'Mid — The Council Surfaces',
 		late: 'Late — The Thing Speaks'
+	};
+
+	const toneLabels: Record<string, string> = {
+		heroic: 'Heroic',
+		exploration: 'Exploration',
+		'combat-heavy': 'Combat-Heavy',
+		social: 'Social / Political',
+		mystery: 'Mystery'
 	};
 
 	async function generateOneshot() {
@@ -38,8 +48,8 @@
 					party_size: 4,
 					party_level: 3,
 					duration_hours: 4.0,
-					tone: 'heroic',
-					hex_region: missionRegion || undefined,
+					tone,
+					hex_region: regionOverride || missionRegion || undefined,
 					revelation_layer: revelationLayer
 				})
 			});
@@ -82,7 +92,7 @@
 					onOneshotGenerated(data.id, data.summary || 'Generated adventure');
 				} else if (data.status === 'failed') {
 					stopPolling();
-					error = 'Generation failed';
+					error = data.content?.error || 'Generation failed';
 					generating = false;
 				}
 			} catch (e: any) {
@@ -124,7 +134,7 @@
 	</p>
 
 	{#if !generating}
-		<div class="form-control mb-4">
+		<div class="form-control mb-3">
 			<label class="label" for="revelation-layer">
 				<span class="label-text text-xs">Campaign Layer</span>
 			</label>
@@ -138,6 +148,36 @@
 				{/each}
 			</select>
 		</div>
+
+		<div class="form-control mb-3">
+			<label class="label" for="tone">
+				<span class="label-text text-xs">Tone / Threat</span>
+			</label>
+			<select
+				id="tone"
+				bind:value={tone}
+				class="select select-bordered select-sm w-full"
+			>
+				{#each Object.entries(toneLabels) as [value, label]}
+					<option {value}>{label}</option>
+				{/each}
+			</select>
+		</div>
+
+		{#if !missionRegion}
+			<div class="form-control mb-4">
+				<label class="label" for="region-override">
+					<span class="label-text text-xs">District / Region (optional)</span>
+				</label>
+				<input
+					id="region-override"
+					type="text"
+					bind:value={regionOverride}
+					placeholder="e.g. The Kathedral District"
+					class="input input-bordered input-sm w-full"
+				/>
+			</div>
+		{/if}
 	{/if}
 
 	{#if error}
