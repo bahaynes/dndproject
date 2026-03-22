@@ -46,7 +46,7 @@
 		'Tier 4': { Routine: 8, Standard: 16, Hard: 24, Extreme: 40 },
 	};
 
-	$: suggestedPayout = mTier && PAYOUTS[mTier]?.[mDifficulty] ?? null;
+	$: suggestedPayout = (mTier && PAYOUTS[mTier]?.[mDifficulty]) ?? null;
 
 	function applyPayout() {
 		if (suggestedPayout !== null) mEssencePayout = suggestedPayout;
