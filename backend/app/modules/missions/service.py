@@ -5,8 +5,11 @@ from . import models, schemas
 from ..items import service as item_service
 from ..characters import models as char_models
 
-def get_mission(db: Session, mission_id: int):
-    return db.query(models.Mission).filter(models.Mission.id == mission_id).first()
+def get_mission(db: Session, mission_id: int, campaign_id: int = None):
+    q = db.query(models.Mission).filter(models.Mission.id == mission_id)
+    if campaign_id is not None:
+        q = q.filter(models.Mission.campaign_id == campaign_id)
+    return q.first()
 
 def get_missions(db: Session, campaign_id: int, skip: int = 0, limit: int = 100, 
                  tier: str = None, region: str = None, 

@@ -138,3 +138,24 @@ A feature is not complete until all of the following pass:
 4. **All existing tests still pass** — run `./run_tests.sh` to confirm no regressions.
 
 Do not mark a task complete, close a PR, or consider a feature shipped if any of the above are failing or missing.
+
+## Starting a Session
+
+Before touching any code or starting the dev environment:
+
+1. Check `SESSION.md` in the repo root for the current state left by the last session
+2. Read pod logs to understand the current state before assuming anything is broken:
+```bash
+   podman logs --tail 20 dnd-westmarches-dev-frontend
+   podman logs --tail 20 dnd-westmarches-dev-backend
+```
+3. Do not run `./kube/dev.sh` or attempt to fix errors until you understand whether
+   the environment is intentionally down or actually broken
+
+## Ending a Session
+
+Before finishing, write a `SESSION.md` to the repo root (gitignored) with:
+- Current state of the dev environment (up/down/broken and why)
+- What was just changed and whether tests passed
+- Any known issues and what NOT to try next session
+- The next logical task

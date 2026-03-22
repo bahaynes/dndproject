@@ -16,6 +16,8 @@
     let upcomingSessions: GameSessionWithPlayers[] = [];
     let loading = true;
 
+    let showOnboarding = false;
+
     auth.subscribe(value => {
         user = value.user;
         campaign = value.campaign;
@@ -32,6 +34,17 @@
         }
         if (authToken) await loadData();
     });
+
+    function dismissOnboarding() {
+        showOnboarding = false;
+        localStorage.setItem('onboarding_dismissed', '1');
+    }
+
+    $: if (!loading && user && !user.active_character) {
+        if (!localStorage.getItem('onboarding_dismissed')) {
+            showOnboarding = true;
+        }
+    }
 
     async function loadData() {
         const headers = { Authorization: `Bearer ${authToken}` };
@@ -54,8 +67,10 @@
         loading = false;
     }
 
-    $: fuelPct = ship ? Math.round((ship.fuel / ship.max_fuel) * 100) : 0;
-    $: statusColor = ship?.status === 'critical' ? 'error' : ship?.status === 'low_fuel' ? 'warning' : 'success';
+    $: statusColor = ship?.status === 'critical' ? 'error' : ship?.status === 'low' ? 'warning' : 'success';
+    $: levelPct = ship ? (ship.next_threshold
+        ? Math.round((ship.essence / ship.next_threshold) * 100)
+        : 100) : 0;
 
     function formatDate(iso: string) {
         return new Date(iso).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
@@ -104,23 +119,36 @@
                     <div class="flex items-center gap-3">
                         <span class="text-2xl font-bold font-[var(--font-cinzel)]">🚀 {ship.name}</span>
                         <span class="badge badge-outline">Level {ship.level}</span>
-                        <span class="badge badge-{statusColor} capitalize">{ship.status.replace('_', ' ')}</span>
+                        <span class="badge badge-{statusColor} capitalize">{ship.status}</span>
                     </div>
-                    <div class="flex gap-6 text-sm font-semibold">
-                        <span>💎 {ship.crystals} Crystals</span>
-                        <span>💰 {ship.credits.toLocaleString()} Credits</span>
+                    <div class="text-sm font-semibold opacity-70">
+                        Long rest costs {ship.long_rest_cost} Essence at this tier
                     </div>
                 </div>
 
-                <!-- Fuel gauge -->
+                <!-- Essence reserve -->
                 <div class="mb-2">
                     <div class="flex justify-between text-xs opacity-70 mb-1">
-                        <span>Fuel</span>
-                        <span>{ship.fuel} / {ship.max_fuel}</span>
+                        <span>⚡ Essence Reserve</span>
+                        <span>{ship.essence} stored</span>
+                    </div>
+                    <div class="text-lg font-bold text-primary">{ship.essence} Essence</div>
+                </div>
+
+                <!-- Level threshold progress -->
+                <div class="mb-2">
+                    <div class="flex justify-between text-xs opacity-70 mb-1">
+                        {#if ship.next_threshold !== null}
+                            <span>Level {ship.level} → {ship.level + 1}</span>
+                            <span>{ship.essence} / {ship.next_threshold} ({ship.essence_to_next_level} to go)</span>
+                        {:else}
+                            <span>Max Level</span>
+                            <span>Level {ship.level}</span>
+                        {/if}
                     </div>
                     <progress
-                        class="progress progress-{statusColor} w-full h-4"
-                        value={fuelPct}
+                        class="progress progress-primary w-full h-3"
+                        value={levelPct}
                         max="100"
                     ></progress>
                 </div>
@@ -189,10 +217,12 @@
                                     <p class="font-medium truncate">{eventTypeLabel(entry.event_type)}</p>
                                     <p class="text-xs opacity-60 truncate">{entry.description}</p>
                                 </div>
-                                <div class="text-right text-xs ml-2 flex-shrink-0 space-y-0.5">
-                                    {#if formatDelta(entry.fuel_delta)}<span class="opacity-70">⛽ {formatDelta(entry.fuel_delta)}</span><br>{/if}
-                                    {#if formatDelta(entry.credit_delta)}<span class="opacity-70">💰 {formatDelta(entry.credit_delta)}</span><br>{/if}
-                                    {#if formatDelta(entry.crystal_delta)}<span class="opacity-70">💎 {formatDelta(entry.crystal_delta)}</span>{/if}
+                                <div class="text-right text-xs ml-2 flex-shrink-0">
+                                    {#if formatDelta(entry.essence_delta)}
+                                        <span class={entry.essence_delta > 0 ? 'text-success' : 'text-error'}>
+                                            ⚡ {formatDelta(entry.essence_delta)}
+                                        </span>
+                                    {/if}
                                 </div>
                             </div>
                             {/each}
@@ -249,6 +279,7 @@
                             <li><a href="/sessions" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">📅 Sessions</a></li>
                             <li><a href="/store" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">🛒 Store</a></li>
                             <li><a href="/maps" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">🗺️ Maps</a></li>
+                            <li><a href="/factions" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">⚖️ Factions</a></li>
                             <li><a href="/ledger" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">📖 Ledger</a></li>
                             <li><a href="/roster" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">👥 Crew Roster</a></li>
                         </ul>
@@ -257,7 +288,7 @@
 
                 <div class="card bg-base-100 shadow-md border border-base-content/10">
                     <div class="card-body p-4">
-                        <FactionReputationTracker isAdmin={user.role === 'admin'} />
+                        <FactionReputationTracker />
                     </div>
                 </div>
             </div>
@@ -284,3 +315,49 @@
         <p class="mt-4">Loading user information...</p>
     {/if}
 </div>
+
+<!-- Onboarding modal — shown to users with no character who haven't dismissed it -->
+{#if showOnboarding}
+<div class="modal modal-open">
+    <div class="modal-box max-w-lg">
+        <h3 class="font-bold text-2xl font-[var(--font-cinzel)] text-primary mb-1">Welcome aboard.</h3>
+        <p class="text-sm opacity-60 mb-4">— Meridian</p>
+        <div class="prose prose-sm max-w-none opacity-80 mb-6">
+            <p>
+                "New crew. Good. I'll keep this brief because I always do.
+                You're sworn to this ship. That means you share in what we earn
+                and what we spend. The ledger doesn't lie, and I don't either —
+                not about reserves, anyway."
+            </p>
+            <p>
+                "First thing: make yourself a character record. I need to know
+                who's on my manifest. After that, check the mission board.
+                Vote on what runs. Show up when the session starts."
+            </p>
+            <p class="text-xs opacity-60">
+                "Questions? Read the briefing docs. After that, ask your crewmates.
+                After that, ask me — but I'll answer the question I think you're
+                actually asking, not the one you said."
+            </p>
+        </div>
+        <div class="flex flex-col gap-3">
+            <a href="/characters" class="btn btn-primary w-full" on:click={dismissOnboarding}>
+                Create Your Character
+            </a>
+            <div class="divider text-xs opacity-40">or read first</div>
+            <div class="flex gap-2">
+                <a href="https://docs.google.com/document" target="_blank" rel="noopener" class="btn btn-outline btn-sm flex-1">
+                    📖 World Bible
+                </a>
+                <a href="/missions" class="btn btn-outline btn-sm flex-1" on:click={dismissOnboarding}>
+                    📋 Mission Board
+                </a>
+            </div>
+            <button class="btn btn-ghost btn-xs opacity-50 mt-2" on:click={dismissOnboarding}>
+                Dismiss — I know what I'm doing
+            </button>
+        </div>
+    </div>
+    <div class="modal-backdrop" on:click={dismissOnboarding}></div>
+</div>
+{/if}

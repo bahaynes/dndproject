@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, JSON
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from ...database import Base
 
 
@@ -16,16 +16,13 @@ class LedgerEntry(Base):
     event_type = Column(String, nullable=False)
     description = Column(String, nullable=False)
 
-    # Resource deltas (positive = gained, negative = spent)
-    fuel_delta = Column(Integer, default=0, nullable=False)
-    crystal_delta = Column(Integer, default=0, nullable=False)
-    credit_delta = Column(Integer, default=0, nullable=False)
-    xp_delta = Column(Integer, default=0, nullable=False)
+    # Essence delta (positive = gained, negative = spent)
+    essence_delta = Column(Integer, default=0, nullable=False)
 
-    # Ship state snapshot at time of entry
-    ship_snapshot = Column(JSON, nullable=True)  # {"level": 1, "fuel": 80, "crystals": 5, "credits": 1000}
+    # Ship state snapshot at time of entry: {"level": 1, "essence": 42}
+    ship_snapshot = Column(JSON, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 
     campaign = relationship("Campaign")
     session = relationship("GameSession")

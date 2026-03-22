@@ -131,7 +131,7 @@
 							<div class="flex flex-wrap gap-2">
 								{#each mission.rewards as reward}
 									{#if reward.xp}
-										<div class="badge badge-outline badge-xs">+{reward.xp} XP</div>
+										<div class="badge badge-outline badge-xs">+{reward.xp} Essence</div>
 									{/if}
 									{#if reward.scrip}
 										<div class="badge badge-outline badge-xs badge-primary">
