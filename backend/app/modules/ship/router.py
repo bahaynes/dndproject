@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from ...dependencies import get_db, get_current_user, get_current_active_admin_user
+from ...dependencies import get_db, get_current_active_user, get_current_active_admin_user
 from ..auth.schemas import User
 from . import schemas, service
 
@@ -11,9 +11,11 @@ router = APIRouter()
 @router.get("/", response_model=schemas.ShipOut, tags=["Ship"])
 def get_ship(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
 ):
-    return service.get_or_create_ship(db, campaign_id=current_user.campaign_id)
+    ship = service.get_or_create_ship(db, campaign_id=current_user.campaign_id)
+    db.commit()
+    return ship
 
 
 @router.put("/", response_model=schemas.ShipOut, tags=["Ship"])
@@ -31,12 +33,13 @@ def adjust_ship(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_admin_user),
 ):
-    return service.adjust_resources(
+    ship = service.adjust_resources(
         db,
         campaign_id=current_user.campaign_id,
         description=data.description,
-        fuel_delta=data.fuel_delta,
-        crystal_delta=data.crystal_delta,
-        credit_delta=data.credit_delta,
+        essence_delta=data.essence_delta,
         event_type="AdminAdjustment",
     )
+    db.commit()
+    db.refresh(ship)
+    return ship

@@ -84,6 +84,7 @@
 				{#if $auth.isAuthenticated}
 					<li><a href="/dashboard" class="font-semibold">Dashboard</a></li>
 					<li><a href="/maps" class="font-semibold">World Map</a></li>
+					<li><a href="/factions" class="font-semibold">Factions</a></li>
 					<li><a href="/campaigns" class="font-semibold">Switch Campaign</a></li>
 				{/if}
 			</ul>

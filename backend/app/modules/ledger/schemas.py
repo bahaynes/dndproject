@@ -17,10 +17,7 @@ VALID_EVENT_TYPES = {
 class LedgerEntryCreate(BaseModel):
     event_type: str
     description: str
-    fuel_delta: int = 0
-    crystal_delta: int = 0
-    credit_delta: int = 0
-    xp_delta: int = 0
+    essence_delta: int = 0
     session_id: Optional[int] = None
     ship_snapshot: Optional[Dict[str, Any]] = None
 
@@ -31,10 +28,7 @@ class LedgerEntryOut(BaseModel):
     session_id: Optional[int] = None
     event_type: str
     description: str
-    fuel_delta: int
-    crystal_delta: int
-    credit_delta: int
-    xp_delta: int
+    essence_delta: int
     ship_snapshot: Optional[Dict[str, Any]] = None
     created_at: datetime
 

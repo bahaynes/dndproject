@@ -2,8 +2,6 @@ from pydantic import BaseModel, field_validator
 from typing import Optional, List
 from datetime import datetime
 
-VALID_FACTIONS = {"Kathedral", "Vastarei"}
-
 
 class FactionReputationEventBase(BaseModel):
     delta: int
@@ -27,13 +25,8 @@ class FactionReputationEvent(FactionReputationEventBase):
 class FactionReputationBase(BaseModel):
     faction_name: str
     level: int = 0
-
-    @field_validator("faction_name")
-    @classmethod
-    def faction_must_be_valid(cls, v: str) -> str:
-        if v not in VALID_FACTIONS:
-            raise ValueError(f"faction_name must be one of {VALID_FACTIONS}")
-        return v
+    color: Optional[str] = None
+    description: Optional[str] = None
 
     @field_validator("level")
     @classmethod
@@ -50,6 +43,12 @@ class FactionReputation(FactionReputationBase):
 
     class Config:
         from_attributes = True
+
+
+class FactionCreate(BaseModel):
+    faction_name: str
+    color: Optional[str] = None
+    description: Optional[str] = None
 
 
 class ReputationAdjust(BaseModel):

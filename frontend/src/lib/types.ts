@@ -51,12 +51,12 @@ export interface Ship {
     campaign_id: number;
     name: string;
     level: number;
-    fuel: number;
-    max_fuel: number;
-    crystals: number;
-    credits: number;
+    essence: number;
     motd?: string;
-    status: 'nominal' | 'low_fuel' | 'critical';
+    status: 'nominal' | 'low' | 'critical';
+    long_rest_cost: number;
+    next_threshold: number | null;
+    essence_to_next_level: number;
     created_at: string;
 }
 
@@ -66,10 +66,7 @@ export interface LedgerEntry {
     session_id?: number;
     event_type: string;
     description: string;
-    fuel_delta: number;
-    crystal_delta: number;
-    credit_delta: number;
-    xp_delta: number;
+    essence_delta: number;
     ship_snapshot?: Record<string, number>;
     created_at: string;
 }
@@ -166,9 +163,7 @@ export interface GameSessionWithPlayers {
     after_action_report?: string;
     field_report?: string;
     result?: string;
-    fuel_burned: number;
-    crystals_earned: number;
-    credits_earned: number;
+    essence_earned?: number;
     min_players: number;
     max_players: number;
     players: CharacterInGameSession[];
