@@ -18,15 +18,15 @@ def test_admin_create_ledger_entry(client, campaign, admin_auth_headers):
         "/api/ledger/",
         json={
             "event_type": "AdminAdjustment",
-            "description": "Manual scrip award",
-            "credit_delta": 500,
+            "description": "Manual essence award",
+            "essence_delta": 20,
         },
         headers=admin_auth_headers,
     )
     assert res.status_code == 200
     data = res.json()
     assert data["event_type"] == "AdminAdjustment"
-    assert data["credit_delta"] == 500
+    assert data["essence_delta"] == 20
     assert data["campaign_id"] is not None
     assert data["ship_snapshot"] is not None  # snapshot captured at time of entry
 
@@ -91,19 +91,32 @@ def test_ledger_scoped_to_campaign(client, db_session, campaign, admin_auth_head
 
 
 def test_ship_adjust_auto_creates_ledger_entry(client, campaign, admin_auth_headers):
-    """Adjusting ship resources automatically creates a ledger entry."""
+    """Adjusting ship essence automatically creates a ledger entry."""
     client.post(
         "/api/ship/adjust",
-        json={"fuel_delta": -15, "crystal_delta": 2, "description": "Exploration run"},
+        json={"essence_delta": 15, "description": "Exploration run"},
         headers=admin_auth_headers,
     )
     res = client.get("/api/ledger/", headers=admin_auth_headers)
     entries = res.json()
     assert len(entries) == 1
     entry = entries[0]
-    assert entry["fuel_delta"] == -15
-    assert entry["crystal_delta"] == 2
-    assert entry["ship_snapshot"]["fuel"] is not None
+    assert entry["essence_delta"] == 15
+    assert entry["ship_snapshot"]["essence"] is not None
+
+
+def test_ledger_snapshot_reflects_post_adjustment_state(client, campaign, admin_auth_headers):
+    """Snapshot in the ledger entry should reflect the ship state after the adjustment."""
+    client.put("/api/ship/", json={"essence": 10}, headers=admin_auth_headers)
+    client.post(
+        "/api/ship/adjust",
+        json={"essence_delta": 26, "description": "Big mission"},
+        headers=admin_auth_headers,
+    )
+    entries = client.get("/api/ledger/", headers=admin_auth_headers).json()
+    snapshot = entries[0]["ship_snapshot"]
+    assert snapshot["essence"] == 36
+    assert snapshot["level"] == 6  # 36 >= threshold for level 6
 
 
 def test_ledger_limit_and_offset(client, campaign, admin_auth_headers):

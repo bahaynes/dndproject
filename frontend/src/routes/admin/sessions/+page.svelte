@@ -17,9 +17,7 @@
 	let showComplete = false;
 	let completingSession: GameSessionWithPlayers | null = null;
 	let cResult: 'success' | 'failure' = 'success';
-	let cFuelBurned = 0;
-	let cCrystalsEarned = 0;
-	let cCreditsEarned = 0;
+	let cEssenceEarned = 0;
 	let cAfterAction = '';
 	let cCasualties: number[] = [];
 	let completing = false;
@@ -91,9 +89,7 @@
 	function openCompleteModal(session: GameSessionWithPlayers) {
 		completingSession = session;
 		cResult = 'success';
-		cFuelBurned = 0;
-		cCrystalsEarned = 0;
-		cCreditsEarned = 0;
+		cEssenceEarned = 0;
 		cAfterAction = '';
 		cCasualties = [];
 		showComplete = true;
@@ -117,9 +113,7 @@
 				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${get(auth).token}` },
 				body: JSON.stringify({
 					result: cResult,
-					fuel_burned: cFuelBurned,
-					crystals_earned: cCrystalsEarned,
-					credits_earned: cCreditsEarned,
+					essence_earned: cEssenceEarned,
 					after_action_report: cAfterAction || null,
 					casualties: cCasualties,
 				}),
@@ -357,19 +351,10 @@
 		</div>
 
 		<!-- Resources -->
-		<div class="grid grid-cols-3 gap-3">
-			<div>
-				<label class="label"><span class="label-text">⛽ Fuel Burned</span></label>
-				<input type="number" min="0" class="input input-bordered input-sm w-full" bind:value={cFuelBurned} />
-			</div>
-			<div>
-				<label class="label"><span class="label-text">💎 Crystals Earned</span></label>
-				<input type="number" min="0" class="input input-bordered input-sm w-full" bind:value={cCrystalsEarned} />
-			</div>
-			<div>
-				<label class="label"><span class="label-text">💰 Credits Earned</span></label>
-				<input type="number" min="0" class="input input-bordered input-sm w-full" bind:value={cCreditsEarned} />
-			</div>
+		<div>
+			<label class="label"><span class="label-text">⚡ Essence Earned (net, after transit)</span></label>
+			<input type="number" class="input input-bordered input-sm w-full" bind:value={cEssenceEarned} />
+			<p class="text-xs opacity-50 mt-1">Positive = crew brought Essence back to Meridian. Negative = reserves were spent.</p>
 		</div>
 
 		<!-- Casualties -->
