@@ -16,10 +16,9 @@ spec:
         runAsGroup: 1000
         runAsNonRoot: true
       ports:
-        # Bind to loopback only — Caddy is the sole entry point
+        # Caddy is the sole entry point. Binding globally allows docker proxy.
         - containerPort: 9000
           hostPort: 9000
-          hostIP: 127.0.0.1
       env:
         - name: WEBHOOK_SECRET
           valueFrom:

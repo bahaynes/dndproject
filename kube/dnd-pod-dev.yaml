@@ -30,6 +30,8 @@ spec:
           value: "${DISCORD_BOT_TOKEN}"
         - name: DISCORD_REDIRECT_URI
           value: "${DISCORD_REDIRECT_URI}"
+        - name: FRONTEND_URL
+          value: "${FRONTEND_URL}"
         - name: ADMIN_DISCORD_IDS
           value: "${ADMIN_DISCORD_IDS}"
       volumeMounts:
