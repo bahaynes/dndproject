@@ -94,7 +94,7 @@ async def get_available_campaigns(
 
     available = [c for c in potential_campaigns if c.id not in joined_campaign_ids]
 
-    return available
+    return [schemas.Campaign.model_validate(c) for c in available]
 
 @router.post("/join", tags=["Campaigns"])
 async def join_campaign(
@@ -162,7 +162,7 @@ async def join_campaign(
         "role": app_role
     })
 
-    return {"access_token": access_token, "token_type": "bearer", "campaign": campaign}
+    return {"access_token": access_token, "token_type": "bearer", "campaign": schemas.Campaign.model_validate(campaign)}
 
 @router.post("/setup", tags=["Admin"])
 async def setup_campaign(
@@ -206,8 +206,8 @@ async def setup_campaign(
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "campaign": campaign,
-        "user": new_user
+        "campaign": schemas.Campaign.model_validate(campaign),
+        "user": auth_schemas.User.model_validate(new_user)
     }
 
 @router.post("/discord/guilds", tags=["Admin"])
