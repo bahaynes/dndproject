@@ -53,6 +53,8 @@ spec:
               key: token
         - name: DISCORD_REDIRECT_URI
           value: "https://westmarches.bahaynes.com/api/auth/discord/callback"
+        - name: FRONTEND_URL
+          value: "https://westmarches.bahaynes.com"
         - name: ADMIN_DISCORD_IDS
           valueFrom:
             secretKeyRef:

@@ -10,11 +10,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Download adnanh/webhook binary
-ARG WEBHOOK_VERSION=2.8.1
+ARG WEBHOOK_VERSION=2.8.3
 RUN curl -fsSL \
-        "https://github.com/adnanh/webhook/releases/download/${WEBHOOK_VERSION}/webhook-linux-amd64" \
-        -o /usr/local/bin/webhook \
-    && chmod +x /usr/local/bin/webhook
+        "https://github.com/adnanh/webhook/releases/download/${WEBHOOK_VERSION}/webhook-linux-amd64.tar.gz" \
+        -o webhook.tar.gz \
+    && tar -xzf webhook.tar.gz \
+    && mv webhook-linux-amd64/webhook /usr/local/bin/webhook \
+    && chmod +x /usr/local/bin/webhook \
+    && rm -rf webhook.tar.gz webhook-linux-amd64
 
 # Non-root user (deploy.sh refuses to run as root)
 RUN useradd -m -u 1000 -s /bin/bash appuser
