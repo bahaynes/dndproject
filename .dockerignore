@@ -1,0 +1,11 @@
+data/
+kube/
+docs/
+.git/
+.env*
+node_modules/
+frontend/node_modules/
+backend/.venv/
+__pycache__/
+*.pyc
+*.log
