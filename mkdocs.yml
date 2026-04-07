@@ -40,8 +40,6 @@ plugins:
 
 nav:
   - Home: index.md
-  - Architecture:
-      - Frontend Routes: FRONTEND_ROUTES_PLAN.md
   - Backend API:
       - App:
           - Main: reference/app/main.md
