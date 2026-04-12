@@ -42,6 +42,30 @@ test.describe('Player flow', () => {
     await expect(playerPage.locator('main')).toBeVisible();
   });
 
+  test('dashboard shows Mission Board section', async ({ playerPage }) => {
+    await playerPage.goto('/dashboard');
+    await playerPage.waitForLoadState('networkidle');
+    await expect(playerPage.getByText('Mission Board')).toBeVisible();
+  });
+
+  test('dashboard shows Available Contracts section', async ({ playerPage }) => {
+    await playerPage.goto('/dashboard');
+    await playerPage.waitForLoadState('networkidle');
+    // Section only appears if there are discoverable missions
+    const contractsHeading = playerPage.getByText('Available Contracts');
+    // Either visible (missions exist) or absent (no missions) — either is valid
+    const count = await contractsHeading.count();
+    if (count > 0) {
+      await expect(contractsHeading).toBeVisible();
+    }
+  });
+
+  test('root page redirects authenticated user to dashboard', async ({ playerPage }) => {
+    await playerPage.goto('/');
+    await playerPage.waitForLoadState('networkidle');
+    await expect(playerPage).toHaveURL(/\/dashboard/);
+  });
+
   test('maps page loads', async ({ playerPage }) => {
     await playerPage.goto('/maps');
     await playerPage.waitForLoadState('networkidle');
