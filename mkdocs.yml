@@ -40,8 +40,6 @@ plugins:
 
 nav:
   - Home: index.md
-  - Architecture:
-      - Frontend Routes: FRONTEND_ROUTES_PLAN.md
   - Backend API:
       - App:
           - Main: reference/app/main.md
@@ -52,8 +50,12 @@ nav:
           - Auth: reference/app/modules/auth.md
           - Campaigns: reference/app/modules/campaigns.md
           - Characters: reference/app/modules/characters.md
+          - Debug: reference/app/modules/debug.md
+          - Factions: reference/app/modules/factions.md
           - Items: reference/app/modules/items.md
+          - Ledger: reference/app/modules/ledger.md
           - Maps: reference/app/modules/maps.md
           - Missions: reference/app/modules/missions.md
           - Oneshot: reference/app/modules/oneshot.md
           - Sessions: reference/app/modules/sessions.md
+          - Ship: reference/app/modules/ship.md

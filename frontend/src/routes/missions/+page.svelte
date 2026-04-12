@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { auth } from '$lib/auth';
-	import { get } from 'svelte/store';
-	import { API_BASE_URL } from '$lib/config';
+	import { api } from '$lib/api';
 	import type { Mission } from '$lib/types';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
@@ -23,20 +22,9 @@
 		loading = true;
 		error = '';
 		try {
-			const authState = get(auth);
-			const res = await fetch(`${API_BASE_URL}/missions/`, {
-				headers: {
-					Authorization: `Bearer ${authState.token}`
-				}
-			});
-
-			if (res.ok) {
-				missions = await res.json();
-			} else {
-				error = 'Failed to load missions.';
-			}
+			missions = await api('GET', '/missions/');
 		} catch (e) {
-			error = 'An error occurred while loading missions.';
+			error = e instanceof Error ? e.message : 'Failed to load missions.';
 		} finally {
 			loading = false;
 		}
@@ -45,22 +33,10 @@
 	async function handleSignup(missionId: number) {
 		error = '';
 		try {
-			const authState = get(auth);
-			const res = await fetch(`${API_BASE_URL}/missions/${missionId}/signup`, {
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${authState.token}`
-				}
-			});
-
-			if (res.ok) {
-				await fetchMissions();
-			} else {
-				const errData = await res.json();
-				error = errData.detail || 'Failed to sign up for mission.';
-			}
+			await api('POST', `/missions/${missionId}/signup`);
+			await fetchMissions();
 		} catch (e) {
-			error = 'An error occurred during signup.';
+			error = e instanceof Error ? e.message : 'Failed to sign up for mission.';
 		}
 	}
 

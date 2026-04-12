@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { auth } from '$lib/auth';
-	import { get } from 'svelte/store';
-	import { API_BASE_URL } from '$lib/config';
+	import { api } from '$lib/api';
 	import type { Mission, Item } from '$lib/types';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import Modal from '$lib/components/Modal.svelte';
@@ -107,8 +106,7 @@
 	}
 
 	onMount(async () => {
-		const authState = get(auth);
-		if (!authState.isAuthenticated || authState.user?.role !== 'admin') {
+		if (!$auth.isAuthenticated || $auth.user?.role !== 'admin') {
 			goto('/dashboard');
 			return;
 		}
@@ -127,54 +125,37 @@
 	}
 
 	async function fetchMissions() {
-		const res = await fetch(`${API_BASE_URL}/missions/`, {
-			headers: { Authorization: `Bearer ${get(auth).token}` }
-		});
-		if (res.ok) missions = await res.json();
+		missions = await api('GET', '/missions/');
 	}
 
 	async function fetchItems() {
-		const res = await fetch(`${API_BASE_URL}/items/`, {
-			headers: { Authorization: `Bearer ${get(auth).token}` }
-		});
-		if (res.ok) availableItems = await res.json();
+		availableItems = await api('GET', '/items/');
 	}
 
 	async function saveMission() {
 		try {
-			const url = editingMissionId
-				? `${API_BASE_URL}/missions/${editingMissionId}`
-				: `${API_BASE_URL}/missions/`;
-			const method = editingMissionId ? 'PUT' : 'POST';
-
 			const rewards = [{ xp: mEssencePayout, scrip: 0, item_id: mItemRewardId || null }];
-
-			const res = await fetch(url, {
-				method,
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${get(auth).token}`
-				},
-				body: JSON.stringify({
-					name: mName,
-					description: mDescription,
-					status: mStatus,
-					tier: mTier || null,
-					region: mRegion || null,
-					cooldown_days: mCooldown,
-					is_retired: mIsRetired,
-					is_discoverable: mIsDiscoverable,
-					prerequisite_id: mPrerequisiteId || null,
-					oneshot_id: mOneshotId || null,
-					rewards,
-				})
-			});
-
-			if (res.ok) {
-				success = editingMissionId ? 'Mission updated.' : 'Mission posted to the board.';
-				showCreateMission = false;
-				await fetchMissions();
+			const body = {
+				name: mName,
+				description: mDescription,
+				status: mStatus,
+				tier: mTier || null,
+				region: mRegion || null,
+				cooldown_days: mCooldown,
+				is_retired: mIsRetired,
+				is_discoverable: mIsDiscoverable,
+				prerequisite_id: mPrerequisiteId || null,
+				oneshot_id: mOneshotId || null,
+				rewards
+			};
+			if (editingMissionId) {
+				await api('PUT', `/missions/${editingMissionId}`, body);
+			} else {
+				await api('POST', '/missions/', body);
 			}
+			success = editingMissionId ? 'Mission updated.' : 'Mission posted to the board.';
+			showCreateMission = false;
+			await fetchMissions();
 		} catch (e) {
 			error = 'Failed to save mission.';
 		}
@@ -182,11 +163,8 @@
 
 	async function patchStatus(id: number, status: string) {
 		try {
-			const res = await fetch(`${API_BASE_URL}/missions/${id}/status?status=${status}`, {
-				method: 'PUT',
-				headers: { Authorization: `Bearer ${get(auth).token}` }
-			});
-			if (res.ok) await fetchMissions();
+			await api('PUT', `/missions/${id}/status?status=${status}`);
+			await fetchMissions();
 		} catch (e) {}
 	}
 

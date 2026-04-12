@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { auth } from '$lib/auth';
-	import { get } from 'svelte/store';
-	import { API_BASE_URL } from '$lib/config';
+	import { api } from '$lib/api';
 	import type { GameSessionWithPlayers } from '$lib/types';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import Modal from '$lib/components/Modal.svelte';
@@ -31,8 +30,7 @@
 	let showCreate = false;
 
 	onMount(async () => {
-		const authState = get(auth);
-		if (!authState.isAuthenticated || authState.user?.role !== 'admin') {
+		if (!$auth.isAuthenticated || $auth.user?.role !== 'admin') {
 			goto('/dashboard');
 			return;
 		}
@@ -42,10 +40,7 @@
 	async function fetchSessions() {
 		loading = true;
 		try {
-			const res = await fetch(`${API_BASE_URL}/sessions/`, {
-				headers: { Authorization: `Bearer ${get(auth).token}` }
-			});
-			if (res.ok) sessions = await res.json();
+			sessions = await api('GET', '/sessions/');
 		} catch (e) {
 			error = 'Failed to load sessions.';
 		} finally {
@@ -59,28 +54,17 @@
 			error = 'Session title and date/time are required!';
 			return;
 		}
-
 		try {
-			const res = await fetch(`${API_BASE_URL}/sessions/`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${get(auth).token}`
-				},
-				body: JSON.stringify({
-					name: sName,
-					description: sDescription,
-					session_date: new Date(sDate).toISOString(),
-					status: 'Open',
-					min_players: sMinPlayers,
-					max_players: sMaxPlayers
-				})
+			await api('POST', '/sessions/', {
+				name: sName,
+				description: sDescription,
+				session_date: new Date(sDate).toISOString(),
+				status: 'Open',
+				min_players: sMinPlayers,
+				max_players: sMaxPlayers
 			});
-			if (res.ok) {
-				success = 'Session scheduled.';
-				showCreate = false;
-				await fetchSessions();
-			}
+			showCreate = false;
+			await fetchSessions();
 		} catch (e) {
 			error = 'Failed to create session.';
 		}
@@ -108,26 +92,16 @@
 		completing = true;
 		error = '';
 		try {
-			const res = await fetch(`${API_BASE_URL}/sessions/${completingSession.id}/complete`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${get(auth).token}` },
-				body: JSON.stringify({
-					result: cResult,
-					essence_earned: cEssenceEarned,
-					after_action_report: cAfterAction || null,
-					casualties: cCasualties,
-				}),
+			await api('POST', `/sessions/${completingSession.id}/complete`, {
+				result: cResult,
+				essence_earned: cEssenceEarned,
+				after_action_report: cAfterAction || null,
+				casualties: cCasualties
 			});
-			if (res.ok) {
-				success = 'Session completed and ledger updated!';
-				showComplete = false;
-				await fetchSessions();
-			} else {
-				const data = await res.json();
-				error = data.detail ?? 'Failed to complete session.';
-			}
+			showComplete = false;
+			await fetchSessions();
 		} catch (e) {
-			error = 'Failed to complete session.';
+			error = e instanceof Error ? e.message : 'Failed to complete session.';
 		} finally {
 			completing = false;
 		}
@@ -135,40 +109,22 @@
 
 	async function forceConfirm(proposalId: number) {
 		try {
-			const res = await fetch(`${API_BASE_URL}/sessions/proposals/${proposalId}/force_confirm`, {
-				method: 'POST',
-				headers: { Authorization: `Bearer ${get(auth).token}` }
-			});
-			if (res.ok) {
-				success = 'Proposal force-confirmed.';
-				await fetchSessions();
-			}
+			await api('POST', `/sessions/proposals/${proposalId}/force_confirm`);
+			await fetchSessions();
 		} catch (e) {}
 	}
 
 	async function vetoProposal(proposalId: number) {
 		try {
-			const res = await fetch(`${API_BASE_URL}/sessions/proposals/${proposalId}/veto`, {
-				method: 'POST',
-				headers: { Authorization: `Bearer ${get(auth).token}` }
-			});
-			if (res.ok) {
-				success = 'Proposal vetoed.';
-				await fetchSessions();
-			}
+			await api('POST', `/sessions/proposals/${proposalId}/veto`);
+			await fetchSessions();
 		} catch (e) {}
 	}
 
 	async function kickPlayer(sessionId: number, characterId: number) {
 		try {
-			const res = await fetch(`${API_BASE_URL}/sessions/${sessionId}/kick/${characterId}`, {
-				method: 'DELETE',
-				headers: { Authorization: `Bearer ${get(auth).token}` }
-			});
-			if (res.ok) {
-				success = 'Player removed from roster.';
-				await fetchSessions();
-			}
+			await api('DELETE', `/sessions/${sessionId}/kick/${characterId}`);
+			await fetchSessions();
 		} catch (e) {}
 	}
 </script>

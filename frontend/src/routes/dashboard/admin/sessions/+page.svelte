@@ -1,9 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { GameSessionWithPlayers } from '../../../../lib/types';
-  import { auth } from '../../../../lib/auth';
-  import { get } from 'svelte/store';
-  import { API_BASE_URL } from '$lib/config';
+  import { api } from '$lib/api';
 
   let sessions: GameSessionWithPlayers[] = [];
   let error: string | null = null;
@@ -36,7 +34,7 @@
             name: session.name,
             description: session.description || '',
             session_date: session.session_date,
-            status: session.status,
+            status: session.status as 'Scheduled' | 'Completed',
             after_action_report: session.after_action_report || ''
         };
       }
@@ -46,30 +44,11 @@
   async function updateSession(sessionId: number) {
     error = null;
     try {
-        const token = get(auth).token;
-        if (!token) {
-            throw new Error('Not authenticated. Please log in.');
-        }
-        const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(sessionToUpdate),
-        });
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Failed to update session');
-        }
-        managedSessionId = null;
-        await fetchSessions(); // Refresh the list
+      await api('PUT', `/sessions/${sessionId}`, sessionToUpdate);
+      managedSessionId = null;
+      await fetchSessions();
     } catch (err) {
-        if (err instanceof Error) {
-            error = err.message;
-        } else {
-            error = 'An unknown error occurred';
-        }
+      error = err instanceof Error ? err.message : 'An unknown error occurred';
     }
   }
 
@@ -80,60 +59,24 @@
   async function fetchSessions() {
     error = null;
     try {
-      const token = get(auth).token;
-      if (!token) {
-        throw new Error('Not authenticated. Please log in.');
-      }
-      const response = await fetch(`${API_BASE_URL}/sessions/`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to fetch sessions');
-      }
-      sessions = await response.json();
+      sessions = await api('GET', '/sessions/');
     } catch (err) {
-      if (err instanceof Error) {
-        error = err.message;
-      } else {
-        error = 'An unknown error occurred';
-      }
+      error = err instanceof Error ? err.message : 'Failed to fetch sessions';
     }
   }
 
   async function createSession() {
     error = null;
     try {
-      const token = get(auth).token;
-      if (!token) {
-        throw new Error('Not authenticated. Please log in.');
-      }
-      const response = await fetch(`${API_BASE_URL}/sessions/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          ...newSession,
-          session_date: new Date(newSession.session_date).toISOString(),
-        }),
+      await api('POST', '/sessions/', {
+        ...newSession,
+        session_date: new Date(newSession.session_date).toISOString(),
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to create session');
-      }
       showCreateForm = false;
       newSession = { name: '', description: '', session_date: '' };
-      await fetchSessions(); // Refresh the list
+      await fetchSessions();
     } catch (err) {
-      if (err instanceof Error) {
-        error = err.message;
-      } else {
-        error = 'An unknown error occurred';
-      }
+      error = err instanceof Error ? err.message : 'Failed to create session';
     }
   }
 </script>

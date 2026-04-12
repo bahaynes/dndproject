@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { auth } from '$lib/auth';
-	import { get } from 'svelte/store';
-	import { API_BASE_URL } from '$lib/config';
+	import { api } from '$lib/api';
 	import type { Character, InventoryItem } from '$lib/types';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
@@ -17,29 +16,16 @@
 	async function fetchInventory() {
 		loading = true;
 		error = '';
+		const characterId = $auth.user?.active_character?.id;
+		if (!characterId) {
+			error = 'No character found.';
+			loading = false;
+			return;
+		}
 		try {
-			const authState = get(auth);
-			const characterId = authState.user?.active_character?.id;
-
-			if (!characterId) {
-				error = 'No character found.';
-				loading = false;
-				return;
-			}
-
-			const res = await fetch(`${API_BASE_URL}/characters/${characterId}`, {
-				headers: {
-					Authorization: `Bearer ${authState.token}`
-				}
-			});
-
-			if (res.ok) {
-				character = await res.json();
-			} else {
-				error = 'Failed to load inventory.';
-			}
+			character = await api('GET', `/characters/${characterId}`);
 		} catch (e) {
-			error = 'An error occurred while loading inventory.';
+			error = 'Failed to load inventory.';
 		} finally {
 			loading = false;
 		}
@@ -47,31 +33,11 @@
 
 	async function removeItem(inventoryItem: InventoryItem) {
 		if (!character) return;
-
-		// We confirm removal usually, but for simple MVP let's just do it
 		try {
-			const authState = get(auth);
-			// Backend expects inventory_item_id as path param for removal
-			// Based on inventory_router.py: @router.delete("/{inventory_item_id}", tags=["Inventory"])
-			const res = await fetch(
-				`${API_BASE_URL}/characters/${character.id}/inventory/${inventoryItem.id}`,
-				{
-					method: 'DELETE',
-					headers: {
-						Authorization: `Bearer ${authState.token}`
-					}
-				}
-			);
-
-			if (res.ok) {
-				// Refresh local list
-				await fetchInventory();
-			} else {
-				const errData = await res.json();
-				error = errData.detail || 'Failed to remove item.';
-			}
+			await api('DELETE', `/characters/${character.id}/inventory/${inventoryItem.id}`);
+			await fetchInventory();
 		} catch (e) {
-			error = 'An error occurred while removing the item.';
+			error = e instanceof Error ? e.message : 'Failed to remove item.';
 		}
 	}
 </script>

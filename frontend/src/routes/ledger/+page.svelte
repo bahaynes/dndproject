@@ -1,22 +1,18 @@
 <script lang="ts">
-    import { auth } from '$lib/auth';
+    import { api } from '$lib/api';
     import { onMount } from 'svelte';
-    import { API_BASE_URL } from '$lib/config';
     import type { LedgerEntry } from '$lib/types';
-
-    let authToken: string | null = null;
     let entries: LedgerEntry[] = [];
     let loading = true;
     let filterType = '';
     let offset = 0;
     const PAGE_SIZE = 25;
 
+
     const EVENT_TYPES = [
         'MissionCompleted', 'MissionFailed', 'Purchase', 'RewardDistribution',
         'AdminAdjustment', 'ShipAdjustment', 'CharacterDeath', 'LevelUp',
     ];
-
-    auth.subscribe(v => { authToken = v.token; });
 
     onMount(loadEntries);
 
@@ -24,10 +20,7 @@
         loading = true;
         const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) });
         if (filterType) params.set('event_type', filterType);
-        const res = await fetch(`${API_BASE_URL}/ledger/?${params}`, {
-            headers: { Authorization: `Bearer ${authToken}` },
-        });
-        if (res.ok) entries = await res.json();
+        entries = await api('GET', `/ledger/?${params}`).catch(() => []);
         loading = false;
     }
 

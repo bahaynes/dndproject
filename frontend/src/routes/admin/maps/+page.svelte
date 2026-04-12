@@ -21,9 +21,7 @@
 
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { auth } from '$lib/auth';
-	import { get } from 'svelte/store';
-	import { API_BASE_URL } from '$lib/config';
+	import { api } from '$lib/api';
 	import { goto } from '$app/navigation';
 	import HexGrid from '$lib/components/HexGrid.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
@@ -71,35 +69,17 @@
 	const FACTIONS = ['None', 'Inheritors', 'Kathedral', 'Vastarei'];
 
 	onMount(async () => {
-		// Check admin
-		const authState = get(auth);
-		if (!authState.isAuthenticated || authState.user?.role !== 'admin') {
-			// Redirect or show error (omitted for brevity)
-		}
-
 		await Promise.all([fetchMaps(), fetchMissions()]);
-		if (maps.length > 0) {
-			activeMap = maps[0];
-		}
+		if (maps.length > 0) activeMap = maps[0];
 		loading = false;
 	});
 
 	async function fetchMissions() {
-		try {
-			const res = await fetch(`${API_BASE_URL}/missions/`, {
-				headers: { Authorization: `Bearer ${get(auth).token}` }
-			});
-			if (res.ok) missions = await res.json();
-		} catch (e) {}
+		try { missions = await api('GET', '/missions/'); } catch (e) {}
 	}
 
 	async function fetchMaps() {
-		try {
-			const res = await fetch(`${API_BASE_URL}/maps/`, {
-				headers: { Authorization: `Bearer ${get(auth).token}` }
-			});
-			if (res.ok) maps = await res.json();
-		} catch (e) {}
+		try { maps = await api('GET', '/maps/'); } catch (e) {}
 	}
 
 	function handleHexClick(e: CustomEvent) {
@@ -159,7 +139,6 @@
 	async function saveChanges() {
 		if (!activeMap || !isDirty) return;
 
-		const token = get(auth).token;
 		let successCount = 0;
 		let failCount = 0;
 
@@ -169,25 +148,16 @@
 			if (!hex) continue;
 
 			try {
-				const res = await fetch(`${API_BASE_URL}/maps/${activeMap.id}/hexes/${q}/${r}`, {
-					method: 'PUT',
-					headers: {
-						'Content-Type': 'application/json',
-						Authorization: `Bearer ${token}`
-					},
-					body: JSON.stringify({
-						terrain: hex.terrain,
-						is_discovered: hex.is_discovered,
-						linked_location_name: hex.linked_location_name,
-						linked_mission_id: hex.linked_mission_id,
-						notes: (hex as any).notes,
-						hex_state: hex.hex_state,
-						controlling_faction: hex.controlling_faction ?? null
-					})
+				await api('PUT', `/maps/${activeMap.id}/hexes/${q}/${r}`, {
+					terrain: hex.terrain,
+					is_discovered: hex.is_discovered,
+					linked_location_name: hex.linked_location_name,
+					linked_mission_id: hex.linked_mission_id,
+					notes: (hex as any).notes,
+					hex_state: hex.hex_state,
+					controlling_faction: hex.controlling_faction ?? null
 				});
-
-				if (res.ok) successCount++;
-				else failCount++;
+				successCount++;
 			} catch (e) {
 				failCount++;
 			}

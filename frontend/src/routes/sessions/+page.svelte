@@ -2,8 +2,7 @@
 	import { onMount } from 'svelte';
 	import type { GameSessionWithPlayers, Mission } from '../../lib/types';
 	import { auth } from '../../lib/auth';
-	import { get } from 'svelte/store';
-	import { API_BASE_URL } from '$lib/config';
+	import { api } from '$lib/api';
 	import Modal from '$lib/components/Modal.svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
 
@@ -20,10 +19,8 @@
 	let fieldReportDraft: Record<number, string> = {};
 	let submittingFieldReport: number | null = null;
 
-	// Reactive update for character ID
 	$: myCharacterId = $auth.user?.active_character?.id;
 
-	// Fetch sessions on mount and when auth token is available (handled in onMount logic effectively)
 	onMount(async () => {
 		await Promise.all([fetchSessions(), fetchMissions()]);
 	});
@@ -31,35 +28,15 @@
 	async function fetchSessions() {
 		error = null;
 		try {
-			const token = get(auth).token;
-			if (!token) {
-				throw new Error('Not authenticated. Please log in.');
-			}
-			const response = await fetch(`${API_BASE_URL}/sessions/`, {
-				headers: {
-					Authorization: `Bearer ${token}`
-				}
-			});
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.detail || 'Failed to fetch sessions');
-			}
-			sessions = await response.json();
+			sessions = await api('GET', '/sessions/');
 		} catch (err) {
-			if (err instanceof Error) {
-				error = err.message;
-			} else {
-				error = 'An unknown error occurred';
-			}
+			error = err instanceof Error ? err.message : 'Failed to fetch sessions';
 		}
 	}
 
 	async function fetchMissions() {
 		try {
-			const res = await fetch(`${API_BASE_URL}/missions/`, {
-				headers: { Authorization: `Bearer ${get(auth).token}` }
-			});
-			if (res.ok) availableMissions = await res.json();
+			availableMissions = await api('GET', '/missions/');
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to load missions';
 		}
@@ -75,25 +52,8 @@
 
 	async function toggleBacking(proposalId: number) {
 		error = null;
-		const token = get(auth).token;
-		if (!token) {
-			error = 'You must be logged in.';
-			return;
-		}
-
 		try {
-			const response = await fetch(`${API_BASE_URL}/sessions/proposals/${proposalId}/toggle_back`, {
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${token}`
-				}
-			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.detail || 'Failed to update backing');
-			}
-
+			await api('POST', `/sessions/proposals/${proposalId}/toggle_back`);
 			await fetchSessions();
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';
@@ -106,18 +66,7 @@
 		submittingFieldReport = sessionId;
 		error = null;
 		try {
-			const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/field-report`, {
-				method: 'PATCH',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${get(auth).token}`
-				},
-				body: JSON.stringify({ field_report: text })
-			});
-			if (!response.ok) {
-				const d = await response.json();
-				throw new Error(d.detail || 'Failed to submit field report');
-			}
+			await api('PATCH', `/sessions/${sessionId}/field-report`, { field_report: text });
 			fieldReportDraft[sessionId] = '';
 			await fetchSessions();
 		} catch (err) {
@@ -130,26 +79,11 @@
 	async function proposeMission() {
 		if (!selectedSessionId || !selectedMissionId) return;
 		error = null;
-		const token = get(auth).token;
-
 		try {
-			const response = await fetch(`${API_BASE_URL}/sessions/proposals`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${token}`
-				},
-				body: JSON.stringify({
-					session_id: selectedSessionId,
-					mission_id: selectedMissionId
-				})
+			await api('POST', '/sessions/proposals', {
+				session_id: selectedSessionId,
+				mission_id: selectedMissionId
 			});
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.detail || 'Failed to propose mission');
-			}
-
 			showProposeModal = false;
 			await fetchSessions();
 		} catch (err) {

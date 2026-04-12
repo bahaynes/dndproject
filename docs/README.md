@@ -5,11 +5,15 @@ API documentation is automatically generated from Python docstrings using [mkdoc
 
 ## Setup
 
-1.  Ensure you have the documentation dependencies installed:
+1.  Ensure you have the documentation dependencies installed. The project uses
+    `uv` for dependency management — the docs deps are included in the dev group:
     ```bash
-    pip install -r backend/requirements.txt
+    cd backend && uv sync
     ```
-    (Note: These are included in the dev container if you rebuild it)
+    Alternatively, install standalone with pip:
+    ```bash
+    pip install mkdocs mkdocs-material "mkdocstrings[python]"
+    ```
 
 ## Building the Docs
 

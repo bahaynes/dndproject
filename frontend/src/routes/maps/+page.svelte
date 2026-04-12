@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { auth } from '$lib/auth';
-	import { get } from 'svelte/store';
-	import { API_BASE_URL } from '$lib/config';
+	import { api } from '$lib/api';
 	import HexGrid from '$lib/components/HexGrid.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
@@ -37,32 +36,11 @@
 	let submittingNote = false;
 
 	onMount(async () => {
-		// Check admin
-		const authState = get(auth);
-		isAdmin = authState.user?.role === 'admin';
-
-		await fetchMaps();
-
-		if (maps.length > 0) {
-			activeMap = maps[0];
-		}
-
+		isAdmin = $auth.user?.role === 'admin';
+		try { maps = await api('GET', '/maps/'); } catch (e) {}
+		if (maps.length > 0) activeMap = maps[0];
 		loading = false;
 	});
-
-	async function fetchMaps() {
-		try {
-			const res = await fetch(`${API_BASE_URL}/maps/`, {
-				headers: { Authorization: `Bearer ${get(auth).token}` }
-			});
-			if (res.ok) {
-				maps = await res.json();
-			}
-		} catch (e) {
-			console.error('Failed to fetch maps', e);
-			// Do not block dummy generation for dev testing
-		}
-	}
 
 	function handleHexClick(e: CustomEvent) {
 		const { q, r } = e.detail;
@@ -81,30 +59,14 @@
 		if (!selectedHex || !activeMap || !noteDraft.trim()) return;
 		submittingNote = true;
 		try {
-			const res = await fetch(
-				`${API_BASE_URL}/maps/${activeMap.id}/hexes/${selectedHex.q}/${selectedHex.r}/notes`,
-				{
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						Authorization: `Bearer ${get(auth).token}`
-					},
-					body: JSON.stringify({ text: noteDraft })
-				}
-			);
-			if (res.ok) {
-				const updated = await res.json();
-				// Update local hex data
-				const idx = activeMap.hexes.findIndex(
-					(h) => h.q === selectedHex!.q && h.r === selectedHex!.r
-				);
-				if (idx !== -1) {
-					activeMap.hexes[idx] = { ...activeMap.hexes[idx], player_notes: updated.player_notes };
-					selectedHex = { ...selectedHex, player_notes: updated.player_notes };
-					activeMap.hexes = [...activeMap.hexes];
-				}
-				noteDraft = '';
+			const updated = await api('POST', `/maps/${activeMap.id}/hexes/${selectedHex.q}/${selectedHex.r}/notes`, { text: noteDraft });
+			const idx = activeMap.hexes.findIndex((h) => h.q === selectedHex!.q && h.r === selectedHex!.r);
+			if (idx !== -1) {
+				activeMap.hexes[idx] = { ...activeMap.hexes[idx], player_notes: updated.player_notes };
+				selectedHex = { ...selectedHex, player_notes: updated.player_notes };
+				activeMap.hexes = [...activeMap.hexes];
 			}
+			noteDraft = '';
 		} catch (e) {
 			console.error('Failed to submit note', e);
 		} finally {

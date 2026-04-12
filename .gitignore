@@ -44,6 +44,7 @@ htmlcov/
 .cache
 nosetests.xml
 coverage.xml
+coverage.json
 *.cover
 *.py,cover
 .hypothesis/
@@ -95,4 +96,3 @@ e2e/node_modules/
 e2e/package-lock.json
 e2e/test-results/
 frontend/test-results/
-SESSION.md
