@@ -1,10 +1,7 @@
 <script lang="ts">
-    import { auth } from '$lib/auth';
+    import { api } from '$lib/api';
     import { onMount } from 'svelte';
-    import { API_BASE_URL } from '$lib/config';
     import type { Ship } from '$lib/types';
-
-    let authToken: string | null = null;
     let ship: Ship | null = null;
     let loading = true;
     let saving = false;
@@ -24,21 +21,17 @@
     let adjEssenceDelta = 0;
     let adjDescription = '';
 
-    auth.subscribe(v => { authToken = v.token; });
     onMount(loadShip);
 
     async function loadShip() {
         loading = true;
-        const res = await fetch(`${API_BASE_URL}/ship/`, {
-            headers: { Authorization: `Bearer ${authToken}` },
-        });
-        if (res.ok) {
-            ship = await res.json();
+        try {
+            ship = await api('GET', '/ship/');
             editName = ship!.name;
             editLevel = ship!.level;
             editEssence = ship!.essence;
             editMotd = ship!.motd ?? '';
-        }
+        } catch (e) {}
         loading = false;
     }
 
@@ -46,19 +39,11 @@
         saving = true;
         saveMsg = '';
         saveError = '';
-        const res = await fetch(`${API_BASE_URL}/ship/`, {
-            method: 'PUT',
-            headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: editName, level: editLevel, essence: editEssence, motd: editMotd || null,
-            }),
-        });
-        if (res.ok) {
-            ship = await res.json();
+        try {
+            ship = await api('PUT', '/ship/', { name: editName, level: editLevel, essence: editEssence, motd: editMotd || null });
             saveMsg = 'Ship configuration saved.';
-        } else {
-            const err = await res.json();
-            saveError = err.detail ?? 'Failed to save.';
+        } catch (e) {
+            saveError = e instanceof Error ? e.message : 'Failed to save.';
         }
         saving = false;
     }
@@ -68,22 +53,14 @@
         adjusting = true;
         adjustMsg = '';
         adjustError = '';
-        const res = await fetch(`${API_BASE_URL}/ship/adjust`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                essence_delta: adjEssenceDelta,
-                description: adjDescription,
-            }),
-        });
-        if (res.ok) {
-            ship = await res.json();
+        try {
+            ship = await api('POST', '/ship/adjust', { essence_delta: adjEssenceDelta, description: adjDescription });
             editEssence = ship!.essence;
             adjustMsg = 'Essence adjusted and ledger entry created.';
-            adjEssenceDelta = 0; adjDescription = '';
-        } else {
-            const err = await res.json();
-            adjustError = err.detail ?? 'Adjustment failed.';
+            adjEssenceDelta = 0;
+            adjDescription = '';
+        } catch (e) {
+            adjustError = e instanceof Error ? e.message : 'Adjustment failed.';
         }
         adjusting = false;
     }

@@ -1,28 +1,20 @@
 <script lang="ts">
     import { auth } from '$lib/auth';
+    import { api } from '$lib/api';
     import { onMount } from 'svelte';
     import { goto } from '$app/navigation';
-    import { API_BASE_URL } from '$lib/config';
     import FactionReputationTracker from '$lib/components/FactionReputationTracker.svelte';
     import type { Ship, LedgerEntry, CharacterRosterEntry, GameSessionWithPlayers } from '$lib/types';
-
-    let user: any = null;
-    let campaign: any = null;
-    let authToken: string | null = null;
 
     let ship: Ship | null = null;
     let ledgerEntries: LedgerEntry[] = [];
     let roster: CharacterRosterEntry[] = [];
     let upcomingSessions: GameSessionWithPlayers[] = [];
     let loading = true;
-
     let showOnboarding = false;
 
-    auth.subscribe(value => {
-        user = value.user;
-        campaign = value.campaign;
-        authToken = value.token;
-    });
+    $: user = $auth.user;
+    $: campaign = $auth.campaign;
 
     onMount(async () => {
         if (!user && !localStorage.getItem('accessToken')) {
@@ -32,7 +24,7 @@
             goto('/campaigns');
             return;
         }
-        if (authToken) await loadData();
+        if ($auth.token) await loadData();
     });
 
     function dismissOnboarding() {
@@ -47,23 +39,20 @@
     }
 
     async function loadData() {
-        const headers = { Authorization: `Bearer ${authToken}` };
-        const [shipRes, ledgerRes, rosterRes, sessionsRes] = await Promise.all([
-            fetch(`${API_BASE_URL}/ship/`, { headers }),
-            fetch(`${API_BASE_URL}/ledger/?limit=5`, { headers }),
-            fetch(`${API_BASE_URL}/characters/roster`, { headers }),
-            fetch(`${API_BASE_URL}/sessions/?limit=100`, { headers }),
+        const [s, l, r, sessions] = await Promise.all([
+            api('GET', '/ship/').catch(() => null),
+            api('GET', '/ledger/?limit=5').catch(() => []),
+            api('GET', '/characters/roster').catch(() => []),
+            api('GET', '/sessions/?limit=100').catch(() => []),
         ]);
-        if (shipRes.ok) ship = await shipRes.json();
-        if (ledgerRes.ok) ledgerEntries = await ledgerRes.json();
-        if (rosterRes.ok) roster = await rosterRes.json();
-        if (sessionsRes.ok) {
-            const all: GameSessionWithPlayers[] = await sessionsRes.json();
-            upcomingSessions = all
-                .filter(s => s.status !== 'Completed' && s.status !== 'Cancelled')
-                .sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime())
-                .slice(0, 3);
-        }
+        ship = s;
+        ledgerEntries = l ?? [];
+        roster = r ?? [];
+        const all: GameSessionWithPlayers[] = sessions ?? [];
+        upcomingSessions = all
+            .filter(s => s.status !== 'Completed' && s.status !== 'Cancelled')
+            .sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime())
+            .slice(0, 3);
         loading = false;
     }
 

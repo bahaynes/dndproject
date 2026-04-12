@@ -1,8 +1,7 @@
 <script lang="ts">
     import { auth } from '$lib/auth';
+    import { api } from '$lib/api';
     import { onMount } from 'svelte';
-    import { get } from 'svelte/store';
-    import { API_BASE_URL } from '$lib/config';
 
     interface ReputationEvent {
         id: number;
@@ -66,11 +65,7 @@
 
     async function fetchReputations() {
         loading = true;
-        const { token } = get(auth);
-        const res = await fetch(`${API_BASE_URL}/factions/`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) reputations = await res.json();
+        reputations = await api('GET', '/factions/');
         loading = false;
     }
 
@@ -78,25 +73,19 @@
         if (!createName.trim()) return;
         creating = true;
         createError = '';
-        const { token } = get(auth);
-        const res = await fetch(`${API_BASE_URL}/factions/`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+        try {
+            await api('POST', '/factions/', {
                 faction_name: createName.trim(),
                 color: createColor,
                 description: createDescription.trim() || null,
-            }),
-        });
-        if (res.ok) {
+            });
             showCreateForm = false;
             createName = '';
             createColor = '#6b7280';
             createDescription = '';
             await fetchReputations();
-        } else {
-            const err = await res.json();
-            createError = err.detail ?? 'Failed to create faction.';
+        } catch (e) {
+            createError = e instanceof Error ? e.message : 'Failed to create faction.';
         }
         creating = false;
     }
@@ -104,28 +93,22 @@
     async function submitAdjust(factionName: string) {
         if (!adjustDescription.trim()) return;
         adjusting = factionName;
-        const { token } = get(auth);
-        const res = await fetch(`${API_BASE_URL}/factions/${encodeURIComponent(factionName)}/adjust`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ delta: adjustDelta, description: adjustDescription.trim() }),
-        });
-        if (res.ok) {
+        try {
+            await api('POST', `/factions/${encodeURIComponent(factionName)}/adjust`, {
+                delta: adjustDelta,
+                description: adjustDescription.trim()
+            });
             showAdjustFor = null;
             adjustDelta = 1;
             adjustDescription = '';
             await fetchReputations();
-        }
+        } catch (e) {}
         adjusting = null;
     }
 
     async function confirmDelete(factionName: string) {
         deleting = factionName;
-        const { token } = get(auth);
-        await fetch(`${API_BASE_URL}/factions/${encodeURIComponent(factionName)}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` },
-        });
+        try { await api('DELETE', `/factions/${encodeURIComponent(factionName)}`); } catch (e) {}
         confirmDeleteFor = null;
         deleting = null;
         await fetchReputations();

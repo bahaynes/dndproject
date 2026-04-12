@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { auth } from '$lib/auth';
-	import { get } from 'svelte/store';
-	import { API_BASE_URL } from '$lib/config';
+	import { api } from '$lib/api';
 	import type { StoreItem, Character } from '$lib/types';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import Modal from '$lib/components/Modal.svelte';
@@ -29,37 +28,15 @@
 
 	async function fetchStoreItems() {
 		try {
-			// .. existing fetchStoreItems code doesn't depend on character, just auth token ..
-			const authState = get(auth);
-			const res = await fetch(`${API_BASE_URL}/store/items/`, {
-				headers: {
-					Authorization: `Bearer ${authState.token}`
-				}
-			});
-			if (res.ok) {
-				storeItems = await res.json();
-			}
-		} catch (e) {
-			console.error('Failed to fetch store items', e);
-		}
+			storeItems = await api('GET', '/store/items/');
+		} catch (e) {}
 	}
 
 	async function fetchCharacter(charId: number) {
 		loading = true;
 		try {
-			const authState = get(auth);
-			// Removing the internal charId fetch since we pass it in
-			const res = await fetch(`${API_BASE_URL}/characters/${charId}`, {
-				headers: {
-					Authorization: `Bearer ${authState.token}`
-				}
-			});
-			if (res.ok) {
-				character = await res.json();
-			}
-		} catch (e) {
-			console.error('Failed to fetch character', e);
-		} finally {
+			character = await api('GET', `/characters/${charId}`);
+		} catch (e) {} finally {
 			loading = false;
 		}
 	}
@@ -72,35 +49,16 @@
 
 	async function handlePurchase() {
 		if (!selectedItem || !character) return;
-
 		error = '';
 		successMessage = '';
-
 		try {
-			const authState = get(auth);
-			const res = await fetch(
-				`${API_BASE_URL}/store/items/${selectedItem.id}/purchase?quantity=${purchaseQuantity}`,
-				{
-					method: 'POST',
-					headers: {
-						Authorization: `Bearer ${authState.token}`
-					}
-				}
-			);
-
-			if (res.ok) {
-				successMessage = `Successfully purchased ${purchaseQuantity}x ${selectedItem.item.name}!`;
-				showPurchaseConfirm = false;
-				await Promise.all([fetchStoreItems(), fetchCharacter(character.id)]);
-
-				// Clear success message after 5s
-				setTimeout(() => (successMessage = ''), 5000);
-			} else {
-				const errData = await res.json();
-				error = errData.detail || 'Purchase failed.';
-			}
+			await api('POST', `/store/items/${selectedItem.id}/purchase?quantity=${purchaseQuantity}`);
+			successMessage = `Successfully purchased ${purchaseQuantity}x ${selectedItem.item.name}!`;
+			showPurchaseConfirm = false;
+			await Promise.all([fetchStoreItems(), fetchCharacter(character.id)]);
+			setTimeout(() => (successMessage = ''), 5000);
 		} catch (e) {
-			error = 'An error occurred during purchase.';
+			error = e instanceof Error ? e.message : 'Purchase failed.';
 		}
 	}
 </script>

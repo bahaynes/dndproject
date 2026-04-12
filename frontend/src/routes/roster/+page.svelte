@@ -1,27 +1,20 @@
 <script lang="ts">
-    import { auth } from '$lib/auth';
+    import { api } from '$lib/api';
     import { onMount } from 'svelte';
-    import { API_BASE_URL } from '$lib/config';
     import type { CharacterRosterEntry } from '$lib/types';
-
-    let authToken: string | null = null;
     let roster: CharacterRosterEntry[] = [];
     let loading = true;
     let statusFilter = '';
     let sortKey: keyof CharacterRosterEntry = 'name';
     let sortAsc = true;
 
-    auth.subscribe(v => { authToken = v.token; });
     onMount(loadRoster);
 
     async function loadRoster() {
         loading = true;
         const params = new URLSearchParams();
         if (statusFilter) params.set('status', statusFilter);
-        const res = await fetch(`${API_BASE_URL}/characters/roster?${params}`, {
-            headers: { Authorization: `Bearer ${authToken}` },
-        });
-        if (res.ok) roster = await res.json();
+        roster = await api('GET', `/characters/roster?${params}`).catch(() => []);
         loading = false;
     }
 

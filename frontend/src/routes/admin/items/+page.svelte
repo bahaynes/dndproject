@@ -1,8 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { auth } from '$lib/auth';
-  import { get } from 'svelte/store';
-  import { API_BASE_URL } from '$lib/config';
+  import { api } from '$lib/api';
   import type { Item, StoreItem } from '$lib/types';
   import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
   import Modal from '$lib/components/Modal.svelte';
@@ -26,8 +25,7 @@
   let showAddToStore = false;
 
   onMount(async () => {
-    const authState = get(auth);
-    if (!authState.isAuthenticated || authState.user?.role !== 'admin') {
+    if (!$auth.isAuthenticated || $auth.user?.role !== 'admin') {
       goto('/dashboard');
       return;
     }
@@ -47,36 +45,21 @@
   }
 
   async function fetchItems() {
-    const res = await fetch(`${API_BASE_URL}/items/`, {
-      headers: { Authorization: `Bearer ${get(auth).token}` }
-    });
-    if (res.ok) items = await res.json();
+    items = await api('GET', '/items/');
   }
 
   async function fetchStoreItems() {
-    const res = await fetch(`${API_BASE_URL}/store/items/`, {
-      headers: { Authorization: `Bearer ${get(auth).token}` }
-    });
-    if (res.ok) storeItems = await res.json();
+    storeItems = await api('GET', '/store/items/');
   }
 
   async function createItem() {
     try {
-      const res = await fetch(`${API_BASE_URL}/items/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${get(auth).token}`
-        },
-        body: JSON.stringify({ name: newItemName, description: newItemDescription })
-      });
-      if (res.ok) {
-        success = "Item created successfully.";
-        newItemName = "";
-        newItemDescription = "";
-        showCreateItem = false;
-        await fetchItems();
-      }
+      await api('POST', '/items/', { name: newItemName, description: newItemDescription });
+      success = "Item created successfully.";
+      newItemName = "";
+      newItemDescription = "";
+      showCreateItem = false;
+      await fetchItems();
     } catch (e) {
       error = "Failed to create item.";
     }
@@ -85,23 +68,14 @@
   async function addToStore() {
     if (!selectedItem) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/store/items/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${get(auth).token}`
-        },
-        body: JSON.stringify({
-          item_id: selectedItem.id,
-          price: storePrice,
-          quantity_available: storeQuantity
-        })
+      await api('POST', '/store/items/', {
+        item_id: selectedItem.id,
+        price: storePrice,
+        quantity_available: storeQuantity
       });
-      if (res.ok) {
-        success = "Item added to store.";
-        showAddToStore = false;
-        await fetchStoreItems();
-      }
+      success = "Item added to store.";
+      showAddToStore = false;
+      await fetchStoreItems();
     } catch (e) {
       error = "Failed to add to store.";
     }

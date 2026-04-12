@@ -1,13 +1,11 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { auth } from '$lib/auth';
-	import { get } from 'svelte/store';
-	import { API_BASE_URL } from '$lib/config';
+	import { api } from '$lib/api';
 	import type { Character } from '$lib/types';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
 	let characters: Character[] = [];
-	let viewCharacter: Character | null = null; // The character currently being viewed/edited
+	let viewCharacter: Character | null = null;
 	let loading = true;
 	let error = '';
 
@@ -24,46 +22,21 @@
 	let newCharName = '';
 	let newCharDesc = '';
 
-	// Reactive activeCharacterId from auth store
 	$: activeCharacterId = $auth.user?.active_character?.id;
 
-	// Trigger fetch when token is available
 	$: if ($auth.token && loading && characters.length === 0 && !error) {
 		fetchMyCharacters();
 	}
 
 	async function fetchMyCharacters() {
-		const authState = get(auth);
-		if (!authState.token) return; // Should be handled by reactive stmt but safety check
-
 		try {
-			const res = await fetch(`${API_BASE_URL}/characters/`, {
-				headers: {
-					Authorization: `Bearer ${authState.token}`
-				}
-			});
-
-			if (res.ok) {
-				characters = await res.json();
-
-				// Default view to active character, or first character, or null
-				const active = characters.find((c) => c.id === activeCharacterId);
-				viewCharacter = active || characters[0] || null;
-
-				if (viewCharacter) resetEditForm();
-				loading = false;
-			} else {
-				if (res.status === 401) {
-					// Token invalid/expired
-					// Let layout handle auth state usually, but we can stop loading
-					loading = false;
-					return;
-				}
-				error = 'Failed to load characters.';
-				loading = false;
-			}
+			characters = await api('GET', '/characters/');
+			const active = characters.find((c) => c.id === activeCharacterId);
+			viewCharacter = active || characters[0] || null;
+			if (viewCharacter) resetEditForm();
 		} catch (e) {
-			error = 'An error occurred while loading characters.';
+			error = e instanceof Error ? e.message : 'Failed to load characters.';
+		} finally {
 			loading = false;
 		}
 	}
@@ -85,21 +58,10 @@
 	}
 
 	async function activateCharacter(char: Character) {
+		const { token, campaign } = $auth;
 		try {
-			const authState = get(auth);
-			const res = await fetch(`${API_BASE_URL}/characters/${char.id}/activate`, {
-				method: 'POST',
-				headers: { Authorization: `Bearer ${authState.token}` }
-			});
-
-			if (res.ok) {
-				const updatedUser = await res.json();
-				// Update auth store
-				auth.update((state) => ({
-					...state,
-					user: updatedUser
-				}));
-			}
+			const updatedUser = await api('POST', `/characters/${char.id}/activate`);
+			if (token) auth.login(updatedUser, token, campaign ?? undefined);
 		} catch (e) {
 			console.error('Failed to activate character', e);
 		}
@@ -107,82 +69,41 @@
 
 	async function createCharacter() {
 		if (!newCharName) return;
-
 		try {
-			const authState = get(auth);
-			const res = await fetch(`${API_BASE_URL}/characters/`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${authState.token}`
-				},
-				body: JSON.stringify({
-					name: newCharName,
-					description: newCharDesc || 'A new adventurer.'
-				})
+			const newChar = await api('POST', '/characters/', {
+				name: newCharName,
+				description: newCharDesc || 'A new adventurer.'
 			});
-
-			if (res.ok) {
-				const newChar = await res.json();
-				// Refresh list
-				await fetchMyCharacters();
-				// Switch view to new character
-				const found = characters.find((c) => c.id === newChar.id);
-				if (found) selectCharacter(found);
-
-				isCreating = false;
-				newCharName = '';
-				newCharDesc = '';
-			} else {
-				const err = await res.json();
-				alert(err.detail || 'Failed to create character');
-			}
+			await fetchMyCharacters();
+			const found = characters.find((c) => c.id === newChar.id);
+			if (found) selectCharacter(found);
+			isCreating = false;
+			newCharName = '';
+			newCharDesc = '';
 		} catch (e) {
-			alert('Error creating character');
+			alert(e instanceof Error ? e.message : 'Error creating character');
 		}
 	}
 
 	async function handleUpdate() {
 		if (!viewCharacter) return;
-
+		const { token, campaign, user } = $auth;
 		try {
-			const authState = get(auth);
-			const res = await fetch(`${API_BASE_URL}/characters/${viewCharacter.id}`, {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${authState.token}`
-				},
-				body: JSON.stringify({
-					name: editName,
-					description: editDescription,
-					character_sheet_url: editCharacterSheetUrl,
-					class_name: editClassName || null,
-					level: editLevel,
-				})
+			const updated = await api('PUT', `/characters/${viewCharacter.id}`, {
+				name: editName,
+				description: editDescription,
+				character_sheet_url: editCharacterSheetUrl,
+				class_name: editClassName || null,
+				level: editLevel
 			});
-
-			if (res.ok) {
-				const updated = await res.json();
-				// Update local list
-				characters = characters.map((c) => (c.id === updated.id ? updated : c));
-				viewCharacter = updated;
-				isEditing = false;
-
-				// If this was active, we might want to update auth store too to reflect name changes
-				if (activeCharacterId === updated.id) {
-					auth.update((state) => {
-						if (state.user) {
-							return { ...state, user: { ...state.user, active_character: updated } };
-						}
-						return state;
-					});
-				}
-			} else {
-				alert('Failed to update character');
+			characters = characters.map((c) => (c.id === updated.id ? updated : c));
+			viewCharacter = updated;
+			isEditing = false;
+			if (activeCharacterId === updated.id && user && token) {
+				auth.login({ ...user, active_character: updated }, token, campaign ?? undefined);
 			}
 		} catch (e) {
-			alert('Error saving updates');
+			alert('Failed to update character');
 		}
 	}
 </script>
