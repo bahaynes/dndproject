@@ -17,22 +17,28 @@
     let showProposeModal = false;
     let selectedSessionId: number | null = null;
     let selectedMissionId: number | null = null;
+    let dataLoaded = false;
 
     $: user = $auth.user;
     $: campaign = $auth.campaign;
     $: char = user?.active_character;
     $: myCharacterId = char?.id;
 
-    onMount(async () => {
-        if (!user && !localStorage.getItem('accessToken')) {
+    onMount(() => {
+        if (!localStorage.getItem('accessToken')) {
             goto('/login');
-            return;
-        } else if (user && !campaign) {
-            goto('/campaigns');
-            return;
         }
-        if ($auth.token) await loadData();
     });
+
+    // Fires when auth hydrates (may be before or after onMount)
+    $: if ($auth.token && !dataLoaded) {
+        dataLoaded = true;
+        loadData();
+    }
+
+    $: if ($auth.isAuthenticated && !$auth.campaign) {
+        goto('/campaigns');
+    }
 
     function dismissOnboarding() {
         showOnboarding = false;

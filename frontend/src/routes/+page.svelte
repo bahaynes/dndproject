@@ -20,8 +20,10 @@
       <div class="card w-full max-w-md mx-auto shadow-2xl bg-base-100 border-2 border-primary/20">
         <div class="card-body items-center text-center">
           <p class="mb-6 text-lg text-base-content/80">Join the adventure today.</p>
-          <a href="{API_BASE_URL}/auth/discord/login" data-sveltekit-reload class="btn btn-primary btn-lg w-full gap-3 font-bold uppercase tracking-widest shadow-xl">
-            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037 2.03 2.03 0 0 0 .59 1.05 2.031 2.031 0 0 0 .589.049.073.073 0 0 0 .079-.036 19.774 19.774 0 0 0-4.885 1.516c-.05.01-.064.08-.024.11a16.142 16.142 0 0 1 1.764 2.89.076.076 0 0 0 .065.048c.026-.002.052.003.076.014a19.866 19.866 0 0 0 6.666 0 .077.077 0 0 0 .077-.062 16.16 16.16 0 0 1 1.764-2.89.073.073 0 0 0-.025-.11ZM6.3 16.48a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm11.4 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"/></svg>
+          <a href="{API_BASE_URL}/auth/discord/login" data-sveltekit-reload class="btn btn-lg w-full gap-3 font-bold shadow-xl text-white" style="background-color: #5865F2; border-color: #5865F2;">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 127.14 96.36" xmlns="http://www.w3.org/2000/svg">
+              <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z"/>
+            </svg>
             Login with Discord
           </a>
         </div>

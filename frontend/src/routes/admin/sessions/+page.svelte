@@ -29,13 +29,20 @@
 	let sMaxPlayers = 6;
 	let showCreate = false;
 
-	onMount(async () => {
-		if (!$auth.isAuthenticated || $auth.user?.role !== 'admin') {
-			goto('/dashboard');
-			return;
-		}
-		await fetchSessions();
+	let dataLoaded = false;
+
+	onMount(() => {
+		if (!localStorage.getItem('accessToken')) goto('/dashboard');
 	});
+
+	$: if ($auth.isAuthenticated && $auth.user?.role !== 'admin') {
+		goto('/dashboard');
+	}
+
+	$: if ($auth.isAuthenticated && $auth.user?.role === 'admin' && !dataLoaded) {
+		dataLoaded = true;
+		fetchSessions();
+	}
 
 	async function fetchSessions() {
 		loading = true;
@@ -263,15 +270,6 @@
 		<div>
 			<label class="label"><span class="label-text">Date and Time</span></label>
 			<input type="datetime-local" bind:value={sDate} class="input input-bordered w-full" />
-		</div>
-		<div>
-			<label class="label"><span class="label-text">Admin Override Name</span></label>
-			<input
-				type="text"
-				bind:value={sName}
-				class="input input-bordered w-full"
-				placeholder="e.g. Saturday Slot"
-			/>
 		</div>
 		<div>
 			<label class="label"><span class="label-text">Briefing</span></label>

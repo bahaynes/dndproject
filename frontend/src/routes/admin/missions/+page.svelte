@@ -105,13 +105,20 @@
 		showCreateMission = true;
 	}
 
-	onMount(async () => {
-		if (!$auth.isAuthenticated || $auth.user?.role !== 'admin') {
-			goto('/dashboard');
-			return;
-		}
-		await reloadData();
+	let dataLoaded = false;
+
+	onMount(() => {
+		if (!localStorage.getItem('accessToken')) goto('/dashboard');
 	});
+
+	$: if ($auth.isAuthenticated && $auth.user?.role !== 'admin') {
+		goto('/dashboard');
+	}
+
+	$: if ($auth.isAuthenticated && $auth.user?.role === 'admin' && !dataLoaded) {
+		dataLoaded = true;
+		reloadData();
+	}
 
 	async function reloadData() {
 		loading = true;
