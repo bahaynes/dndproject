@@ -101,7 +101,7 @@
 
 						<!-- Rewards section -->
 						<div class="mb-4 rounded-lg bg-base-200 p-3">
-							<span class="mb-2 block text-[10px] font-bold uppercase opacity-50"
+							<span class="mb-2 block text-[10px] font-bold text-base-content/60 uppercase"
 								>Potential Rewards</span
 							>
 							<div class="flex flex-wrap gap-2">
@@ -143,7 +143,7 @@
 										</div>
 									{/if}
 								</div>
-								<span class="text-xs opacity-60">
+								<span class="text-xs text-base-content/65">
 									{mission.players.length === 0
 										? 'Seeking members'
 										: `${mission.players.length} members signed up`}

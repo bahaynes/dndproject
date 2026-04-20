@@ -129,8 +129,7 @@
 	</div>
 
 	<p class="mb-4 text-xs opacity-70">
-		Generate an Aphtharton adventure framed as a question for the Inheritors. Grounded in the
-		campaign's faction state and field reports.
+		Generate an adventure grounded in the campaign's current faction state and field reports.
 	</p>
 
 	{#if !generating}

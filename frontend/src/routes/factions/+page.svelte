@@ -141,7 +141,7 @@
             <h1 class="text-3xl font-bold font-[var(--font-cinzel)] tracking-tight text-primary">
                 Faction Standing
             </h1>
-            <p class="text-sm opacity-50 mt-1">Current relations between Meridian's crew and the powers of the Rim.</p>
+            <p class="text-sm opacity-50 mt-1">Your crew's standing with each active faction.</p>
         </div>
         {#if isAdmin}
             <button

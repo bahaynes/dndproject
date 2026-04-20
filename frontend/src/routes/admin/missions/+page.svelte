@@ -42,7 +42,7 @@
 		'Tier 1': { Routine: 2, Standard: 4, Hard: 6, Extreme: 10 },
 		'Tier 2': { Routine: 4, Standard: 8, Hard: 12, Extreme: 20 },
 		'Tier 3': { Routine: 6, Standard: 12, Hard: 18, Extreme: 30 },
-		'Tier 4': { Routine: 8, Standard: 16, Hard: 24, Extreme: 40 },
+		'Tier 4': { Routine: 8, Standard: 16, Hard: 24, Extreme: 40 }
 	};
 
 	$: suggestedPayout = (mTier && PAYOUTS[mTier]?.[mDifficulty]) ?? null;
@@ -55,7 +55,7 @@
 		Available: 'On the Board',
 		'In Progress': 'Underway',
 		Completed: 'Completed',
-		Cancelled: 'Cancelled',
+		Cancelled: 'Cancelled'
 	};
 
 	function displayStatus(s: string) {
@@ -206,21 +206,23 @@
 				<div class="card bg-base-200 shadow-md">
 					<div class="card-body">
 						<div class="flex flex-col justify-between gap-4 md:flex-row">
-							<div class="flex-1 min-w-0">
-								<div class="flex items-center gap-2 flex-wrap mb-1">
+							<div class="min-w-0 flex-1">
+								<div class="mb-1 flex flex-wrap items-center gap-2">
 									<h3 class="text-xl font-bold">{mission.name}</h3>
 									<div class="badge badge-sm">{displayStatus(mission.status)}</div>
 									{#if mission.tier}
 										<div class="badge badge-outline badge-sm">{mission.tier}</div>
 									{/if}
 									{#if mission.region}
-										<span class="text-xs opacity-50">📍 {mission.region}</span>
+										<span class="text-xs text-base-content/60">📍 {mission.region}</span>
 									{/if}
 								</div>
 								{#if mission.rewards[0]?.xp}
-									<div class="text-xs opacity-60 mb-2">⚡ {mission.rewards[0].xp} Essence net payout</div>
+									<div class="mb-2 text-xs text-base-content/65">
+										⚡ {mission.rewards[0].xp} Essence net payout
+									</div>
 								{/if}
-								<div class="text-sm opacity-70">
+								<div class="text-sm text-base-content/70">
 									<MarkdownRenderer content={mission.description || 'No briefing.'} />
 								</div>
 							</div>
@@ -229,24 +231,30 @@
 								{#if mission.status === 'Available'}
 									<button
 										class="btn btn-outline btn-sm"
-										on:click={() => patchStatus(mission.id, 'In Progress')}>Mark Underway</button>
+										on:click={() => patchStatus(mission.id, 'In Progress')}>Mark Underway</button
+									>
 								{:else if mission.status === 'In Progress'}
 									<button
 										class="btn btn-outline btn-sm btn-success"
-										on:click={() => patchStatus(mission.id, 'Completed')}>Mark Completed</button>
+										on:click={() => patchStatus(mission.id, 'Completed')}>Mark Completed</button
+									>
 								{/if}
 								<button
 									class="btn btn-outline btn-sm btn-primary"
-									on:click={() => openEdit(mission)}>Edit</button>
+									on:click={() => openEdit(mission)}>Edit</button
+								>
 								<button
-									class="btn btn-ghost btn-sm text-error"
-									on:click={() => patchStatus(mission.id, 'Cancelled')}>Retire</button>
+									class="btn text-base-content/60 btn-ghost btn-sm"
+									on:click={() => patchStatus(mission.id, 'Cancelled')}>Retire</button
+								>
 							</div>
 						</div>
 
 						{#if mission.players.length > 0}
 							<div class="mt-4 border-t border-base-content/10 pt-4">
-								<span class="mb-2 block text-[10px] font-bold uppercase opacity-50">Crew Enrolled</span>
+								<span class="mb-2 block text-[10px] font-bold text-base-content/60 uppercase"
+									>Crew Enrolled</span
+								>
 								<div class="flex flex-wrap gap-2">
 									{#each mission.players as p}
 										<div class="badge badge-outline badge-md">{p.name}</div>
@@ -258,7 +266,7 @@
 				</div>
 			{/each}
 			{#if missions.length === 0}
-				<div class="py-12 text-center opacity-50">
+				<div class="py-12 text-center text-base-content/60">
 					The board is empty. Post the first job above.
 				</div>
 			{/if}
@@ -276,7 +284,12 @@
 		<div class="grid grid-cols-2 gap-4">
 			<div class="form-control">
 				<label class="label"><span class="label-text">Job Title</span></label>
-				<input type="text" bind:value={mName} class="input-bordered input w-full" placeholder="e.g. Last Transmission" />
+				<input
+					type="text"
+					bind:value={mName}
+					class="input-bordered input w-full"
+					placeholder="e.g. Last Transmission"
+				/>
 			</div>
 			<div class="form-control">
 				<label class="label"><span class="label-text">Tier</span></label>
@@ -294,7 +307,11 @@
 		<div class="grid grid-cols-2 gap-4">
 			<div class="form-control">
 				<label class="label"><span class="label-text">Difficulty</span></label>
-				<select bind:value={mDifficulty} class="select-bordered select w-full" on:change={applyPayout}>
+				<select
+					bind:value={mDifficulty}
+					class="select-bordered select w-full"
+					on:change={applyPayout}
+				>
 					<option value="Routine">Routine (below party level)</option>
 					<option value="Standard">Standard (at party level)</option>
 					<option value="Hard">Hard (above party level)</option>
@@ -305,13 +322,23 @@
 				<label class="label">
 					<span class="label-text">⚡ Essence Payout (net)</span>
 					{#if suggestedPayout !== null && suggestedPayout !== mEssencePayout}
-						<button class="label-text-alt text-primary text-xs cursor-pointer underline" on:click={applyPayout}>
+						<button
+							class="label-text-alt cursor-pointer text-xs text-primary underline"
+							on:click={applyPayout}
+						>
 							Use suggested ({suggestedPayout})
 						</button>
 					{/if}
 				</label>
-				<input type="number" bind:value={mEssencePayout} min="0" class="input-bordered input w-full" />
-				<p class="text-xs opacity-50 mt-1">Net Essence to Meridian's reserves after transit deduction.</p>
+				<input
+					type="number"
+					bind:value={mEssencePayout}
+					min="0"
+					class="input-bordered input w-full"
+				/>
+				<p class="mt-1 text-xs text-base-content/60">
+					Net Essence to ship reserves after transit deduction.
+				</p>
 			</div>
 		</div>
 
@@ -319,7 +346,12 @@
 		<div class="grid grid-cols-2 gap-4">
 			<div class="form-control">
 				<label class="label"><span class="label-text">Region / Location</span></label>
-				<input type="text" bind:value={mRegion} class="input-bordered input w-full" placeholder="e.g. Contested Band" />
+				<input
+					type="text"
+					bind:value={mRegion}
+					class="input-bordered input w-full"
+					placeholder="e.g. Contested Band"
+				/>
 			</div>
 			<div class="form-control">
 				<label class="label"><span class="label-text">Item Reward (optional)</span></label>
@@ -347,16 +379,20 @@
 				<div class="mt-8 flex items-center gap-4 px-2">
 					<label class="label cursor-pointer gap-2">
 						<span class="label-text">Retired</span>
-						<input type="checkbox" bind:checked={mIsRetired} class="checkbox checkbox-error" />
+						<input type="checkbox" bind:checked={mIsRetired} class="checkbox checkbox-warning" />
 					</label>
 					<label class="label cursor-pointer gap-2">
 						<span class="label-text">Visible</span>
-						<input type="checkbox" bind:checked={mIsDiscoverable} class="checkbox checkbox-primary" />
+						<input
+							type="checkbox"
+							bind:checked={mIsDiscoverable}
+							class="checkbox checkbox-primary"
+						/>
 					</label>
 				</div>
 			</div>
 		{:else}
-			<label class="label cursor-pointer gap-2 w-fit">
+			<label class="label w-fit cursor-pointer gap-2">
 				<input type="checkbox" bind:checked={mIsDiscoverable} class="checkbox checkbox-primary" />
 				<span class="label-text">Post visibly to the board</span>
 			</label>
@@ -368,16 +404,32 @@
 				<div class="flex items-center gap-4">
 					<label class="label"><span class="label-text">Briefing</span></label>
 					<div class="tabs-boxed tabs tabs-xs">
-						<button type="button" class="tab {mDescriptionTab === 'write' ? 'tab-active' : ''}" on:click={() => (mDescriptionTab = 'write')}>Write</button>
-						<button type="button" class="tab {mDescriptionTab === 'preview' ? 'tab-active' : ''}" on:click={() => (mDescriptionTab = 'preview')}>Preview</button>
+						<button
+							type="button"
+							class="tab {mDescriptionTab === 'write' ? 'tab-active' : ''}"
+							on:click={() => (mDescriptionTab = 'write')}>Write</button
+						>
+						<button
+							type="button"
+							class="tab {mDescriptionTab === 'preview' ? 'tab-active' : ''}"
+							on:click={() => (mDescriptionTab = 'preview')}>Preview</button
+						>
 					</div>
 				</div>
-				<button type="button" class="btn btn-ghost btn-xs" on:click={() => (showOneshotGenerator = !showOneshotGenerator)}>
+				<button
+					type="button"
+					class="btn btn-ghost btn-xs"
+					on:click={() => (showOneshotGenerator = !showOneshotGenerator)}
+				>
 					{showOneshotGenerator ? '✕ Close' : '🎲 AI Generator'}
 				</button>
 			</div>
 			{#if mDescriptionTab === 'write'}
-				<textarea bind:value={mDescription} class="textarea-bordered textarea h-32 w-full font-mono text-sm" placeholder="The question the crew is going to answer this session..."></textarea>
+				<textarea
+					bind:value={mDescription}
+					class="textarea-bordered textarea h-32 w-full font-mono text-sm"
+					placeholder="The question the crew is going to answer this session..."
+				></textarea>
 			{:else}
 				<div class="min-h-32 rounded-lg border border-base-content/10 bg-base-300/30 p-4">
 					<MarkdownRenderer content={mDescription || '*No content to preview*'} />
@@ -386,7 +438,11 @@
 		</div>
 
 		{#if showOneshotGenerator}
-			<OneshotGenerator missionTier={mTier} missionRegion={mRegion} onOneshotGenerated={handleOneshotGenerated} />
+			<OneshotGenerator
+				missionTier={mTier}
+				missionRegion={mRegion}
+				onOneshotGenerated={handleOneshotGenerated}
+			/>
 		{/if}
 
 		{#if mOneshotId}
@@ -396,22 +452,29 @@
 		{/if}
 
 		<!-- Advanced (collapsed) -->
-		<div class="collapse collapse-arrow border border-base-content/10 rounded-lg">
+		<div class="collapse-arrow collapse rounded-lg border border-base-content/10">
 			<input type="checkbox" bind:checked={showAdvanced} />
 			<div class="collapse-title text-sm font-medium">Advanced</div>
-			<div class="collapse-content form-control gap-3">
+			<div class="form-control collapse-content gap-3">
 				<div class="form-control">
 					<label class="label">
 						<span class="label-text">Re-run cooldown (days)</span>
-						<span class="label-text-alt opacity-50">Days before this hex can run again</span>
+						<span class="label-text-alt text-base-content/60"
+							>Days before this hex can run again</span
+						>
 					</label>
-					<input type="number" bind:value={mCooldown} min="0" class="input-bordered input input-sm w-full" />
+					<input
+						type="number"
+						bind:value={mCooldown}
+						min="0"
+						class="input-bordered input input-sm w-full"
+					/>
 				</div>
 				<div class="form-control">
 					<label class="label"><span class="label-text">Prerequisite mission</span></label>
-					<select bind:value={mPrerequisiteId} class="select-bordered select select-sm w-full">
+					<select bind:value={mPrerequisiteId} class="select-bordered select w-full select-sm">
 						<option value={undefined}>None</option>
-						{#each missions.filter(m => m.id !== editingMissionId) as m}
+						{#each missions.filter((m) => m.id !== editingMissionId) as m}
 							<option value={m.id}>{m.name}</option>
 						{/each}
 					</select>

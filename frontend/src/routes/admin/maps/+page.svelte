@@ -1,24 +1,3 @@
-<script context="module">
-	function getTerrainColor(terrain: string): string {
-		switch (terrain) {
-			case 'plains':
-				return '#90EE90';
-			case 'forest':
-				return '#228B22';
-			case 'mountain':
-				return '#808080';
-			case 'water':
-				return '#4682B4';
-			case 'desert':
-				return '#F4A460';
-			case 'swamp':
-				return '#556B2F';
-			default:
-				return '#D3D3D3';
-		}
-	}
-</script>
-
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
@@ -26,6 +5,7 @@
 	import HexGrid from '$lib/components/HexGrid.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import type { Mission } from '$lib/types';
+	import { getTerrainColor } from '$lib/utils/terrainColors';
 
 	interface HexData {
 		q: number;
@@ -75,11 +55,15 @@
 	});
 
 	async function fetchMissions() {
-		try { missions = await api('GET', '/missions/'); } catch (e) {}
+		try {
+			missions = await api('GET', '/missions/');
+		} catch (e) {}
 	}
 
 	async function fetchMaps() {
-		try { maps = await api('GET', '/maps/'); } catch (e) {}
+		try {
+			maps = await api('GET', '/maps/');
+		} catch (e) {}
 	}
 
 	function handleHexClick(e: CustomEvent) {
@@ -176,22 +160,22 @@
 
 <div class="flex h-[calc(100vh-64px)]">
 	<!-- Sidebar Tools -->
-	<div class="bg-base-200 border-base-content/10 flex w-64 flex-col border-r p-4">
+	<div class="flex w-64 flex-col border-r border-base-content/10 bg-base-200 p-4">
 		<h2 class="mb-4 text-xl font-[var(--font-cinzel)] font-bold">Map Editor</h2>
 
 		<div class="mb-6 flex flex-col gap-2">
-			<span class="text-xs font-bold uppercase opacity-50">Tools</span>
+			<span class="text-xs font-bold text-base-content/60 uppercase">Tools</span>
 			<div class="join w-full">
 				<button
-					class="join-item btn flex-1 {selectedTool === 'select' ? 'btn-primary' : 'btn-outline'}"
+					class="btn join-item flex-1 {selectedTool === 'select' ? 'btn-primary' : 'btn-outline'}"
 					on:click={() => (selectedTool = 'select')}>Select</button
 				>
 				<button
-					class="join-item btn flex-1 {selectedTool === 'paint' ? 'btn-primary' : 'btn-outline'}"
+					class="btn join-item flex-1 {selectedTool === 'paint' ? 'btn-primary' : 'btn-outline'}"
 					on:click={() => (selectedTool = 'paint')}>Paint</button
 				>
 				<button
-					class="join-item btn flex-1 {selectedTool === 'fog' ? 'btn-primary' : 'btn-outline'}"
+					class="btn join-item flex-1 {selectedTool === 'fog' ? 'btn-primary' : 'btn-outline'}"
 					on:click={() => (selectedTool = 'fog')}>Fog</button
 				>
 			</div>
@@ -199,7 +183,7 @@
 
 		{#if selectedTool === 'paint'}
 			<div class="mb-6 flex flex-col gap-2">
-				<span class="text-xs font-bold uppercase opacity-50">Palette</span>
+				<span class="text-xs font-bold text-base-content/60 uppercase">Palette</span>
 				<div class="grid grid-cols-2 gap-2">
 					{#each TERRAIN_TYPES as t}
 						<button
@@ -220,10 +204,10 @@
 		{/if}
 
 		{#if selectedTool === 'select' && selectedHex}
-			<div class="border-base-content/10 mt-4 flex flex-col gap-4 border-t pt-4">
+			<div class="mt-4 flex flex-col gap-4 border-t border-base-content/10 pt-4">
 				<div class="flex items-center justify-between">
 					<span class="text-sm font-bold">Hex {selectedHex.q}, {selectedHex.r}</span>
-					<button class="btn btn-xs btn-ghost" on:click={() => (selectedHex = null)}>Close</button>
+					<button class="btn btn-ghost btn-xs" on:click={() => (selectedHex = null)}>Close</button>
 				</div>
 
 				<div class="form-control">
@@ -232,7 +216,7 @@
 						id="terrain-select"
 						bind:value={selectedHex.terrain}
 						on:change={updateSelectedHex}
-						class="select select-bordered select-sm"
+						class="select-bordered select select-sm"
 					>
 						{#each TERRAIN_TYPES as t}
 							<option value={t.toLowerCase()}>{t}</option>
@@ -259,7 +243,7 @@
 						type="text"
 						bind:value={selectedHex.linked_location_name}
 						on:input={updateSelectedHex}
-						class="input input-bordered input-sm"
+						class="input-bordered input input-sm"
 						placeholder="Optional"
 					/>
 				</div>
@@ -272,7 +256,7 @@
 						id="mission-link"
 						bind:value={selectedHex.linked_mission_id}
 						on:change={updateSelectedHex}
-						class="select select-bordered select-sm"
+						class="select-bordered select select-sm"
 					>
 						<option value={null}>None</option>
 						{#each missions as mission}
@@ -289,7 +273,7 @@
 						id="hex-state-select"
 						bind:value={selectedHex.hex_state}
 						on:change={updateSelectedHex}
-						class="select select-bordered select-sm"
+						class="select-bordered select select-sm"
 					>
 						{#each HEX_STATES as s}
 							<option value={s.value}>{s.label}</option>
@@ -305,7 +289,7 @@
 						id="faction-select"
 						bind:value={selectedHex.controlling_faction}
 						on:change={updateSelectedHex}
-						class="select select-bordered select-sm"
+						class="select-bordered select select-sm"
 					>
 						{#each FACTIONS as f}
 							<option value={f === 'None' ? null : f}>{f}</option>
@@ -316,15 +300,15 @@
 		{/if}
 
 		{#if selectedTool === 'fog'}
-			<div class="border-base-content/10 mb-6 mt-4 flex flex-col gap-2 border-t pt-4">
-				<span class="text-xs font-bold uppercase opacity-50">Bulk Actions</span>
-				<button class="btn btn-sm btn-outline" on:click={() => setAllDiscovery(true)}>
+			<div class="mt-4 mb-6 flex flex-col gap-2 border-t border-base-content/10 pt-4">
+				<span class="text-xs font-bold text-base-content/60 uppercase">Bulk Actions</span>
+				<button class="btn btn-outline btn-sm" on:click={() => setAllDiscovery(true)}>
 					Reveal All
 				</button>
-				<button class="btn btn-sm btn-outline" on:click={() => setAllDiscovery(false)}>
+				<button class="btn btn-outline btn-sm" on:click={() => setAllDiscovery(false)}>
 					Hide All
 				</button>
-				<div class="mt-2 text-[10px] leading-tight opacity-60">
+				<div class="mt-2 text-[10px] leading-tight text-base-content/65">
 					Click individual hexes while Fog tool is active to toggle discovery.
 				</div>
 			</div>
@@ -332,7 +316,7 @@
 
 		<div class="mt-auto">
 			{#if isDirty}
-				<button class="btn btn-success w-full" on:click={saveChanges}>Save Changes</button>
+				<button class="btn w-full btn-success" on:click={saveChanges}>Save Changes</button>
 			{:else}
 				<button class="btn btn-disabled w-full">Synced</button>
 			{/if}
@@ -353,7 +337,7 @@
 				on:click={handleHexClick}
 			/>
 
-			<div class="bg-base-100/90 absolute right-4 top-4 rounded p-2 text-xs shadow">
+			<div class="absolute top-4 right-4 rounded bg-base-100/90 p-2 text-xs shadow">
 				Active Map: <strong>{activeMap.name}</strong> ({activeMap.hexes.length} Hexes)
 			</div>
 		{/if}

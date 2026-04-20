@@ -4,6 +4,7 @@
 	import { api } from '$lib/api';
 	import HexGrid from '$lib/components/HexGrid.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+	import { getFactionBadgeStyle } from '$lib/utils/terrainColors';
 
 	// Minimal types for map view
 	interface HexData {
@@ -37,7 +38,9 @@
 
 	onMount(async () => {
 		isAdmin = $auth.user?.role === 'admin';
-		try { maps = await api('GET', '/maps/'); } catch (e) {}
+		try {
+			maps = await api('GET', '/maps/');
+		} catch (e) {}
 		if (maps.length > 0) activeMap = maps[0];
 		loading = false;
 	});
@@ -59,8 +62,14 @@
 		if (!selectedHex || !activeMap || !noteDraft.trim()) return;
 		submittingNote = true;
 		try {
-			const updated = await api('POST', `/maps/${activeMap.id}/hexes/${selectedHex.q}/${selectedHex.r}/notes`, { text: noteDraft });
-			const idx = activeMap.hexes.findIndex((h) => h.q === selectedHex!.q && h.r === selectedHex!.r);
+			const updated = await api(
+				'POST',
+				`/maps/${activeMap.id}/hexes/${selectedHex.q}/${selectedHex.r}/notes`,
+				{ text: noteDraft }
+			);
+			const idx = activeMap.hexes.findIndex(
+				(h) => h.q === selectedHex!.q && h.r === selectedHex!.r
+			);
 			if (idx !== -1) {
 				activeMap.hexes[idx] = { ...activeMap.hexes[idx], player_notes: updated.player_notes };
 				selectedHex = { ...selectedHex, player_notes: updated.player_notes };
@@ -77,7 +86,7 @@
 
 <div class="flex h-[calc(100vh-64px)] flex-col">
 	{#if maps.length > 1}
-		<div class="border-base-300 bg-base-200 flex gap-2 overflow-x-auto border-b p-2">
+		<div class="flex gap-2 overflow-x-auto border-b border-base-300 bg-base-200 p-2">
 			{#each maps as map}
 				<button
 					class="btn btn-sm {activeMap?.id === map.id ? 'btn-primary' : 'btn-ghost'}"
@@ -96,54 +105,62 @@
 			</div>
 		{:else if activeMap}
 			<div
-				class="bg-base-100/90 border-base-content/10 absolute left-4 top-4 z-10 max-w-xs rounded-xl border p-4 shadow-lg backdrop-blur"
+				class="absolute top-4 left-4 z-10 max-w-xs rounded-xl border border-base-content/10 bg-base-100/90 p-4 shadow-lg backdrop-blur"
 			>
 				<h2 class="text-2xl font-[var(--font-cinzel)] font-bold">{activeMap.name}</h2>
-				<p class="mt-1 text-xs opacity-70">
+				<p class="mt-1 text-xs text-base-content/70">
 					Explore the world. Discovered areas are shown in color.
 				</p>
 
-				<div class="bg-base-200 mt-4 rounded p-2 font-mono text-xs">
+				<div class="mt-4 rounded bg-base-200 p-2 font-mono text-xs">
 					Left Click: Select<br />
 					Drag: Pan Map<br />
 					Scroll: Zoom
 				</div>
 
 				{#if isAdmin}
-					<div class="border-base-content/10 mt-4 border-t pt-4">
-						<a href="/admin/maps" class="btn btn-sm btn-outline w-full">Open Map Editor</a>
+					<div class="mt-4 border-t border-base-content/10 pt-4">
+						<a href="/admin/maps" class="btn w-full btn-outline btn-sm">Open Map Editor</a>
 					</div>
 				{/if}
 			</div>
 
 			{#if selectedHex}
 				<div
-					class="bg-base-100/90 border-base-content/10 absolute bottom-4 left-4 z-10 w-80 rounded-xl border p-4 shadow-lg backdrop-blur"
+					class="absolute bottom-4 left-4 z-10 w-80 rounded-xl border border-base-content/10 bg-base-100/90 p-4 shadow-lg backdrop-blur"
 				>
 					<div class="flex items-center justify-between">
 						<h3 class="text-xl font-[var(--font-cinzel)] font-bold">
 							{selectedHex.linked_location_name || 'Wilderness'}
 						</h3>
-						<button class="btn btn-xs btn-ghost" on:click={() => (selectedHex = null)}>✕</button>
+						<button class="btn btn-ghost btn-xs" on:click={() => (selectedHex = null)}>✕</button>
 					</div>
 
 					<div class="mt-4 flex flex-col gap-2">
 						<div class="flex flex-wrap items-center gap-2">
-							<span class="text-neutral-content text-xs font-bold uppercase opacity-50">Terrain:</span>
-							<span class="badge badge-outline border-primary/30 text-sm capitalize">{selectedHex.terrain}</span>
+							<span class="text-xs font-bold text-base-content/60 uppercase">Terrain:</span>
+							<span class="badge badge-outline border-primary/30 text-sm capitalize"
+								>{selectedHex.terrain}</span
+							>
 							{#if selectedHex.hex_state && selectedHex.hex_state !== 'wilderness'}
-								<span class="badge badge-outline text-xs capitalize">{selectedHex.hex_state.replace('_', ' ')}</span>
+								<span class="badge badge-outline text-xs capitalize"
+									>{selectedHex.hex_state.replace('_', ' ')}</span
+								>
 							{/if}
 							{#if selectedHex.controlling_faction}
-								<span class="badge text-xs" style="background:rgba(59,130,246,0.2);border-color:rgba(59,130,246,0.4)"
+								<span
+									class="badge text-xs"
+									style={getFactionBadgeStyle(selectedHex.controlling_faction)}
 									>{selectedHex.controlling_faction}</span
 								>
 							{/if}
 						</div>
 
 						{#if selectedHex.linked_mission_id}
-							<div class="border-primary/20 bg-primary/5 mt-2 rounded-lg border p-3">
-								<span class="text-primary mb-1 block text-[10px] font-bold uppercase">Linked Mission</span>
+							<div class="mt-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+								<span class="mb-1 block text-[10px] font-bold text-primary uppercase"
+									>Linked Mission</span
+								>
 								<div class="flex items-center justify-between gap-2">
 									<p class="truncate text-sm font-semibold">
 										{selectedHex.linked_mission?.name || 'Unknown Mission'}
@@ -155,12 +172,15 @@
 
 						{#if selectedHex.player_notes && selectedHex.player_notes.length > 0}
 							<div class="mt-2 border-t border-base-content/10 pt-2">
-								<span class="text-xs font-bold uppercase opacity-50">Notes left here</span>
+								<span class="text-xs font-bold text-base-content/60 uppercase">Notes left here</span
+								>
 								<div class="mt-1 flex flex-col gap-1">
 									{#each selectedHex.player_notes as note}
 										<div class="rounded bg-base-200/60 p-2 text-xs">
 											{note.text}
-											<span class="ml-1 opacity-40">— {new Date(note.created_at).toLocaleDateString()}</span>
+											<span class="ml-1 text-base-content/55"
+												>— {new Date(note.created_at).toLocaleDateString()}</span
+											>
 										</div>
 									{/each}
 								</div>
@@ -168,15 +188,15 @@
 						{/if}
 
 						<div class="mt-2 border-t border-base-content/10 pt-2">
-							<span class="text-xs font-bold uppercase opacity-50">Leave a Note</span>
+							<span class="text-xs font-bold text-base-content/60 uppercase">Leave a Note</span>
 							<textarea
-								class="textarea textarea-bordered mt-1 w-full text-xs"
+								class="textarea-bordered textarea mt-1 w-full text-xs"
 								rows="2"
 								placeholder="Mark what you found here..."
 								bind:value={noteDraft}
 							></textarea>
 							<button
-								class="btn btn-xs btn-outline mt-1 w-full"
+								class="btn mt-1 w-full btn-outline btn-xs"
 								disabled={!noteDraft.trim() || submittingNote}
 								on:click={submitNote}
 							>
@@ -194,10 +214,12 @@
 				on:click={handleHexClick}
 			/>
 		{:else}
-			<div class="bg-base-100 absolute inset-0 flex flex-col items-center justify-center gap-4">
-				<p class="italic opacity-50">Designating coordinates... No maps found for this campaign.</p>
+			<div class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-base-100">
+				<p class="text-base-content/60 italic">
+					Designating coordinates... No maps found for this campaign.
+				</p>
 				{#if isAdmin}
-					<a href="/admin/maps" class="btn btn-primary btn-sm">Create a Map</a>
+					<a href="/admin/maps" class="btn btn-sm btn-primary">Create a Map</a>
 				{/if}
 			</div>
 		{/if}

@@ -2,6 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { hexToPixel, hexCornerPoints } from '../utils/hexMath';
 	import type { HexCoord } from '../utils/hexMath';
+	import { getTerrainColor } from '../utils/terrainColors';
 
 	export let q: number;
 	export let r: number;
@@ -20,25 +21,6 @@
 
 	$: pixel = hexToPixel(q, r, size);
 	$: points = hexCornerPoints(size - 1); // -1 for padding/stroke
-
-	function getColor(terrain: string): string {
-		switch (terrain.toLowerCase()) {
-			case 'plains':
-				return '#90EE90'; // LightGreen
-			case 'forest':
-				return '#228B22'; // ForestGreen
-			case 'mountain':
-				return '#808080'; // Gray
-			case 'water':
-				return '#4682B4'; // SteelBlue
-			case 'desert':
-				return '#F4A460'; // SandyBrown
-			case 'swamp':
-				return '#556B2F'; // DarkOliveGreen
-			default:
-				return '#D3D3D3'; // LightGray
-		}
-	}
 
 	function getFactionOverlay(faction: string | null): string | null {
 		switch (faction) {
@@ -69,7 +51,16 @@
 	}
 
 	function handleClick() {
-		dispatch('click', { q, r, terrain, isDiscovered, label, hexState, controllingFaction, playerNotesCount });
+		dispatch('click', {
+			q,
+			r,
+			terrain,
+			isDiscovered,
+			label,
+			hexState,
+			controllingFaction,
+			playerNotesCount
+		});
 	}
 
 	$: factionOverlay = getFactionOverlay(controllingFaction);
@@ -86,7 +77,7 @@
 >
 	<polygon
 		{points}
-		fill={isDiscovered || adminMode ? getColor(terrain) : '#1a1a1a'}
+		fill={isDiscovered || adminMode ? getTerrainColor(terrain) : '#1a1a1a'}
 		opacity={adminMode && !isDiscovered ? 0.45 : 1}
 		stroke={isSelected ? '#fff' : '#444'}
 		stroke-width={isSelected ? 3 : 1}

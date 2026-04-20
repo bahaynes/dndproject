@@ -130,7 +130,7 @@
 							</div>
 						</div>
 
-						<div class="mb-4 text-sm opacity-70">
+						<div class="mb-4 text-sm text-base-content/70">
 							<MarkdownRenderer content={session.description || 'No description provided.'} />
 						</div>
 						<div class="my-2 rounded bg-base-200 p-2 text-sm">
@@ -143,24 +143,29 @@
 							{#if session.field_report}
 								<div class="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
 									<div class="mb-2 flex items-center gap-2">
-										<span class="text-xs font-bold uppercase tracking-widest opacity-60">Dispatch from the Field</span>
+										<span class="text-xs font-bold tracking-widest text-base-content/65 uppercase"
+											>Dispatch from the Field</span
+										>
 									</div>
-									<div class="prose prose-sm max-w-none opacity-90 font-serif">
+									<div class="prose prose-sm max-w-none font-serif opacity-90">
 										<MarkdownRenderer content={session.field_report} />
 									</div>
 								</div>
 							{:else if session.players.some((p) => p.id === myCharacterId)}
 								<div class="mt-4 rounded-xl border border-base-content/10 bg-base-200/50 p-4">
-									<p class="mb-2 text-xs font-bold uppercase opacity-50">File a Field Report</p>
+									<p class="mb-2 text-xs font-bold text-base-content/60 uppercase">
+										File a Field Report
+									</p>
 									<textarea
-										class="textarea textarea-bordered w-full text-sm"
+										class="textarea-bordered textarea w-full text-sm"
 										rows="4"
 										placeholder="Write your dispatch from the mission, in the voice of your character..."
 										bind:value={fieldReportDraft[session.id]}
 									></textarea>
 									<button
-										class="btn btn-sm btn-primary mt-2 w-full"
-										disabled={!fieldReportDraft[session.id]?.trim() || submittingFieldReport === session.id}
+										class="btn mt-2 w-full btn-sm btn-primary"
+										disabled={!fieldReportDraft[session.id]?.trim() ||
+											submittingFieldReport === session.id}
 										on:click={() => submitFieldReport(session.id)}
 									>
 										{submittingFieldReport === session.id ? 'Submitting...' : 'Post to the Board'}
@@ -177,7 +182,9 @@
 									</div>
 								{/if}
 								<div class="mt-4">
-									<span class="text-xs font-bold uppercase opacity-50">Heroes Confirmed</span>
+									<span class="text-xs font-bold text-base-content/60 uppercase"
+										>Heroes Confirmed</span
+									>
 									<div class="mt-1 flex flex-wrap gap-1">
 										{#each session.players as player}
 											<div class="badge badge-ghost badge-sm">{player.name}</div>
@@ -188,7 +195,7 @@
 						{:else}
 							<div class="mt-4">
 								<div class="mb-2 flex items-center justify-between">
-									<h3 class="text-xs font-bold uppercase opacity-50">Proposals</h3>
+									<h3 class="text-xs font-bold text-base-content/60 uppercase">Proposals</h3>
 									{#if session.status !== 'Completed' && session.status !== 'Cancelled'}
 										<button
 											class="btn btn-ghost btn-xs"
@@ -238,7 +245,7 @@
 									</div>
 								{/each}
 								{#if session.proposals.length === 0}
-									<div class="py-4 text-center text-xs italic opacity-50">
+									<div class="py-4 text-center text-xs text-base-content/60 italic">
 										No proposals yet. Be the first!
 									</div>
 								{/if}
@@ -276,7 +283,7 @@
 				</option>
 			{/each}
 		</select>
-		<p class="mt-4 text-sm italic opacity-70">
+		<p class="mt-4 text-sm text-base-content/70 italic">
 			Proposing will add you as the first backer. When a proposal hits {sessions.find(
 				(s) => s.id === selectedSessionId
 			)?.min_players || 4} backers, the session is locked.
