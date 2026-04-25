@@ -29,13 +29,20 @@
 	let sMaxPlayers = 6;
 	let showCreate = false;
 
-	onMount(async () => {
-		if (!$auth.isAuthenticated || $auth.user?.role !== 'admin') {
-			goto('/dashboard');
-			return;
-		}
-		await fetchSessions();
+	let dataLoaded = false;
+
+	onMount(() => {
+		if (!localStorage.getItem('accessToken')) goto('/dashboard');
 	});
+
+	$: if ($auth.isAuthenticated && $auth.user?.role !== 'admin') {
+		goto('/dashboard');
+	}
+
+	$: if ($auth.isAuthenticated && $auth.user?.role === 'admin' && !dataLoaded) {
+		dataLoaded = true;
+		fetchSessions();
+	}
 
 	async function fetchSessions() {
 		loading = true;
@@ -81,7 +88,7 @@
 
 	function toggleCasualty(charId: number) {
 		if (cCasualties.includes(charId)) {
-			cCasualties = cCasualties.filter(id => id !== charId);
+			cCasualties = cCasualties.filter((id) => id !== charId);
 		} else {
 			cCasualties = [...cCasualties, charId];
 		}
@@ -131,7 +138,7 @@
 
 <div class="container mx-auto max-w-6xl p-4">
 	<div class="mb-8 flex items-center justify-between">
-		<h1 class="text-primary text-4xl font-[var(--font-cinzel)] font-bold">Session Management</h1>
+		<h1 class="text-4xl font-[var(--font-cinzel)] font-bold text-primary">Session Management</h1>
 		<button class="btn btn-primary" on:click={() => (showCreate = true)}>+ Schedule Session</button>
 	</div>
 
@@ -140,18 +147,20 @@
 	{:else}
 		<div class="grid grid-cols-1 gap-6">
 			{#each sessions as session}
-				<div class="card bg-base-200 overflow-hidden shadow-xl">
+				<div class="card overflow-hidden bg-base-200 shadow-xl">
 					<div class="flex h-full flex-col md:flex-row">
 						<div
-							class="bg-primary/10 flex min-w-[150px] flex-col items-center justify-center p-6 text-center"
+							class="flex min-w-[150px] flex-col items-center justify-center bg-primary/10 p-6 text-center"
 						>
-							<span class="text-xs font-bold uppercase opacity-50"
+							<span class="text-xs font-bold text-base-content/65 uppercase"
 								>{new Date(session.session_date).toLocaleDateString('en-US', {
 									month: 'short'
 								})}</span
 							>
 							<span class="text-3xl font-bold">{new Date(session.session_date).getDate()}</span>
-							<span class="text-xs opacity-50">{new Date(session.session_date).getFullYear()}</span>
+							<span class="text-xs text-base-content/60"
+								>{new Date(session.session_date).getFullYear()}</span
+							>
 						</div>
 
 						<div class="card-body flex-grow">
@@ -164,20 +173,20 @@
 								</div>
 							</div>
 
-							<p class="mb-4 text-sm opacity-70">
+							<p class="mb-4 text-sm text-base-content/70">
 								{session.description || 'No description provided.'}
 							</p>
 
 							<div class="flex flex-col gap-4">
 								{#if session.status === 'Confirmed' && session.confirmed_mission}
-									<div class="bg-success/5 border-success/20 rounded-lg border p-3">
-										<span class="text-success text-xs font-bold uppercase opacity-70"
+									<div class="rounded-lg border border-success/20 bg-success/5 p-3">
+										<span class="text-xs font-bold text-success uppercase opacity-70"
 											>Running Mission</span
 										>
 										<h3 class="text-lg font-bold">{session.confirmed_mission.name}</h3>
 										<div class="mt-2 flex flex-wrap gap-2">
 											{#each session.players as p}
-												<div class="badge badge-sm badge-ghost gap-2">
+												<div class="badge gap-2 badge-ghost badge-sm">
 													{p.name}
 													<button
 														class="text-error hover:scale-110"
@@ -190,11 +199,12 @@
 								{:else}
 									<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 										{#each session.proposals as proposal}
-											<div class="bg-base-300/30 border-base-content/5 rounded border p-3">
+											<div class="rounded border border-base-content/5 bg-base-300/30 p-3">
 												<div class="flex items-start justify-between">
 													<div>
 														<h4 class="font-bold">{proposal.mission.name}</h4>
-														<span class="text-xs opacity-50">{proposal.backers.length} backers</span
+														<span class="text-xs text-base-content/60"
+															>{proposal.backers.length} backers</span
 														>
 													</div>
 													<div class="badge badge-xs">{proposal.status}</div>
@@ -205,7 +215,7 @@
 														on:click={() => forceConfirm(proposal.id)}>Force Confirm</button
 													>
 													<button
-														class="btn btn-xs btn-outline btn-error"
+														class="btn btn-outline btn-xs btn-error"
 														on:click={() => vetoProposal(proposal.id)}>Veto</button
 													>
 												</div>
@@ -214,14 +224,14 @@
 									</div>
 								{/if}
 
-								<div class="ml-auto mt-2 flex gap-2">
+								<div class="mt-2 ml-auto flex gap-2">
 									{#if session.status === 'Confirmed'}
 										<button
 											class="btn btn-sm btn-success"
 											on:click={() => openCompleteModal(session)}>Finalize & Complete</button
 										>
 									{/if}
-									<button class="btn btn-sm btn-ghost text-error">Cancel Slot</button>
+									<button class="btn text-error btn-ghost btn-sm">Cancel Slot</button>
 								</div>
 							</div>
 						</div>
@@ -230,9 +240,9 @@
 			{/each}
 			{#if sessions.length === 0}
 				<div
-					class="bg-base-200 rounded-box border-base-content/10 border-2 border-dashed py-20 text-center"
+					class="rounded-box border-2 border-dashed border-base-content/10 bg-base-200 py-20 text-center"
 				>
-					<h2 class="text-2xl font-bold opacity-50">No sessions scheduled yet.</h2>
+					<h2 class="text-2xl font-bold text-base-content/60">No sessions scheduled yet.</h2>
 				</div>
 			{/if}
 		</div>
@@ -246,103 +256,115 @@
 			<input
 				type="text"
 				bind:value={sName}
-				class="input input-bordered w-full"
+				class="input-bordered input w-full"
 				placeholder="e.g. The Spooky Swamp Crawl"
 			/>
 		</div>
 		<div class="grid grid-cols-2 gap-4">
 			<div>
 				<label class="label"><span class="label-text">Min Players</span></label>
-				<input type="number" bind:value={sMinPlayers} class="input input-bordered w-full" />
+				<input type="number" bind:value={sMinPlayers} class="input-bordered input w-full" />
 			</div>
 			<div>
 				<label class="label"><span class="label-text">Max Players</span></label>
-				<input type="number" bind:value={sMaxPlayers} class="input input-bordered w-full" />
+				<input type="number" bind:value={sMaxPlayers} class="input-bordered input w-full" />
 			</div>
 		</div>
 		<div>
 			<label class="label"><span class="label-text">Date and Time</span></label>
-			<input type="datetime-local" bind:value={sDate} class="input input-bordered w-full" />
-		</div>
-		<div>
-			<label class="label"><span class="label-text">Admin Override Name</span></label>
-			<input
-				type="text"
-				bind:value={sName}
-				class="input input-bordered w-full"
-				placeholder="e.g. Saturday Slot"
-			/>
+			<input type="datetime-local" bind:value={sDate} class="input-bordered input w-full" />
 		</div>
 		<div>
 			<label class="label"><span class="label-text">Briefing</span></label>
 			<textarea
 				bind:value={sDescription}
-				class="textarea textarea-bordered h-24 w-full"
+				class="textarea-bordered textarea h-24 w-full"
 				placeholder="What should they expect?"
 			></textarea>
 		</div>
 	</div>
 	<div slot="action">
-		<button class="btn btn-primary w-full" on:click={createSession}>Schedule Session</button>
+		<button class="btn w-full btn-primary" on:click={createSession}>Schedule Session</button>
 	</div>
 </Modal>
 
 <!-- Complete Session Modal -->
 <Modal show={showComplete} title="Complete Session" onClose={() => (showComplete = false)}>
 	{#if completingSession}
-	<div class="form-control gap-4">
-		<!-- Result -->
-		<div>
-			<label class="label"><span class="label-text font-semibold">Mission Result</span></label>
-			<div class="flex gap-4">
-				<label class="flex items-center gap-2 cursor-pointer">
-					<input type="radio" class="radio radio-success" bind:group={cResult} value="success" />
-					<span class="text-success font-medium">✅ Success</span>
-				</label>
-				<label class="flex items-center gap-2 cursor-pointer">
-					<input type="radio" class="radio radio-error" bind:group={cResult} value="failure" />
-					<span class="text-error font-medium">❌ Failure</span>
-				</label>
+		<div class="form-control gap-4">
+			<!-- Result -->
+			<div>
+				<label class="label"><span class="label-text font-semibold">Mission Result</span></label>
+				<div class="flex gap-4">
+					<label class="flex cursor-pointer items-center gap-2">
+						<input type="radio" class="radio radio-success" bind:group={cResult} value="success" />
+						<span class="font-medium text-success">✅ Success</span>
+					</label>
+					<label class="flex cursor-pointer items-center gap-2">
+						<input type="radio" class="radio radio-warning" bind:group={cResult} value="failure" />
+						<span class="font-medium text-warning">❌ Failure</span>
+					</label>
+				</div>
 			</div>
-		</div>
 
-		<!-- Resources -->
-		<div>
-			<label class="label"><span class="label-text">⚡ Essence Earned (net, after transit)</span></label>
-			<input type="number" class="input input-bordered input-sm w-full" bind:value={cEssenceEarned} />
-			<p class="text-xs opacity-50 mt-1">Positive = crew brought Essence back to Meridian. Negative = reserves were spent.</p>
-		</div>
-
-		<!-- Casualties -->
-		{#if completingSession.players.length > 0}
-		<div>
-			<label class="label"><span class="label-text">💀 Casualties (mark as Dead)</span></label>
-			<div class="flex flex-wrap gap-2">
-				{#each completingSession.players as p}
-				<label class="flex items-center gap-2 cursor-pointer border border-base-content/20 rounded px-3 py-1 {cCasualties.includes(p.id) ? 'bg-error/20 border-error/40' : ''}">
-					<input type="checkbox" class="checkbox checkbox-sm checkbox-error"
-						checked={cCasualties.includes(p.id)}
-						on:change={() => toggleCasualty(p.id)} />
-					<span class="text-sm">{p.name}</span>
-				</label>
-				{/each}
+			<!-- Resources -->
+			<div>
+				<label class="label"
+					><span class="label-text">⚡ Essence Earned (net, after transit)</span></label
+				>
+				<input
+					type="number"
+					class="input-bordered input input-sm w-full"
+					bind:value={cEssenceEarned}
+				/>
+				<p class="mt-1 text-xs text-base-content/60">
+					Positive = Essence returned to reserves. Negative = reserves were spent.
+				</p>
 			</div>
-		</div>
-		{/if}
 
-		<!-- After-Action Report -->
-		<div>
-			<label class="label"><span class="label-text">After-Action Report (optional)</span></label>
-			<textarea class="textarea textarea-bordered w-full h-20" bind:value={cAfterAction} placeholder="What happened? How did it go?"></textarea>
-		</div>
+			<!-- Casualties -->
+			{#if completingSession.players.length > 0}
+				<div>
+					<label class="label"><span class="label-text">💀 Casualties (mark as Dead)</span></label>
+					<div class="flex flex-wrap gap-2">
+						{#each completingSession.players as p}
+							<label
+								class="flex cursor-pointer items-center gap-2 rounded border border-base-content/20 px-3 py-1 {cCasualties.includes(
+									p.id
+								)
+									? 'border-error/40 bg-error/20'
+									: ''}"
+							>
+								<input
+									type="checkbox"
+									class="checkbox checkbox-sm checkbox-error"
+									checked={cCasualties.includes(p.id)}
+									on:change={() => toggleCasualty(p.id)}
+								/>
+								<span class="text-sm">{p.name}</span>
+							</label>
+						{/each}
+					</div>
+				</div>
+			{/if}
 
-		{#if error}
-		<div class="alert alert-error text-sm">{error}</div>
-		{/if}
-	</div>
+			<!-- After-Action Report -->
+			<div>
+				<label class="label"><span class="label-text">After-Action Report (optional)</span></label>
+				<textarea
+					class="textarea-bordered textarea h-20 w-full"
+					bind:value={cAfterAction}
+					placeholder="What happened? How did it go?"
+				></textarea>
+			</div>
+
+			{#if error}
+				<div class="alert text-sm alert-error">{error}</div>
+			{/if}
+		</div>
 	{/if}
 	<div slot="action">
-		<button class="btn btn-success w-full" on:click={submitComplete} disabled={completing}>
+		<button class="btn w-full btn-success" on:click={submitComplete} disabled={completing}>
 			{completing ? 'Processing...' : 'Log Session Result'}
 		</button>
 	</div>

@@ -1,352 +1,547 @@
 <script lang="ts">
-    import { auth } from '$lib/auth';
-    import { api } from '$lib/api';
-    import { onMount } from 'svelte';
-    import { goto } from '$app/navigation';
-    import FactionReputationTracker from '$lib/components/FactionReputationTracker.svelte';
-    import type { Ship, LedgerEntry, CharacterRosterEntry, GameSessionWithPlayers } from '$lib/types';
+	import { auth } from '$lib/auth';
+	import { api } from '$lib/api';
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import Modal from '$lib/components/Modal.svelte';
+	import type { Ship, GameSessionWithPlayers, Mission } from '$lib/types';
 
-    let ship: Ship | null = null;
-    let ledgerEntries: LedgerEntry[] = [];
-    let roster: CharacterRosterEntry[] = [];
-    let upcomingSessions: GameSessionWithPlayers[] = [];
-    let loading = true;
-    let showOnboarding = false;
+	let ship: Ship | null = null;
+	let upcomingSessions: GameSessionWithPlayers[] = [];
+	let availableMissions: Mission[] = [];
+	let loading = true;
+	let showOnboarding = false;
+	let backingError: string | null = null;
 
-    $: user = $auth.user;
-    $: campaign = $auth.campaign;
+	// Propose modal
+	let showProposeModal = false;
+	let selectedSessionId: number | null = null;
+	let selectedMissionId: number | null = null;
+	let dataLoaded = false;
 
-    onMount(async () => {
-        if (!user && !localStorage.getItem('accessToken')) {
-            goto('/login');
-            return;
-        } else if (user && !campaign) {
-            goto('/campaigns');
-            return;
-        }
-        if ($auth.token) await loadData();
-    });
+	$: user = $auth.user;
+	$: campaign = $auth.campaign;
+	$: char = user?.active_character;
+	$: myCharacterId = char?.id;
 
-    function dismissOnboarding() {
-        showOnboarding = false;
-        localStorage.setItem('onboarding_dismissed', '1');
-    }
+	onMount(() => {
+		if (!localStorage.getItem('accessToken')) {
+			goto('/login');
+		}
+	});
 
-    $: if (!loading && user && !user.active_character) {
-        if (!localStorage.getItem('onboarding_dismissed')) {
-            showOnboarding = true;
-        }
-    }
+	// Fires when auth hydrates (may be before or after onMount)
+	$: if ($auth.token && !dataLoaded) {
+		dataLoaded = true;
+		loadData();
+	}
 
-    async function loadData() {
-        const [s, l, r, sessions] = await Promise.all([
-            api('GET', '/ship/').catch(() => null),
-            api('GET', '/ledger/?limit=5').catch(() => []),
-            api('GET', '/characters/roster').catch(() => []),
-            api('GET', '/sessions/?limit=100').catch(() => []),
-        ]);
-        ship = s;
-        ledgerEntries = l ?? [];
-        roster = r ?? [];
-        const all: GameSessionWithPlayers[] = sessions ?? [];
-        upcomingSessions = all
-            .filter(s => s.status !== 'Completed' && s.status !== 'Cancelled')
-            .sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime())
-            .slice(0, 3);
-        loading = false;
-    }
+	$: if ($auth.isAuthenticated && !$auth.campaign) {
+		goto('/campaigns');
+	}
 
-    $: statusColor = ship?.status === 'critical' ? 'error' : ship?.status === 'low' ? 'warning' : 'success';
-    $: levelPct = ship ? (ship.next_threshold
-        ? Math.round((ship.essence / ship.next_threshold) * 100)
-        : 100) : 0;
+	function dismissOnboarding() {
+		showOnboarding = false;
+		localStorage.setItem('onboarding_dismissed', '1');
+	}
 
-    function formatDate(iso: string) {
-        return new Date(iso).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-    }
+	$: if (!loading && user && !user.active_character) {
+		if (!localStorage.getItem('onboarding_dismissed')) {
+			showOnboarding = true;
+		}
+	}
 
-    function formatDelta(n: number) {
-        if (n === 0) return null;
-        return n > 0 ? `+${n}` : `${n}`;
-    }
+	async function loadData() {
+		const [s, sessions, missions] = await Promise.all([
+			api('GET', '/ship/').catch(() => null),
+			api('GET', '/sessions/').catch(() => []),
+			api('GET', '/missions/').catch(() => [])
+		]);
+		ship = s;
+		const all: GameSessionWithPlayers[] = sessions ?? [];
+		upcomingSessions = all
+			.filter((s) => s.status !== 'Completed' && s.status !== 'Cancelled')
+			.sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime());
+		availableMissions = (missions ?? []).filter((m: Mission) => !m.is_retired && m.is_discoverable);
+		loading = false;
+	}
 
-    function eventTypeLabel(type: string) {
-        const labels: Record<string, string> = {
-            MissionCompleted: '✅ Mission Complete',
-            MissionFailed: '❌ Mission Failed',
-            Purchase: '🛒 Purchase',
-            RewardDistribution: '🎁 Rewards',
-            AdminAdjustment: '⚙️ Adjustment',
-            ShipAdjustment: '🚀 Ship Adjust',
-            CharacterDeath: '💀 Death',
-            LevelUp: '⬆️ Level Up',
-        };
-        return labels[type] ?? type;
-    }
+	function isBacking(proposalId: number): boolean {
+		if (!myCharacterId) return false;
+		for (const session of upcomingSessions) {
+			const proposal = session.proposals.find((p) => p.id === proposalId);
+			if (proposal) return proposal.backers.some((b) => b.id === myCharacterId);
+		}
+		return false;
+	}
+
+	async function toggleBacking(proposalId: number) {
+		backingError = null;
+		try {
+			await api('POST', `/sessions/proposals/${proposalId}/toggle_back`);
+			await loadData();
+		} catch (e) {
+			backingError = e instanceof Error ? e.message : 'Failed to update backing.';
+		}
+	}
+
+	async function proposeMission() {
+		if (!selectedSessionId || !selectedMissionId) return;
+		try {
+			await api('POST', '/sessions/proposals', {
+				session_id: selectedSessionId,
+				mission_id: selectedMissionId
+			});
+			showProposeModal = false;
+			await loadData();
+		} catch (e) {
+			backingError = e instanceof Error ? e.message : 'Failed to propose mission.';
+		}
+	}
+
+	function formatDate(iso: string) {
+		return new Date(iso).toLocaleDateString(undefined, {
+			weekday: 'long',
+			month: 'short',
+			day: 'numeric'
+		});
+	}
+
+	function inCooldown(m: Mission): boolean {
+		if (!m.last_run_date) return false;
+		return Date.now() - new Date(m.last_run_date).getTime() < m.cooldown_days * 86400000;
+	}
+
+	$: statusColor =
+		ship?.status === 'critical' ? 'error' : ship?.status === 'low' ? 'warning' : 'success';
+	$: levelPct = ship
+		? ship.next_threshold
+			? Math.round((ship.essence / ship.next_threshold) * 100)
+			: 100
+		: 0;
 </script>
 
-<div class="container mx-auto p-4 max-w-6xl">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6 border-b border-base-content/10 pb-4">
-        <h1 class="text-3xl font-bold font-[var(--font-cinzel)] tracking-tight text-primary">
-            {campaign ? campaign.name : 'Dashboard'}
-        </h1>
-        {#if campaign}
-            <div class="hidden md:block text-xs opacity-50 uppercase font-bold text-right">Active Campaign</div>
-        {/if}
-    </div>
+<div class="min-h-screen">
+	{#if loading}
+		<div class="flex justify-center py-32">
+			<span class="loading loading-lg loading-spinner text-primary"></span>
+		</div>
+	{:else if user}
+		<!-- Character Identity Banner -->
+		<div class="border-b border-base-content/10 bg-base-200/60 px-4 py-8">
+			<div class="container mx-auto max-w-5xl xl:max-w-screen-xl 2xl:max-w-screen-2xl">
+				{#if char}
+					<div class="flex flex-wrap items-center justify-between gap-4">
+						<div>
+							<p class="mb-1 text-xs tracking-widest text-base-content/55 uppercase">
+								Active Crew Member
+							</p>
+							<h1 class="text-3xl font-[var(--font-cinzel)] font-bold tracking-tight text-primary">
+								{char.name}
+							</h1>
+							<div class="mt-1 flex items-center gap-3 text-sm text-base-content/75">
+								{#if char.class_name}<span>{char.class_name}</span><span
+										class="text-base-content/30">·</span
+									>{/if}
+								<span>Level {char.level}</span>
+								<span class="text-base-content/30">·</span>
+								<span
+									>{char.missions_completed} mission{char.missions_completed !== 1 ? 's' : ''} completed</span
+								>
+							</div>
+						</div>
+						<div class="flex flex-col items-end gap-1">
+							{#if ship}
+								<div class="flex items-center gap-2">
+									<span class="text-xs text-base-content/60">Ship Essence</span>
+									<span class="badge badge-{statusColor} badge-sm">⚡ {ship.essence}</span>
+								</div>
+								{#if ship.next_threshold}
+									<div class="flex items-center gap-2 text-xs text-base-content/60">
+										<span>Level {ship.level} → {ship.level + 1}</span>
+										<progress
+											class="progress h-1.5 w-24 progress-primary"
+											value={levelPct}
+											max="100"
+										></progress>
+									</div>
+								{/if}
+							{/if}
+							{#if ship?.motd}
+								<p class="max-w-xs text-right text-xs text-base-content/60 italic">"{ship.motd}"</p>
+							{/if}
+						</div>
+					</div>
+				{:else}
+					<div class="flex flex-wrap items-center justify-between gap-4">
+						<div>
+							<h1 class="text-3xl font-[var(--font-cinzel)] font-bold tracking-tight text-primary">
+								{campaign?.name ?? 'West Marches'}
+							</h1>
+							<p class="mt-1 text-sm text-base-content/70">You haven't joined the crew yet.</p>
+						</div>
+						<a href="/characters" class="btn btn-sm btn-primary">Create Your Character →</a>
+					</div>
+				{/if}
+			</div>
+		</div>
 
-    {#if loading}
-        <div class="flex justify-center py-16"><span class="loading loading-spinner loading-lg text-primary"></span></div>
-    {:else if user}
+		<div
+			class="container mx-auto max-w-5xl space-y-12 px-4 py-10 xl:max-w-screen-xl 2xl:max-w-screen-2xl"
+		>
+			<!-- Session Board — Visual Centerpiece -->
+			<section>
+				<div class="mb-5 flex items-baseline justify-between">
+					<div>
+						<h2 class="text-2xl font-[var(--font-cinzel)] font-bold text-primary">Mission Board</h2>
+						<p class="mt-1 text-xs text-base-content/60">
+							Back a proposal to put it on the slate. Needs {upcomingSessions[0]?.min_players ?? 4} crew
+							minimum.
+						</p>
+					</div>
+					<a href="/sessions" class="text-xs text-primary transition-colors hover:underline"
+						>All sessions →</a
+					>
+				</div>
 
-        <!-- Ship Status Panel -->
-        {#if ship}
-        <div class="card bg-base-100 shadow-md border border-base-content/10 mb-6">
-            <div class="card-body">
-                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                    <div class="flex items-center gap-3">
-                        <span class="text-2xl font-bold font-[var(--font-cinzel)]">🚀 {ship.name}</span>
-                        <span class="badge badge-outline">Level {ship.level}</span>
-                        <span class="badge badge-{statusColor} capitalize">{ship.status}</span>
-                    </div>
-                    <div class="text-sm font-semibold opacity-70">
-                        Long rest costs {ship.long_rest_cost} Essence at this tier
-                    </div>
-                </div>
+				{#if backingError}
+					<div class="mb-4 alert text-sm alert-error">{backingError}</div>
+				{/if}
 
-                <!-- Essence reserve -->
-                <div class="mb-2">
-                    <div class="flex justify-between text-xs opacity-70 mb-1">
-                        <span>⚡ Essence Reserve</span>
-                        <span>{ship.essence} stored</span>
-                    </div>
-                    <div class="text-lg font-bold text-primary">{ship.essence} Essence</div>
-                </div>
+				{#if upcomingSessions.length === 0}
+					<div class="rounded-xl border border-base-content/10 bg-base-200/40 p-8 text-center">
+						<p class="text-sm text-base-content/60 italic">
+							No sessions on the board. The DM will post one soon.
+						</p>
+					</div>
+				{:else}
+					<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+						{#each upcomingSessions as session}
+							<div class="card border border-base-content/10 bg-base-100 shadow-sm">
+								<div class="card-body p-5">
+									<!-- Session header -->
+									<div class="mb-3 flex items-start justify-between">
+										<div>
+											<h3 class="text-base leading-tight font-[var(--font-cinzel)] font-bold">
+												{session.name}
+											</h3>
+											<p class="mt-1 text-xs text-base-content/65">
+												📅 {formatDate(session.session_date)}
+											</p>
+										</div>
+										<span class="badge shrink-0 badge-outline badge-sm capitalize"
+											>{session.status}</span
+										>
+									</div>
 
-                <!-- Level threshold progress -->
-                <div class="mb-2">
-                    <div class="flex justify-between text-xs opacity-70 mb-1">
-                        {#if ship.next_threshold !== null}
-                            <span>Level {ship.level} → {ship.level + 1}</span>
-                            <span>{ship.essence} / {ship.next_threshold} ({ship.essence_to_next_level} to go)</span>
-                        {:else}
-                            <span>Max Level</span>
-                            <span>Level {ship.level}</span>
-                        {/if}
-                    </div>
-                    <progress
-                        class="progress progress-primary w-full h-3"
-                        value={levelPct}
-                        max="100"
-                    ></progress>
-                </div>
+									{#if session.status === 'Confirmed' && session.confirmed_mission}
+										<!-- Confirmed session -->
+										<div class="rounded-lg border border-success/20 bg-success/10 p-3">
+											<p class="mb-1 text-xs font-bold tracking-widest text-success/70 uppercase">
+												Confirmed
+											</p>
+											<p class="font-[var(--font-cinzel)] font-bold">
+												{session.confirmed_mission.name}
+											</p>
+											{#if session.confirmed_mission.tier}
+												<span class="mt-1 badge badge-outline badge-xs"
+													>{session.confirmed_mission.tier}</span
+												>
+											{/if}
+											<div class="mt-2 flex flex-wrap gap-1">
+												{#each session.players as player}
+													<span class="badge badge-ghost badge-xs">{player.name}</span>
+												{/each}
+											</div>
+										</div>
+									{:else}
+										<!-- Proposals -->
+										<div class="space-y-3">
+											{#each session.proposals as proposal}
+												<div class="rounded-lg border border-base-content/5 bg-base-200/50 p-3">
+													<div class="mb-1 flex items-start justify-between">
+														<span class="text-sm font-semibold">{proposal.mission.name}</span>
+														<button
+															class="btn ml-2 shrink-0 btn-xs {isBacking(proposal.id)
+																? 'btn-secondary'
+																: 'btn-outline btn-primary'}"
+															on:click={() => toggleBacking(proposal.id)}
+															disabled={!myCharacterId}
+														>
+															{isBacking(proposal.id) ? '✓ Backing' : 'Back This'}
+														</button>
+													</div>
+													{#if proposal.mission.tier}
+														<span class="badge badge-outline badge-xs text-base-content/70"
+															>{proposal.mission.tier}</span
+														>
+													{/if}
+													<div class="mt-2">
+														<progress
+															class="progress h-1.5 w-full progress-primary"
+															value={proposal.backers.length}
+															max={session.min_players}
+														></progress>
+														<p class="mt-1 text-xs text-base-content/65">
+															{proposal.backers.length} / {session.min_players} crew
+														</p>
+													</div>
+												</div>
+											{/each}
 
-                {#if ship.motd}
-                    <div class="alert alert-info mt-3 text-sm">
-                        <span>📢 {ship.motd}</span>
-                    </div>
-                {/if}
-            </div>
-        </div>
-        {/if}
+											{#if session.proposals.length === 0}
+												<p class="py-2 text-center text-xs text-base-content/50 italic">
+													No proposals yet.
+												</p>
+											{/if}
+										</div>
 
-        <!-- Middle row: Upcoming Sessions + Latest Ledger -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+										<div class="mt-3">
+											<button
+												class="btn w-full border border-base-content/10 btn-ghost btn-xs"
+												disabled={!myCharacterId}
+												on:click={() => {
+													selectedSessionId = session.id;
+													showProposeModal = true;
+												}}
+											>
+												+ Propose a Mission
+											</button>
+										</div>
+									{/if}
+								</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</section>
 
-            <!-- Upcoming Sessions -->
-            <div class="card bg-base-100 shadow-md border border-base-content/10">
-                <div class="card-body">
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="card-title text-base">📅 Upcoming Sessions</h2>
-                        <a href="/sessions" class="text-xs text-primary hover:underline">View all →</a>
-                    </div>
-                    {#if upcomingSessions.length === 0}
-                        <p class="text-sm opacity-60">No upcoming sessions scheduled.</p>
-                    {:else}
-                        <div class="space-y-3">
-                            {#each upcomingSessions as session}
-                            <div class="border border-base-content/10 rounded-lg p-3">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <p class="font-semibold text-sm">{session.name}</p>
-                                        {#if session.confirmed_mission}
-                                            <p class="text-xs opacity-70">📜 {session.confirmed_mission.name}</p>
-                                        {/if}
-                                    </div>
-                                    <span class="badge badge-sm badge-outline">{formatDate(session.session_date)}</span>
-                                </div>
-                                <div class="flex items-center justify-between mt-2">
-                                    <span class="text-xs opacity-60">
-                                        {session.players.length}/{session.min_players}+ crew
-                                    </span>
-                                    <span class="badge badge-sm capitalize">{session.status}</span>
-                                </div>
-                            </div>
-                            {/each}
-                        </div>
-                    {/if}
-                </div>
-            </div>
+			<!-- Available Missions -->
+			{#if availableMissions.length > 0}
+				<section>
+					<div class="mb-5 flex items-baseline justify-between">
+						<div>
+							<h2 class="text-2xl font-[var(--font-cinzel)] font-bold text-primary">
+								Available Contracts
+							</h2>
+							<p class="mt-1 text-xs text-base-content/60">
+								Cleared for dispatch — sign up before the slate fills.
+							</p>
+						</div>
+						<a href="/missions" class="text-xs text-primary transition-colors hover:underline"
+							>Full board →</a
+						>
+					</div>
+					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+						{#each availableMissions.slice(0, 6) as mission}
+							<div
+								class="rounded-lg border border-base-content/10 bg-base-100 p-4 {inCooldown(mission)
+									? 'opacity-50'
+									: ''}"
+							>
+								<div class="flex items-start justify-between gap-2">
+									<p class="text-sm leading-tight font-semibold">{mission.name}</p>
+									{#if inCooldown(mission)}
+										<span class="badge shrink-0 badge-ghost badge-xs">❄️ Cooldown</span>
+									{/if}
+								</div>
+								<div class="mt-2 flex flex-wrap gap-1">
+									{#if mission.tier}<span class="badge badge-outline badge-xs">{mission.tier}</span
+										>{/if}
+									{#if mission.region}<span class="badge badge-ghost badge-xs text-base-content/65"
+											>{mission.region}</span
+										>{/if}
+								</div>
+								{#if mission.description}
+									<p class="mt-2 line-clamp-2 text-xs text-base-content/65">
+										{mission.description}
+									</p>
+								{/if}
+							</div>
+						{/each}
+					</div>
+				</section>
+			{/if}
 
-            <!-- Latest Ledger -->
-            <div class="card bg-base-100 shadow-md border border-base-content/10">
-                <div class="card-body">
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="card-title text-base">📖 Latest Ledger</h2>
-                        <a href="/ledger" class="text-xs text-primary hover:underline">View all →</a>
-                    </div>
-                    {#if ledgerEntries.length === 0}
-                        <p class="text-sm opacity-60">No ledger entries yet.</p>
-                    {:else}
-                        <div class="space-y-2">
-                            {#each ledgerEntries as entry}
-                            <div class="flex justify-between items-start text-sm border-b border-base-content/5 pb-2">
-                                <div class="flex-1 min-w-0">
-                                    <p class="font-medium truncate">{eventTypeLabel(entry.event_type)}</p>
-                                    <p class="text-xs opacity-60 truncate">{entry.description}</p>
-                                </div>
-                                <div class="text-right text-xs ml-2 flex-shrink-0">
-                                    {#if formatDelta(entry.essence_delta)}
-                                        <span class={entry.essence_delta > 0 ? 'text-success' : 'text-error'}>
-                                            ⚡ {formatDelta(entry.essence_delta)}
-                                        </span>
-                                    {/if}
-                                </div>
-                            </div>
-                            {/each}
-                        </div>
-                    {/if}
-                </div>
-            </div>
+			<!-- Bottom row: Ship + Quick Nav + Admin -->
+			<section class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+				<!-- Ship compact -->
+				{#if ship}
+					<div class="card border border-base-content/10 bg-base-100 shadow-sm">
+						<div class="card-body p-5">
+							<h3 class="mb-3 text-sm font-[var(--font-cinzel)] font-bold">🚀 {ship.name}</h3>
+							<div class="mb-1 flex items-center justify-between text-xs">
+								<span class="text-base-content/65">⚡ Essence Reserve</span>
+								<span class="badge badge-{statusColor} badge-xs">{ship.essence}</span>
+							</div>
+							{#if ship.next_threshold}
+								<progress class="progress h-1.5 w-full progress-primary" value={levelPct} max="100"
+								></progress>
+								<p class="mt-1 text-xs text-base-content/60">
+									Level {ship.level} → {ship.level + 1} · {ship.essence_to_next_level} to go
+								</p>
+							{:else}
+								<p class="mt-1 text-xs text-base-content/60">Max Level</p>
+							{/if}
+							<p class="mt-1 text-xs text-base-content/60">
+								Long rest: {ship.long_rest_cost} Essence
+							</p>
+						</div>
+					</div>
+				{/if}
 
-        </div>
+				<!-- Quick Nav -->
+				<div class="card border border-base-content/10 bg-base-100 shadow-sm">
+					<div class="card-body p-5">
+						<h3 class="mb-3 text-sm font-[var(--font-cinzel)] font-bold">Navigation</h3>
+						<div class="grid grid-cols-2 gap-1 text-xs">
+							<a
+								href="/characters"
+								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
+								>⚔️ Character</a
+							>
+							<a
+								href="/sessions"
+								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
+								>📅 Sessions</a
+							>
+							<a
+								href="/missions"
+								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
+								>📋 Missions</a
+							>
+							<a
+								href="/store"
+								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
+								>🛒 Store</a
+							>
+							<a
+								href="/maps"
+								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
+								>🗺️ Maps</a
+							>
+							<a
+								href="/factions"
+								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
+								>⚖️ Factions</a
+							>
+							<a
+								href="/ledger"
+								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
+								>📖 Ledger</a
+							>
+							<a
+								href="/roster"
+								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
+								>👥 Roster</a
+							>
+						</div>
+					</div>
+				</div>
 
-        <!-- Bottom: Active Crew + Nav Links -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-
-            <!-- Active Crew -->
-            <div class="md:col-span-2 card bg-base-100 shadow-md border border-base-content/10">
-                <div class="card-body">
-                    <div class="flex justify-between items-center mb-3">
-                        <h2 class="card-title text-base">👥 Active Crew</h2>
-                        <a href="/roster" class="text-xs text-primary hover:underline">Full roster →</a>
-                    </div>
-                    {#if roster.filter(c => c.status === 'Active').length === 0}
-                        <p class="text-sm opacity-60">No active crew members.</p>
-                    {:else}
-                        <div class="overflow-x-auto">
-                            <table class="table table-xs">
-                                <thead>
-                                    <tr><th>Name</th><th>Class</th><th>Lvl</th><th>Player</th><th>Missions</th></tr>
-                                </thead>
-                                <tbody>
-                                    {#each roster.filter(c => c.status === 'Active').slice(0, 8) as char}
-                                    <tr>
-                                        <td class="font-medium">{char.name}</td>
-                                        <td class="opacity-70">{char.class_name ?? '—'}</td>
-                                        <td>{char.level}</td>
-                                        <td class="opacity-70">{char.owner_username ?? '—'}</td>
-                                        <td>{char.missions_completed}</td>
-                                    </tr>
-                                    {/each}
-                                </tbody>
-                            </table>
-                        </div>
-                    {/if}
-                </div>
-            </div>
-
-            <!-- Quick Nav -->
-            <div class="space-y-4">
-                <div class="card bg-base-100 shadow-md border border-base-content/10">
-                    <div class="card-body p-4">
-                        <h2 class="font-semibold mb-2 text-sm">Quick Links</h2>
-                        <ul class="space-y-1">
-                            <li><a href="/characters" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">⚔️ My Character</a></li>
-                            <li><a href="/missions" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">📋 Mission Board</a></li>
-                            <li><a href="/sessions" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">📅 Sessions</a></li>
-                            <li><a href="/store" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">🛒 Store</a></li>
-                            <li><a href="/maps" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">🗺️ Maps</a></li>
-                            <li><a href="/factions" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">⚖️ Factions</a></li>
-                            <li><a href="/ledger" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">📖 Ledger</a></li>
-                            <li><a href="/roster" class="block p-2 hover:bg-base-200 rounded text-sm text-primary font-medium">👥 Crew Roster</a></li>
-                        </ul>
-                    </div>
-                </div>
-
-                <div class="card bg-base-100 shadow-md border border-base-content/10">
-                    <div class="card-body p-4">
-                        <FactionReputationTracker />
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- Admin Tools -->
-        {#if user.role === 'admin'}
-        <div class="card bg-error/10 border border-error/20 shadow-md">
-            <div class="card-body">
-                <h2 class="card-title text-error/80 text-base">⚙️ Dungeon Master Tools</h2>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <a href="/admin/sessions" class="btn btn-sm btn-outline btn-error">Sessions</a>
-                    <a href="/admin/missions" class="btn btn-sm btn-outline btn-error">Missions</a>
-                    <a href="/admin/items" class="btn btn-sm btn-outline btn-error">Items</a>
-                    <a href="/admin/ship" class="btn btn-sm btn-outline btn-error">Ship Config</a>
-                    <a href="/admin/maps" class="btn btn-sm btn-outline btn-error">Maps</a>
-                </div>
-            </div>
-        </div>
-        {/if}
-
-    {:else}
-        <p class="mt-4">Loading user information...</p>
-    {/if}
+				<!-- Admin Tools — neutral, not danger red -->
+				{#if user.role === 'admin'}
+					<div class="card border border-base-content/10 bg-base-200/50 shadow-sm">
+						<div class="card-body p-5">
+							<h3 class="mb-3 text-sm font-[var(--font-cinzel)] font-bold text-base-content/65">
+								⚙️ DM Tools
+							</h3>
+							<div class="space-y-1">
+								<a
+									href="/admin/sessions"
+									class="btn w-full justify-start btn-ghost transition-colors btn-xs hover:bg-base-300"
+									>Sessions</a
+								>
+								<a
+									href="/admin/missions"
+									class="btn w-full justify-start btn-ghost transition-colors btn-xs hover:bg-base-300"
+									>Missions</a
+								>
+								<a
+									href="/admin/items"
+									class="btn w-full justify-start btn-ghost transition-colors btn-xs hover:bg-base-300"
+									>Items</a
+								>
+								<a
+									href="/admin/ship"
+									class="btn w-full justify-start btn-ghost transition-colors btn-xs hover:bg-base-300"
+									>Ship Config</a
+								>
+								<a
+									href="/admin/maps"
+									class="btn w-full justify-start btn-ghost transition-colors btn-xs hover:bg-base-300"
+									>Maps</a
+								>
+							</div>
+						</div>
+					</div>
+				{/if}
+			</section>
+		</div>
+	{:else}
+		<p class="p-8 text-base-content/60">Loading...</p>
+	{/if}
 </div>
 
-<!-- Onboarding modal — shown to users with no character who haven't dismissed it -->
+<!-- Propose Mission Modal -->
+<Modal show={showProposeModal} title="Propose a Mission" onClose={() => (showProposeModal = false)}>
+	<div class="form-control w-full">
+		<label class="label" for="mission-select">
+			<span class="label-text">Select a Mission</span>
+		</label>
+		<select
+			id="mission-select"
+			bind:value={selectedMissionId}
+			class="select-bordered select w-full"
+		>
+			<option value={null}>— Pick a Mission —</option>
+			{#each availableMissions as mission}
+				<option value={mission.id} disabled={inCooldown(mission)}>
+					{mission.name}
+					{mission.tier ? `(${mission.tier})` : ''}{inCooldown(mission) ? ' — ❄️ Cooldown' : ''}
+				</option>
+			{/each}
+		</select>
+		<p class="mt-3 text-sm text-base-content/65 italic">Proposing adds you as the first backer.</p>
+	</div>
+	<div slot="action">
+		<button class="btn w-full btn-primary" on:click={proposeMission} disabled={!selectedMissionId}>
+			Propose Now
+		</button>
+	</div>
+</Modal>
+
+<!-- Onboarding modal -->
 {#if showOnboarding}
-<div class="modal modal-open">
-    <div class="modal-box max-w-lg">
-        <h3 class="font-bold text-2xl font-[var(--font-cinzel)] text-primary mb-1">Welcome aboard.</h3>
-        <p class="text-sm opacity-60 mb-4">— Meridian</p>
-        <div class="prose prose-sm max-w-none opacity-80 mb-6">
-            <p>
-                "New crew. Good. I'll keep this brief because I always do.
-                You're sworn to this ship. That means you share in what we earn
-                and what we spend. The ledger doesn't lie, and I don't either —
-                not about reserves, anyway."
-            </p>
-            <p>
-                "First thing: make yourself a character record. I need to know
-                who's on my manifest. After that, check the mission board.
-                Vote on what runs. Show up when the session starts."
-            </p>
-            <p class="text-xs opacity-60">
-                "Questions? Read the briefing docs. After that, ask your crewmates.
-                After that, ask me — but I'll answer the question I think you're
-                actually asking, not the one you said."
-            </p>
-        </div>
-        <div class="flex flex-col gap-3">
-            <a href="/characters" class="btn btn-primary w-full" on:click={dismissOnboarding}>
-                Create Your Character
-            </a>
-            <div class="divider text-xs opacity-40">or read first</div>
-            <div class="flex gap-2">
-                <a href="https://docs.google.com/document" target="_blank" rel="noopener" class="btn btn-outline btn-sm flex-1">
-                    📖 World Bible
-                </a>
-                <a href="/missions" class="btn btn-outline btn-sm flex-1" on:click={dismissOnboarding}>
-                    📋 Mission Board
-                </a>
-            </div>
-            <button class="btn btn-ghost btn-xs opacity-50 mt-2" on:click={dismissOnboarding}>
-                Dismiss — I know what I'm doing
-            </button>
-        </div>
-    </div>
-    <div class="modal-backdrop" on:click={dismissOnboarding}></div>
-</div>
+	<div class="modal-open modal">
+		<div class="modal-box max-w-lg">
+			<h3 class="mb-1 text-2xl font-[var(--font-cinzel)] font-bold text-primary">
+				Welcome aboard.
+			</h3>
+			<p class="mb-4 text-sm text-base-content/65">— {ship?.name ?? 'Your Captain'}</p>
+			<div class="prose prose-sm mb-6 max-w-none text-base-content/80">
+				<p>
+					"New crew. Good. I'll keep this brief. What we earn goes into the reserves. What we spend
+					comes out of them. The ledger doesn't lie."
+				</p>
+				<p>
+					"First thing: make yourself a character record. After that, check the mission board. Vote
+					on what runs. Show up when the session starts."
+				</p>
+				<p class="text-xs text-base-content/60">"Questions? Ask your crewmates first."</p>
+			</div>
+			<div class="flex flex-col gap-3">
+				<a href="/characters" class="btn w-full btn-primary" on:click={dismissOnboarding}>
+					Create Your Character
+				</a>
+				<a href="/missions" class="btn w-full btn-outline" on:click={dismissOnboarding}>
+					📋 View Mission Board
+				</a>
+				<button class="btn mt-2 text-base-content/55 btn-ghost btn-xs" on:click={dismissOnboarding}>
+					Dismiss — I know what I'm doing
+				</button>
+			</div>
+		</div>
+		<button class="modal-backdrop" aria-label="Close" on:click={dismissOnboarding}></button>
+	</div>
 {/if}

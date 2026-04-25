@@ -36,7 +36,8 @@
 		loading = true;
 		try {
 			character = await api('GET', `/characters/${charId}`);
-		} catch (e) {} finally {
+		} catch (e) {
+		} finally {
 			loading = false;
 		}
 	}
@@ -65,18 +66,20 @@
 
 <div class="container mx-auto max-w-5xl p-4">
 	<div
-		class="border-base-content/10 mb-8 flex flex-col items-start justify-between gap-4 border-b pb-4 md:flex-row md:items-center"
+		class="mb-8 flex flex-col items-start justify-between gap-4 border-b border-base-content/10 pb-4 md:flex-row md:items-center"
 	>
 		<div>
-			<h1 class="text-primary text-4xl font-[var(--font-cinzel)] font-bold">Company Store</h1>
-			<p class="text-sm opacity-60">Trade your hard-earned Scrip for valuable equipment.</p>
+			<h1 class="text-4xl font-[var(--font-cinzel)] font-bold text-primary">Company Store</h1>
+			<p class="text-sm text-base-content/65">
+				Trade your hard-earned Scrip for valuable equipment.
+			</p>
 		</div>
 
 		{#if character}
-			<div class="stats border-primary/20 bg-base-200 border shadow">
+			<div class="stats border border-primary/20 bg-base-200 shadow">
 				<div class="stat px-4 py-2">
-					<div class="stat-title text-primary text-[10px] font-bold uppercase">Your Balance</div>
-					<div class="stat-value text-primary text-2xl">
+					<div class="stat-title text-[10px] font-bold text-primary uppercase">Your Balance</div>
+					<div class="stat-value text-2xl text-primary">
 						{character.stats.scrip} <span class="text-xs">Scrip</span>
 					</div>
 				</div>
@@ -85,7 +88,7 @@
 	</div>
 
 	{#if error}
-		<div class="alert alert-error mb-6 shadow-lg">
+		<div class="mb-6 alert alert-error shadow-lg">
 			<div>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -105,7 +108,7 @@
 	{/if}
 
 	{#if successMessage}
-		<div class="alert alert-success mb-6 shadow-lg">
+		<div class="mb-6 alert alert-success shadow-lg">
 			<div>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
@@ -135,24 +138,24 @@
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
 			{#each storeItems as item}
 				<div
-					class="card bg-base-100 border-base-content/10 hover:border-primary/50 group border shadow-xl transition-all"
+					class="group card border border-base-content/10 bg-base-100 shadow-xl transition-all hover:border-primary/50"
 				>
 					<div class="card-body">
 						<div class="mb-2 flex items-start justify-between">
 							<h2 class="card-title text-xl font-bold">{item.item.name}</h2>
-							<div class="badge badge-primary font-bold">{item.price} Scrip</div>
+							<div class="badge font-bold badge-primary">{item.price} Scrip</div>
 						</div>
 
-						<p class="mb-4 line-clamp-2 h-12 text-sm opacity-70">
+						<p class="mb-4 line-clamp-2 h-12 text-sm text-base-content/70">
 							{item.item.description || 'No description provided.'}
 						</p>
 
 						<div class="mt-auto flex items-center justify-between">
 							<div class="text-xs">
 								{#if item.quantity_available > 0}
-									<span class="text-success font-bold">In Stock: {item.quantity_available}</span>
+									<span class="font-bold text-success">In Stock: {item.quantity_available}</span>
 								{:else}
-									<span class="text-error font-bold">Out of Stock</span>
+									<span class="font-bold text-warning">Out of Stock</span>
 								{/if}
 							</div>
 
@@ -189,7 +192,7 @@
 			<div class="form-control mx-auto mb-6 w-full max-w-xs">
 				<label class="label">
 					<span class="label-text">How many?</span>
-					<span class="label-text-alt opacity-50"
+					<span class="label-text-alt text-base-content/65"
 						>Total Price: {selectedItem.price * purchaseQuantity} Scrip</span
 					>
 				</label>
@@ -203,7 +206,7 @@
 						bind:value={purchaseQuantity}
 						min="1"
 						max={selectedItem.quantity_available}
-						class="input input-sm input-bordered w-full text-center"
+						class="input-bordered input input-sm w-full text-center"
 					/>
 					<button
 						class="btn btn-square btn-sm"
@@ -217,7 +220,7 @@
 			</div>
 
 			{#if character && character.stats.scrip < selectedItem.price * purchaseQuantity}
-				<p class="text-error animate-pulse text-sm font-bold">Insufficient Scrip!</p>
+				<p class="animate-pulse text-sm font-bold text-warning">Insufficient Scrip!</p>
 			{/if}
 		</div>
 	{/if}

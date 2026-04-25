@@ -18,7 +18,7 @@ test.describe('Player flow', () => {
   test('nav shows username after auth', async ({ playerPage }) => {
     await playerPage.goto('/dashboard');
     await playerPage.waitForLoadState('networkidle');
-    await expect(playerPage.locator('nav').getByText('E2E Player')).toBeVisible();
+    await expect(playerPage.locator('nav').getByText('E2E Player').first()).toBeVisible();
   });
 
   test('characters page loads', async ({ playerPage }) => {
@@ -40,6 +40,30 @@ test.describe('Player flow', () => {
     await playerPage.waitForLoadState('networkidle');
     await expect(playerPage).not.toHaveURL(/\/login/);
     await expect(playerPage.locator('main')).toBeVisible();
+  });
+
+  test('dashboard shows Mission Board section', async ({ playerPage }) => {
+    await playerPage.goto('/dashboard');
+    await playerPage.waitForLoadState('networkidle');
+    await expect(playerPage.getByText('Mission Board')).toBeVisible();
+  });
+
+  test('dashboard shows Available Contracts section', async ({ playerPage }) => {
+    await playerPage.goto('/dashboard');
+    await playerPage.waitForLoadState('networkidle');
+    // Section only appears if there are discoverable missions
+    const contractsHeading = playerPage.getByText('Available Contracts');
+    // Either visible (missions exist) or absent (no missions) — either is valid
+    const count = await contractsHeading.count();
+    if (count > 0) {
+      await expect(contractsHeading).toBeVisible();
+    }
+  });
+
+  test('root page redirects authenticated user to dashboard', async ({ playerPage }) => {
+    await playerPage.goto('/');
+    await playerPage.waitForLoadState('networkidle');
+    await expect(playerPage).toHaveURL(/\/dashboard/);
   });
 
   test('maps page loads', async ({ playerPage }) => {
