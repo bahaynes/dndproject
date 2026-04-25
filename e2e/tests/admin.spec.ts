@@ -35,6 +35,6 @@ test.describe('Admin flow', () => {
   test('admin nav shows E2E Admin username', async ({ adminPage }) => {
     await adminPage.goto('/admin/sessions');
     await adminPage.waitForLoadState('networkidle');
-    await expect(adminPage.locator('nav').getByText('E2E Admin')).toBeVisible();
+    await expect(adminPage.locator('nav').getByText('E2E Admin').first()).toBeVisible();
   });
 });

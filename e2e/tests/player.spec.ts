@@ -18,7 +18,7 @@ test.describe('Player flow', () => {
   test('nav shows username after auth', async ({ playerPage }) => {
     await playerPage.goto('/dashboard');
     await playerPage.waitForLoadState('networkidle');
-    await expect(playerPage.locator('nav').getByText('E2E Player')).toBeVisible();
+    await expect(playerPage.locator('nav').getByText('E2E Player').first()).toBeVisible();
   });
 
   test('characters page loads', async ({ playerPage }) => {

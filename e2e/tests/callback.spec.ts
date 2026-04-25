@@ -5,9 +5,8 @@ test.describe('OAuth callback redirect', () => {
 		// Simulate what the backend sends after Discord OAuth
 		await page.goto('/login/callback?token=faketokenvalue&discord_token=fakediscordtoken');
 
-		// Should redirect to /campaigns
+		// Should redirect to /campaigns (waitForURL throws if this never happens)
 		await page.waitForURL(/\/campaigns/, { timeout: 5000 });
-		expect(page.url()).toContain('/campaigns');
 
 		// Tokens should be in localStorage
 		const pending = await page.evaluate(() => localStorage.getItem('pendingToken'));
