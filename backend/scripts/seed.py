@@ -23,25 +23,25 @@ from app.modules.missions.models import Mission, MissionReward
 
 FACTIONS = [
     {
-        "faction_name": "The Alliance",
+        "faction_name": "Collegium",
         "color": "#3b82f6",
         "description": (
-            "Controls core worlds via stable monument-bound Vincula. "
-            "Institutional, bureaucratic, resource-rich. Their real power is "
-            "transit — controlling sworn Vincula means controlling who moves "
-            "between worlds. Not evil; they built a functional system. "
-            "The darkness is structural."
+            "The association of core-world institutions — academies, transit "
+            "authorities, monument custodians. They built a functional system "
+            "and they intend to keep it. Their real power is Vincula access: "
+            "controlling sworn Vincula means controlling who moves between "
+            "worlds. Not evil. Structural."
         ),
     },
     {
-        "faction_name": "The Rim",
+        "faction_name": "Limes",
         "color": "#d97706",
         "description": (
-            "Not an organization — a condition. Frontier worlds, independent "
-            "crews, pirates, salvagers, waystation economies. Everyone the "
-            "Alliance didn't reach in time, or who refused the deal, or who "
-            "got priced out. The Alliance needs Rim output; they just prefer "
-            "the Rim not to know that."
+            "Not an organization — a condition. The frontier boundary: "
+            "independent crews, waystation economies, salvagers, anyone the "
+            "Collegium didn't reach in time or who refused the deal. "
+            "The Collegium needs Limes output; they prefer the Limes not "
+            "to know that."
         ),
     },
 ]
@@ -61,7 +61,7 @@ MISSIONS = [
             "plotted. She hasn't said why she's being quiet about it."
         ),
         "tier": "Tier 1",
-        "region": "Near Rim",
+        "region": "Near Limes",
         "cooldown_days": 14,
         "essence_net": 3,  # Routine difficulty: 2 net + 1 transit = 3 gross posted
     },
@@ -69,13 +69,13 @@ MISSIONS = [
         "name": "Last Transmission",
         "description": (
             "A listening post on the edge of the contested band sent a partial "
-            "burst three weeks ago — coordinates, an Alliance vessel ID, and "
-            "the word 'derelict'. The Alliance hasn't sent a recovery team. "
+            "burst three weeks ago — coordinates, a Collegium vessel ID, and "
+            "the word 'derelict'. The Collegium hasn't sent a recovery team. "
             "That's either an oversight or a decision. Either way, the post "
             "is still broadcasting on loop."
         ),
         "tier": "Tier 1",
-        "region": "Contested Band",
+        "region": "Limes Threshold",
         "cooldown_days": 14,
         "essence_net": 5,  # Standard difficulty: 4 net + 1 transit = 5 gross posted
     },
@@ -85,11 +85,11 @@ MISSIONS = [
             "Waystation Krel is expanding a docking bay and hit something "
             "buried in the rock — old, pre-Calamity construction. "
             "The station master wants it cleared and catalogued before the "
-            "Alliance notices and starts asking questions about permits. "
+            "Collegium notices and starts asking questions about permits. "
             "Pay is flat. Anything you find in there you keep."
         ),
         "tier": "Tier 1",
-        "region": "Near Rim",
+        "region": "Near Limes",
         "cooldown_days": 7,
         "essence_net": 4,  # Standard: 4 net + 1 transit = 5 gross, minus some for item upside
     },
