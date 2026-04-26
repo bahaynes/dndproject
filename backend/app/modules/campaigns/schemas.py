@@ -23,3 +23,16 @@ class CampaignJoin(BaseModel):
 
 class CampaignLogin(BaseModel):
     campaign_id: int
+
+
+class CampaignStats(BaseModel):
+    total_missions: int
+    completed_missions: int
+    failed_missions: int
+    total_characters: int
+    active_characters: int
+    dead_characters: int
+    total_essence_earned: int
+    total_gold_earned: int
+    total_sessions: int
+    last_session_date: Optional[str] = None

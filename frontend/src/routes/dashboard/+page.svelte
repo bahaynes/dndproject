@@ -27,6 +27,9 @@
 	onMount(() => {
 		if (!localStorage.getItem('accessToken')) {
 			goto('/login');
+		} else if ($auth.token && !dataLoaded) {
+			dataLoaded = true;
+			loadData();
 		}
 	});
 
@@ -511,6 +514,11 @@
 									href="/admin/ship"
 									class="btn w-full justify-start btn-ghost transition-colors btn-xs hover:bg-base-300"
 									>Ship Config</a
+								>
+								<a
+									href="/admin/stats"
+									class="btn w-full justify-start btn-ghost transition-colors btn-xs hover:bg-base-300"
+									>Campaign Stats</a
 								>
 								<a
 									href="/admin/maps"
