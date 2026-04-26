@@ -48,24 +48,37 @@ def adjust_resources(
     campaign_id: int,
     description: str,
     essence_delta: int = 0,
+    gold_delta: int = 0,
+    hp_delta: int = 0,
     session_id: Optional[int] = None,
     event_type: str = "ShipAdjustment",
 ) -> models.Ship:
     ship = get_or_create_ship(db, campaign_id)
+    
+    # Update Essence
     ship.essence = max(0, ship.essence + essence_delta)
     # Auto-advance level when essence crosses a threshold (never decrease)
     computed = compute_level_from_essence(ship.essence)
     if computed > ship.level:
         ship.level = computed
+        
+    # Update Gold
+    ship.gold = max(0, ship.gold + gold_delta)
+    
+    # Update HP
+    ship.current_hp = max(0, min(ship.max_hp, ship.current_hp + hp_delta))
+    
     db.flush()
 
-    snapshot = {"level": ship.level, "essence": ship.essence}
+    snapshot = get_snapshot(ship)
     ledger_service.create_entry(
         db=db,
         campaign_id=campaign_id,
         event_type=event_type,
         description=description,
         essence_delta=essence_delta,
+        gold_delta=gold_delta,
+        hp_delta=hp_delta,
         session_id=session_id,
         ship_snapshot=snapshot,
     )
@@ -74,4 +87,10 @@ def adjust_resources(
 
 
 def get_snapshot(ship: models.Ship) -> dict:
-    return {"level": ship.level, "essence": ship.essence}
+    return {
+        "level": ship.level, 
+        "essence": ship.essence,
+        "gold": ship.gold,
+        "hp": ship.current_hp,
+        "max_hp": ship.max_hp
+    }

@@ -38,6 +38,8 @@ def adjust_ship(
         campaign_id=current_user.campaign_id,
         description=data.description,
         essence_delta=data.essence_delta,
+        gold_delta=data.gold_delta,
+        hp_delta=data.hp_delta,
         event_type="AdminAdjustment",
     )
     db.commit()

@@ -14,6 +14,7 @@
 	let editName = '';
 	let editDescription = '';
 	let editCharacterSheetUrl = '';
+	let editShipAbilityNotes = '';
 	let editClassName = '';
 	let editLevel = 1;
 
@@ -46,6 +47,7 @@
 			editName = viewCharacter.name;
 			editDescription = viewCharacter.description || '';
 			editCharacterSheetUrl = viewCharacter.character_sheet_url || '';
+			editShipAbilityNotes = viewCharacter.ship_ability_notes || '';
 			editClassName = viewCharacter.class_name || '';
 			editLevel = viewCharacter.level ?? 1;
 		}
@@ -93,6 +95,7 @@
 				name: editName,
 				description: editDescription,
 				character_sheet_url: editCharacterSheetUrl,
+				ship_ability_notes: editShipAbilityNotes,
 				class_name: editClassName || null,
 				level: editLevel
 			});
@@ -238,9 +241,8 @@
 											</div>
 										{/if}
 										<div class="mt-2 flex gap-2">
-											<div class="badge badge-outline">Essence: {viewCharacter.stats.xp}</div>
 											<div class="badge badge-outline badge-primary">
-												Scrip: {viewCharacter.stats.scrip}
+												Gold: {viewCharacter.stats.gold} GP
 											</div>
 										</div>
 									</div>
@@ -268,6 +270,16 @@
 											/>
 										</label>
 									</div>
+									<div class="form-control mt-2">
+										<label class="label">
+											<span class="label-text">Ship-Flavored Ability Notes</span>
+											<textarea
+												class="textarea textarea-bordered mt-1 h-20 w-full"
+												placeholder="Describe how your abilities synergy with the ship..."
+												bind:value={editShipAbilityNotes}
+											></textarea>
+										</label>
+									</div>
 									<div class="mt-4 flex justify-end gap-2">
 										<button
 											class="btn btn-ghost"
@@ -280,8 +292,16 @@
 									</div>
 								{:else}
 									<div class="prose mb-4 max-w-none whitespace-pre-wrap text-sm opacity-80">
+										<h4 class="font-bold text-base-content underline decoration-primary/30">Backstory</h4>
 										{viewCharacter.description || 'No backstory provided.'}
 									</div>
+
+									{#if viewCharacter.ship_ability_notes}
+										<div class="prose mb-6 max-w-none bg-primary/5 p-4 rounded-lg border border-primary/10">
+											<h4 class="text-sm font-bold uppercase tracking-wider text-primary mb-2">Ship-Flavored Abilities</h4>
+											<p class="text-sm italic opacity-90 whitespace-pre-wrap">{viewCharacter.ship_ability_notes}</p>
+										</div>
+									{/if}
 
 									<div class="mt-4 flex items-center justify-between">
 										<div class="flex gap-2">

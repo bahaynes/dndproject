@@ -119,6 +119,8 @@
 			? Math.round((ship.essence / ship.next_threshold) * 100)
 			: 100
 		: 0;
+	$: hpPct = ship ? Math.round((ship.current_hp / ship.max_hp) * 100) : 0;
+	$: hpColor = hpPct < 25 ? 'error' : hpPct < 50 ? 'warning' : 'success';
 </script>
 
 <div class="min-h-screen">
@@ -145,30 +147,46 @@
 									>{/if}
 								<span>Level {char.level}</span>
 								<span class="text-base-content/30">·</span>
-								<span
-									>{char.missions_completed} mission{char.missions_completed !== 1 ? 's' : ''} completed</span
-								>
+								<span class="text-secondary font-bold">💰 {char.stats.gold} GP</span>
 							</div>
 						</div>
-						<div class="flex flex-col items-end gap-1">
+						<div class="flex flex-col items-end gap-2">
 							{#if ship}
-								<div class="flex items-center gap-2">
-									<span class="text-xs text-base-content/60">Ship Essence</span>
-									<span class="badge badge-{statusColor} badge-sm">⚡ {ship.essence}</span>
-								</div>
-								{#if ship.next_threshold}
-									<div class="flex items-center gap-2 text-xs text-base-content/60">
-										<span>Level {ship.level} → {ship.level + 1}</span>
+								<div class="flex items-center gap-4">
+									<div class="flex flex-col items-end">
+										<div class="flex items-center gap-2">
+											<span class="text-[10px] text-base-content/60 uppercase tracking-tighter">Ship Essence</span>
+											<span class="badge badge-{statusColor} badge-sm">⚡ {ship.essence}</span>
+										</div>
+										{#if ship.next_threshold}
+											<progress
+												class="progress h-1 w-24 progress-primary mt-1"
+												value={levelPct}
+												max="100"
+											></progress>
+										{/if}
+									</div>
+									<div class="flex flex-col items-end">
+										<div class="flex items-center gap-2">
+											<span class="text-[10px] text-base-content/60 uppercase tracking-tighter">Ship Gold</span>
+											<span class="badge badge-secondary badge-sm">🪙 {ship.gold}</span>
+										</div>
+									</div>
+									<div class="flex flex-col items-end">
+										<div class="flex items-center gap-2">
+											<span class="text-[10px] text-base-content/60 uppercase tracking-tighter">Ship Hull</span>
+											<span class="badge badge-{hpColor} badge-sm">❤️ {ship.current_hp}/{ship.max_hp}</span>
+										</div>
 										<progress
-											class="progress h-1.5 w-24 progress-primary"
-											value={levelPct}
+											class="progress h-1 w-24 progress-{hpColor} mt-1"
+											value={hpPct}
 											max="100"
 										></progress>
 									</div>
-								{/if}
+								</div>
 							{/if}
 							{#if ship?.motd}
-								<p class="max-w-xs text-right text-xs text-base-content/60 italic">"{ship.motd}"</p>
+								<p class="max-w-xs text-right text-xs text-base-content/60 italic mt-1">"{ship.motd}"</p>
 							{/if}
 						</div>
 					</div>
@@ -370,22 +388,38 @@
 					<div class="card border border-base-content/10 bg-base-100 shadow-sm">
 						<div class="card-body p-5">
 							<h3 class="mb-3 text-sm font-[var(--font-cinzel)] font-bold">🚀 {ship.name}</h3>
-							<div class="mb-1 flex items-center justify-between text-xs">
-								<span class="text-base-content/65">⚡ Essence Reserve</span>
-								<span class="badge badge-{statusColor} badge-xs">{ship.essence}</span>
+							
+							<div class="space-y-3">
+								<div>
+									<div class="mb-1 flex items-center justify-between text-xs">
+										<span class="text-base-content/65">⚡ Essence Reserve</span>
+										<span class="badge badge-{statusColor} badge-xs">{ship.essence}</span>
+									</div>
+									{#if ship.next_threshold}
+										<progress class="progress h-1.5 w-full progress-primary" value={levelPct} max="100"
+										></progress>
+										<p class="mt-1 text-[10px] text-base-content/60">
+											Level {ship.level} → {ship.level + 1} · {ship.essence_to_next_level} to go
+										</p>
+									{/if}
+								</div>
+
+								<div>
+									<div class="mb-1 flex items-center justify-between text-xs">
+										<span class="text-base-content/65">🪙 Ship Gold</span>
+										<span class="badge badge-secondary badge-xs">{ship.gold} GP</span>
+									</div>
+								</div>
+
+								<div>
+									<div class="mb-1 flex items-center justify-between text-xs">
+										<span class="text-base-content/65">❤️ Hull Integrity</span>
+										<span class="badge badge-{hpColor} badge-xs">{ship.current_hp}/{ship.max_hp}</span>
+									</div>
+									<progress class="progress h-1.5 w-full progress-{hpColor}" value={hpPct} max="100"
+									></progress>
+								</div>
 							</div>
-							{#if ship.next_threshold}
-								<progress class="progress h-1.5 w-full progress-primary" value={levelPct} max="100"
-								></progress>
-								<p class="mt-1 text-xs text-base-content/60">
-									Level {ship.level} → {ship.level + 1} · {ship.essence_to_next_level} to go
-								</p>
-							{:else}
-								<p class="mt-1 text-xs text-base-content/60">Max Level</p>
-							{/if}
-							<p class="mt-1 text-xs text-base-content/60">
-								Long rest: {ship.long_rest_cost} Essence
-							</p>
 						</div>
 					</div>
 				{/if}
@@ -434,6 +468,12 @@
 								href="/roster"
 								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
 								>👥 Roster</a
+							>
+							<a
+								href="https://github.com/bahaynes/dndproject/wiki"
+								target="_blank"
+								class="rounded p-2 font-medium text-secondary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-secondary/50 focus-visible:outline-none"
+								>📖 Wiki</a
 							>
 						</div>
 					</div>
