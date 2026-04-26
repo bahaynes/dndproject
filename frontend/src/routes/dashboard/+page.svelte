@@ -52,18 +52,23 @@
 	}
 
 	async function loadData() {
-		const [s, sessions, missions] = await Promise.all([
-			api('GET', '/ship/').catch(() => null),
-			api('GET', '/sessions/').catch(() => []),
-			api('GET', '/missions/').catch(() => [])
-		]);
-		ship = s;
-		const all: GameSessionWithPlayers[] = sessions ?? [];
-		upcomingSessions = all
-			.filter((s) => s.status !== 'Completed' && s.status !== 'Cancelled')
-			.sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime());
-		availableMissions = (missions ?? []).filter((m: Mission) => !m.is_retired && m.is_discoverable);
-		loading = false;
+		try {
+			const [s, sessions, missions] = await Promise.all([
+				api('GET', '/ship/').catch(() => null),
+				api('GET', '/sessions/').catch(() => []),
+				api('GET', '/missions/').catch(() => [])
+			]);
+			ship = s;
+			const all: GameSessionWithPlayers[] = sessions ?? [];
+			upcomingSessions = all
+				.filter((s) => s.status !== 'Completed' && s.status !== 'Cancelled')
+				.sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime());
+			availableMissions = (missions ?? []).filter((m: Mission) => !m.is_retired && m.is_discoverable);
+		} catch (e) {
+			console.error('Error loading dashboard data', e);
+		} finally {
+			loading = false;
+		}
 	}
 
 	function isBacking(proposalId: number): boolean {

@@ -8,17 +8,28 @@ export async function api(method: string, path: string, body?: unknown): Promise
 	if (token) headers['Authorization'] = `Bearer ${token}`;
 	if (body !== undefined) headers['Content-Type'] = 'application/json';
 
-	const res = await fetch(`${API_BASE_URL}${path}`, {
-		method,
-		headers,
-		...(body !== undefined && { body: JSON.stringify(body) })
-	});
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
-	if (!res.ok) {
-		const err = await res.json().catch(() => ({}));
-		throw new Error(err.detail ?? `HTTP ${res.status}`);
+	try {
+		const res = await fetch(`${API_BASE_URL}${path}`, {
+			method,
+			headers,
+			signal: controller.signal,
+			...(body !== undefined && { body: JSON.stringify(body) })
+		});
+
+		clearTimeout(timeoutId);
+
+		if (!res.ok) {
+			const err = await res.json().catch(() => ({}));
+			throw new Error(err.detail ?? `HTTP ${res.status}`);
+		}
+
+		const text = await res.text();
+		return text ? JSON.parse(text) : undefined;
+	} catch (e) {
+		clearTimeout(timeoutId);
+		throw e;
 	}
-
-	const text = await res.text();
-	return text ? JSON.parse(text) : undefined;
 }
