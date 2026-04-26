@@ -9,8 +9,7 @@ from ..missions.schemas import Mission
 from ..sessions.schemas import GameSession
 
 class CharacterStatsBase(BaseModel):
-    xp: int = 0
-    scrip: int = 0
+    gold: int = 0
 
 class CharacterStatsCreate(CharacterStatsBase):
     pass

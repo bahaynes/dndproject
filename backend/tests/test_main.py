@@ -181,9 +181,9 @@ def test_store_endpoints(client, db_session, setup_data):
     me_res = client.get("/api/auth/me", headers=player_headers)
     char_id = me_res.json()["characters"][0]["id"]
 
-    # Give scrip
+    # Give gold
     character = db_session.query(char_models.Character).filter(char_models.Character.id == char_id).first()
-    character.stats.scrip = 500
+    character.stats.gold = 500
     db_session.commit()
 
     res = client.post(f"/api/store/items/{store_item_id}/purchase?quantity=3", headers=player_headers)

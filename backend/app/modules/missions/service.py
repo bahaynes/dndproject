@@ -120,10 +120,8 @@ def distribute_mission_rewards(db: Session, mission: models.Mission):
 
     for character in mission.players:
         for reward in mission.rewards:
-            if reward.xp:
-                character.stats.xp += reward.xp
-            if reward.scrip:
-                character.stats.scrip += reward.scrip
+            if reward.gold:
+                character.stats.gold += reward.gold
             if reward.item_id:
                 item_service.add_item_to_inventory(db, character_id=character.id, item_id=reward.item_id, quantity=1)
 

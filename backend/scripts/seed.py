@@ -136,7 +136,7 @@ def seed_missions(db, campaign_id: int) -> int:
             db.add(mission)
             db.flush()
             # Essence reward row
-            db.add(MissionReward(mission_id=mission.id, xp=m["essence_net"] * 10))
+            db.add(MissionReward(mission_id=mission.id, gold=m["essence_net"] * 10))
             created += 1
     db.flush()
     return created

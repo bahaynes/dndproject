@@ -14,8 +14,7 @@ class CharacterInMission(CharacterBase):
 # Mission Schemas
 class MissionRewardBase(BaseModel):
     item_id: Optional[int] = None
-    xp: Optional[int] = None
-    scrip: Optional[int] = None
+    gold: Optional[int] = None
 
 class MissionRewardCreate(MissionRewardBase):
     pass

@@ -2,12 +2,11 @@
 	import { onMount } from 'svelte';
 	import { auth } from '$lib/auth';
 	import { api } from '$lib/api';
-	import type { StoreItem, Character } from '$lib/types';
+	import type { StoreItem } from '$lib/types';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 
 	let storeItems: StoreItem[] = [];
-	let character: Character | null = null;
 	let loading = true;
 	let error = '';
 	let successMessage = '';
@@ -16,26 +15,18 @@
 	let purchaseQuantity = 1;
 	let showPurchaseConfirm = false;
 
-	$: activeCharacterId = $auth.user?.active_character?.id;
+	$: activeCharacter = $auth.user?.active_character;
+	$: activeCharacterId = activeCharacter?.id;
+	$: characterGold = activeCharacter?.stats?.gold ?? 0;
 
-	// Fetch store items on mount
-	onMount(fetchStoreItems);
-
-	// Fetch character data whenever activeCharacterId changes (or initially)
-	$: if (activeCharacterId) {
-		fetchCharacter(activeCharacterId);
-	}
+	onMount(async () => {
+		await fetchStoreItems();
+	});
 
 	async function fetchStoreItems() {
-		try {
-			storeItems = await api('GET', '/store/items/');
-		} catch (e) {}
-	}
-
-	async function fetchCharacter(charId: number) {
 		loading = true;
 		try {
-			character = await api('GET', `/characters/${charId}`);
+			storeItems = await api('GET', '/store/items/');
 		} catch (e) {
 		} finally {
 			loading = false;
@@ -49,14 +40,14 @@
 	}
 
 	async function handlePurchase() {
-		if (!selectedItem || !character) return;
+		if (!selectedItem || !activeCharacterId) return;
 		error = '';
 		successMessage = '';
 		try {
 			await api('POST', `/store/items/${selectedItem.id}/purchase?quantity=${purchaseQuantity}`);
 			successMessage = `Successfully purchased ${purchaseQuantity}x ${selectedItem.item.name}!`;
 			showPurchaseConfirm = false;
-			await Promise.all([fetchStoreItems(), fetchCharacter(character.id)]);
+			await fetchStoreItems();
 			setTimeout(() => (successMessage = ''), 5000);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Purchase failed.';
@@ -71,16 +62,16 @@
 		<div>
 			<h1 class="text-4xl font-[var(--font-cinzel)] font-bold text-primary">Company Store</h1>
 			<p class="text-sm text-base-content/65">
-				Trade your hard-earned Scrip for valuable equipment.
+				Acquire equipment and supplies. Prices in GP.
 			</p>
 		</div>
 
-		{#if character}
+		{#if activeCharacter}
 			<div class="stats border border-primary/20 bg-base-200 shadow">
 				<div class="stat px-4 py-2">
-					<div class="stat-title text-[10px] font-bold text-primary uppercase">Your Balance</div>
+					<div class="stat-title text-[10px] font-bold text-primary uppercase">Your Gold</div>
 					<div class="stat-value text-2xl text-primary">
-						{character.stats.scrip} <span class="text-xs">Scrip</span>
+						{characterGold} <span class="text-xs">GP</span>
 					</div>
 				</div>
 			</div>
@@ -143,7 +134,7 @@
 					<div class="card-body">
 						<div class="mb-2 flex items-start justify-between">
 							<h2 class="card-title text-xl font-bold">{item.item.name}</h2>
-							<div class="badge font-bold badge-primary">{item.price} Scrip</div>
+							<div class="badge font-bold badge-primary">{item.price} GP</div>
 						</div>
 
 						<p class="mb-4 line-clamp-2 h-12 text-sm text-base-content/70">
@@ -162,8 +153,7 @@
 							<div class="card-actions">
 								<button
 									class="btn btn-sm btn-primary"
-									disabled={item.quantity_available <= 0 ||
-										(character && character.stats.scrip < item.price)}
+									disabled={item.quantity_available <= 0 || !activeCharacterId}
 									on:click={() => openPurchaseModal(item)}
 								>
 									Purchase
@@ -193,7 +183,7 @@
 				<label class="label">
 					<span class="label-text">How many?</span>
 					<span class="label-text-alt text-base-content/65"
-						>Total Price: {selectedItem.price * purchaseQuantity} Scrip</span
+						>Total Cost: {selectedItem.price * purchaseQuantity} GP</span
 					>
 				</label>
 				<div class="flex items-center gap-2">
@@ -219,8 +209,8 @@
 				</div>
 			</div>
 
-			{#if character && character.stats.scrip < selectedItem.price * purchaseQuantity}
-				<p class="animate-pulse text-sm font-bold text-warning">Insufficient Scrip!</p>
+			{#if characterGold < selectedItem.price * purchaseQuantity}
+				<p class="animate-pulse text-sm font-bold text-warning">Not enough gold.</p>
 			{/if}
 		</div>
 	{/if}
@@ -229,9 +219,7 @@
 		<button class="btn btn-ghost" on:click={() => (showPurchaseConfirm = false)}>Cancel</button>
 		<button
 			class="btn btn-primary"
-			disabled={!selectedItem ||
-				!character ||
-				character.stats.scrip < selectedItem.price * purchaseQuantity}
+			disabled={!selectedItem || !activeCharacterId || characterGold < (selectedItem?.price ?? 0) * purchaseQuantity}
 			on:click={handlePurchase}
 		>
 			Confirm

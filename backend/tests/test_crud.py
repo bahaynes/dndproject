@@ -166,15 +166,15 @@ def test_store_crud(db_session, campaign):
     store_items = item_service.get_store_items_by_campaign(db_session, campaign_id=campaign.id)
     assert len(store_items) == 1
 
-    db_user.characters[0].stats.scrip = 500
+    db_user.characters[0].stats.gold = 500
     db_session.commit()
     result = item_service.purchase_item(db_session, db_user.characters[0], db_store_item, 3)
     assert result["message"] == "Purchase successful"
-    assert db_user.characters[0].stats.scrip == 200
+    assert db_user.characters[0].stats.gold == 200
     assert db_store_item.quantity_available == 7
 
     result = item_service.purchase_item(db_session, db_user.characters[0], db_store_item, 3)
-    assert result["error"] == "Not enough scrip"
+    assert result["error"] == "Not enough gold"
 
 def test_mission_crud(db_session, campaign):
     user_in = auth_schemas.UserCreate(username="missionrunner", discord_id="missionrunner", campaign_id=campaign.id, role="player")
@@ -203,14 +203,13 @@ def test_mission_crud(db_session, campaign):
 
     item_in = item_schemas.ItemCreate(name="Reward Item", description="A reward item")
     db_item = item_service.create_item(db_session, item_in, campaign_id=campaign.id)
-    db_mission.rewards.append(mission_models.MissionReward(mission_id=db_mission.id, xp=100, scrip=50, item_id=db_item.id))
+    db_mission.rewards.append(mission_models.MissionReward(mission_id=db_mission.id, gold=50, item_id=db_item.id))
     mission_service.add_character_to_mission(db_session, db_mission, db_user.characters[0])
     db_session.commit()
 
     result = mission_service.distribute_mission_rewards(db_session, db_mission)
     assert result["message"] == "Rewards distributed successfully"
-    assert db_user.characters[0].stats.xp == 100
-    assert db_user.characters[0].stats.scrip == 50
+    assert db_user.characters[0].stats.gold == 50
 
     inventory_item = db_session.query(item_models.InventoryItem).filter(item_models.InventoryItem.character_id == db_user.characters[0].id, item_models.InventoryItem.item_id == db_item.id).first()
     assert inventory_item is not None

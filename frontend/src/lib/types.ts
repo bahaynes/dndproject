@@ -74,8 +74,7 @@ export interface LedgerEntry {
 export interface CharacterStats {
     id: number;
     character_id: number;
-    xp: number;
-    scrip: number;
+    gold: number;
 }
 
 export interface Item {
@@ -117,8 +116,7 @@ export interface Mission {
 export interface MissionReward {
     id: number;
     item_id?: number;
-    xp?: number;
-    scrip?: number;
+    gold?: number;
     item?: Item;
 }
 
