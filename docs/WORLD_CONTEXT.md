@@ -7,6 +7,21 @@ Do not invent lore. Do not contradict this document. If something is undefined, 
 
 ---
 
+## The Pitch
+
+*For players, session zero, or anywhere a one-paragraph summary is needed:*
+
+> Join a sentient starship's crew on the edge of known space. Every week, vote on which
+> mission you run — safe nearby jobs or dangerous far-out heists. You level up with
+> everyone else, magic items you find are yours to keep, and your choices actually shape
+> what happens next. Bring any character you want, play one-shots, die if you're not
+> careful. First mission next week — come see what this ship wants from you.
+
+The mechanical pitch: space Western heists with a cool ship. Level up with your crew.
+Your choices matter. Accessible enough that your group actually shows up to play.
+
+---
+
 ## The Setting
 
 A single crystal sphere containing dozens of worlds (hex map). Travel between worlds
@@ -26,7 +41,7 @@ Essence is the single resource that drives everything in the sphere. It is:
 - The fuel that powers ship travel and life support
 - The resource that funds character leveling
 - The sustenance that keeps Vincula alive and coherent
-- The currency the Alliance extracts from the Rim
+- The currency the Collegium extracts from the Limes
 
 **Where it comes from:** Essence crystallizes spontaneously in the wake of genuine
 adventuring work — exploration of unknown places, conflict with real stakes, recovery
@@ -72,14 +87,14 @@ loses all levels at once. This is treated as one of the worst acts a mortal can 
 | Humanoid-bound | Infiltration, diplomacy | High | 1–3 sworn |
 | Derelict | Dormant, degraded | None | 0 (bond broken) |
 
-**Scarcity:** ~50–100 Vincula survive in the Rim. Scarce enough to matter,
+**Scarcity:** ~50–100 Vincula survive in the Limes. Scarce enough to matter,
 present enough that crews occasionally encounter one without it being a world event.
-The Alliance controls the most powerful surviving Vincula in the core worlds.
+The Collegium controls the most powerful surviving Vincula in the core worlds.
 
-**What mortals don't know:** All vessel types are the same race. The Alliance has
+**What mortals don't know:** All vessel types are the same race. The Collegium has
 suppressed this knowledge because a population that understands Vincula are a unified
 sapient race with agency — not tools of varying types — would start asking
-uncomfortable questions about what the Alliance's monument-Vincula actually want.
+uncomfortable questions about what the Collegium's monument-Vincula actually want.
 
 ---
 
@@ -99,7 +114,7 @@ crew. It's math."* It is not math.
 
 **Her past:** She knows more than she lets on about the Calamity era. She was there,
 or close enough that the distinction doesn't matter. She has reasons for staying in
-the Rim that she hasn't shared with any crew. Some Vincula she avoids without
+the Limes that she hasn't shared with any crew. Some Vincula she avoids without
 explanation. Some hexes make her go quiet in a way that's different from her
 normal quiet. This is a long-term story arc, not current session content.
 
@@ -148,16 +163,43 @@ Net Essence per 3-mission cycle at the target rest rate (one long rest per three
 missions): **10 / 20 / 30 / 40** by tier. Scales linearly because mission income
 and rest cost both double each tier.
 
-**Magic items:** The Alliance manufactures and sells common and uncommon items
+**Ship support:** A sworn character can describe any class ability as being channeled
+through Meridian's systems — a warlock's eldritch blast becomes a turret volley, a
+ranger's hunter's mark routes through targeting overlays. If the GM rules the
+narrative fits, the character gets one of two bonuses:
+- **Weapon/attack abilities:** doubled damage dice
+- **Defensive/utility abilities:** proficiency added to a relevant saving throw (if
+  not already proficient) or advantage on a relevant check
+
+This is adjudicated per-use at the table, not a standing feature. The GM should
+approve or deny based on whether the fiction actually connects the ability to the ship.
+Meridian's voice in these moments is dry and functional: *"Targeting system online.
+Try not to waste the shot."*
+
+**Magic items:** The Collegium manufactures and sells common and uncommon items
 from their standard catalog. Rare and legendary items exist only in pre-Calamity
-derelicts — the Alliance has never reverse-engineered one. Essence is the de facto
-currency between Rim crews and Alliance traders.
+derelicts — the Collegium has never reverse-engineered one. Essence is the de facto
+currency between Limes crews and Collegium traders.
 
 Common and uncommon items are purchased outright. Rare and above are recovered from
 derelicts and require Meridian to spend Essence integrating them — restoring
 dormant systems, re-binding arcane patterns, making them usable by mortal crew.
 
-| Rarity | Full cost | Alliance copy rights | Net after rights sale |
+**Equip vs. attune to ship:** Every magic item the crew acquires has two possible
+fates:
+- **Equip to a character** — normal attunement. The character carries and uses the
+  item. It leaves with the character if they die or rotate out.
+- **Attune to the ship** — the item is integrated into Meridian's hull. It provides
+  a persistent, campaign-level benefit that applies to all sworn crew. It does not
+  leave with any individual character. Meridian absorbs it; it's part of her now.
+
+The choice is permanent once made. Ship-attuned items should provide benefits that
+make sense as shipwide systems — navigation, life support, hull reinforcement,
+communications — rather than personal combat bonuses. The GM determines the specific
+persistent benefit when the item is integrated. This decision is always visible in
+the ledger.
+
+| Rarity | Full cost | Collegium copy rights | Net after rights sale |
 |---|---|---|---|
 | Common | 5 | — | — |
 | Uncommon | 30 | — | — |
@@ -165,13 +207,13 @@ dormant systems, re-binding arcane patterns, making them usable by mortal crew.
 | Very Rare | 700 | 350 | 350 |
 | Legendary | 2,500 | 1,500 | 1,000 |
 
-**Selling copy rights:** If the party allows the Alliance to study and replicate a
-recovered item, the Alliance pays the listed Essence bounty. The party keeps their
-original. The Alliance adds it to their manufacturing catalog — future Alliance
-forces may carry it. The GM should track what the Alliance has successfully
+**Selling copy rights:** If the party allows the Collegium to study and replicate a
+recovered item, the Collegium pays the listed Essence bounty. The party keeps their
+original. The Collegium adds it to their manufacturing catalog — future Collegium
+forces may carry it. The GM should track what the Collegium has successfully
 reverse-engineered; it changes what common enemies are equipped with.
 
-The Alliance does not buy copy rights for common or uncommon items — they already
+The Collegium does not buy copy rights for common or uncommon items — they already
 make those.
 
 **Cost in context:**
@@ -235,47 +277,47 @@ contradiction made mechanical.
 
 ## The Factions
 
-### The Alliance
+### The Collegium
 Controls core worlds via stable monument-bound Vincula. Institutional, bureaucratic,
 resource-rich. Their real power is **transit** — all ships are Vincula, so controlling
 sworn Vincula means controlling who can move between worlds.
 
-The Alliance isn't evil. They built a functional system and they'd like everyone to
-participate in it. The darkness is structural: they need Rim crews to generate Essence
+The Collegium isn't evil. They built a functional system and they'd like everyone to
+participate in it. The darkness is structural: they need Limes crews to generate Essence
 (safety doesn't produce it) and they've built an extraction apparatus to capture that
-value while keeping the Rim dependent.
+value while keeping the Limes dependent.
 
 They manufacture magic items and can replicate anything they've studied. Common and
 uncommon items are widely available from their traders. At campaign start they have
 never reverse-engineered a rare or legendary item — but this changes if parties sell
-copy rights. The GM should track what the Alliance has successfully catalogued; it
+copy rights. The GM should track what the Collegium has successfully catalogued; it
 shapes what future enemies carry.
 
-### The Rim
-Everyone the Alliance didn't get to in time, or who refused the deal, or who got
+### The Limes
+Everyone the Collegium didn't get to in time, or who refused the deal, or who got
 priced out. Not an organization — a condition. Frontier worlds, independent crews,
 pirates, salvagers, waystation economies built around Essence flow from productive hexes.
 
-Rim outposts survive on two things mirroring the American Wild West:
+Limes outposts survive on two things mirroring the American Wild West:
 - **Agriculture** — specific worlds grow things the core worlds can't, giving
   settlements real leverage in trade negotiations
 - **Essence ranching** — positioning near generative hex zones and building
   waystation infrastructure to service the crews who work them
 
-The Alliance needs Rim output. They just prefer the Rim not to know that.
+The Collegium needs Rim output. They just prefer the Limes not to know that.
 
 ### Magic Items & The Secondary Market
-- **Alliance manufacture:** Common/uncommon, reliable, available at standard
-  Essence price from any Alliance-affiliated station
-- **Pre-Calamity originals:** Items the Alliance has never catalogued. Some do
-  things Alliance manufacture can't replicate. Meridian recognizes some of them
+- **Collegium manufacture:** Common/uncommon, reliable, available at standard
+  Essence price from any Collegium-affiliated station
+- **Pre-Calamity originals:** Items the Collegium has never catalogued. Some do
+  things Collegium manufacture can't replicate. Meridian recognizes some of them
   and doesn't always say so
 - **Rim craft:** Crude, unreliable, occasionally brilliant. May work perfectly,
   may work once, may work better than intended. Not priced in Essence — barter
 
-The extraction loop (revised): Rim crews find rare items → sell copy rights to
-Alliance for Essence bounty → keep the original → Alliance adds it to catalog →
-future Alliance forces may carry it. The Alliance pushes hard for rights sales.
+The extraction loop (revised): Limes crews find rare items → sell copy rights to
+Collegium for Essence bounty → keep the original → Collegium adds it to catalog →
+future Collegium forces may carry it. The Collegium pushes hard for rights sales.
 The crew decides how much of the pre-Calamity world they're willing to hand over.
 
 ---
@@ -293,7 +335,7 @@ What followed wasn't ideological civil war. It was a world full of people who we
 powerful yesterday and helpless today, all equally desperate, scrambling to control
 the few hundred surviving Vincula because they were the only path back to power.
 
-The Alliance won because they secured surviving Vincula fastest and rebuilt
+The Collegium won because they secured surviving Vincula fastest and rebuilt
 bond infrastructure first. They didn't win because they were righteous.
 They won because they moved quickly in a crisis and then turned that crisis
 into a permanent institutional advantage.
@@ -317,6 +359,11 @@ This is an open-table campaign. Variable attendance is a feature, not a problem.
 - Session results update the ledger immediately and permanently
 - New characters enter at Meridian's current crew level — no level 1 punishment
 - Dead characters are replaced quickly — the ship continues, crew rotates
+
+**Starting level:** The campaign begins at level 3. Meridian's reserves open at the
+level 3 threshold (10 Essence). New players never enter below level 3 regardless of
+when they join. The first few missions exist to push the crew toward level 4 — players
+discover how the economy works before the stakes compound.
 
 **The crew model:** Characters are temporary. Meridian is permanent.
 The campaign's continuity lives in the ship's ledger, not in any individual character.
@@ -367,7 +414,7 @@ Three missions posted before each session. Each should have:
 **The three opening missions (Session Zero board):**
 
 **A — Belated (Low / Tier 1 / 5 Essence gross):** Welfare check on a farming outpost
-that missed transmissions. Void-touched pest problem in the basement. Alliance crew
+that missed transmissions. Void-touched pest problem in the basement. Collegium crew
 already on site with charter paperwork. Negotiation and combat both viable paths.
 
 **B — Last Transmission (Medium / Tier 1 / 8 Essence gross, tiered):** Recovery job.
@@ -390,15 +437,15 @@ is the content.
 
 The following are intentionally open. Do not invent details for these without
 explicit instruction:
-- Specific faction names beyond "the Alliance" and "the Rim"
+- Specific faction names beyond "the Collegium" and "the Limes"
 - Full hex map (geography is defined by missions as they're played)
 - Named NPCs beyond Rennick Osal and the *Constant*
-- Detailed Alliance hierarchy and internal politics
+- Detailed Collegium hierarchy and internal politics
 - The truth of the Calamity
 - Meridian's specific pre-Calamity history
 - Whether other spheres exist and what's in them
 - Mechanics of Essence use beyond level 20 (Ascendant Vinculum territory)
-- What the Alliance does with successfully catalogued rare items over time
+- What the Collegium does with successfully catalogued rare items over time
 
 ---
 

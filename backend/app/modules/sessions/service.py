@@ -152,8 +152,7 @@ def complete_session(
     if data.after_action_report:
         session.after_action_report = data.after_action_report
 
-    # Distribute mission rewards (XP + scrip + items) on success
-    total_xp = 0
+    # Distribute mission rewards (gold + items) on success
     if data.result == "success" and session.confirmed_mission_id:
         mission = mission_service.get_mission(db, session.confirmed_mission_id, campaign_id=campaign_id)
         if mission:
@@ -161,11 +160,8 @@ def complete_session(
             db.flush()
             for character in session.players:
                 for reward in mission.rewards:
-                    if reward.xp:
-                        character.stats.xp += reward.xp
-                        total_xp += reward.xp
-                    if reward.scrip:
-                        character.stats.scrip += reward.scrip
+                    if reward.gold:
+                        character.stats.gold += reward.gold
                     if reward.item_id:
                         from ..items import service as item_service
                         item_service.add_item_to_inventory(

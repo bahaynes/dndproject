@@ -42,7 +42,6 @@ class MissionReward(Base):
     item_id = Column(Integer, ForeignKey("items.id"), nullable=True)
     item = relationship("Item")
 
-    xp = Column(Integer, nullable=True)
-    scrip = Column(Integer, nullable=True)
+    gold = Column(Integer, nullable=True)
 
     mission = relationship("Mission", back_populates="rewards")

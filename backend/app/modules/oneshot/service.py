@@ -70,13 +70,13 @@ class OneShotService:
             self.db.commit()
 
     def _aggregate_context(self, campaign_id: int, params: dict) -> str:
-        """Collect Aphtharton-specific campaign data for the LLM prompt."""
+        """Collect campaign context for the LLM prompt."""
         campaign = self.db.query(Campaign).filter(Campaign.id == campaign_id).first()
         context_parts = [f"Campaign: {campaign.name}"]
 
         # Revelation layer
         revelation_layer = params.get("revelation_layer", "early")
-        layer_labels = {"early": "Layer One — The Frame Shifts", "mid": "Layer Two — The Council Surfaces", "late": "Layer Three — The Thing Speaks"}
+        layer_labels = {"early": "Early — Surface Complications", "mid": "Mid — Hidden Threads", "late": "Late — Campaign Revelations"}
         context_parts.append(f"Revelation Layer: {layer_labels.get(revelation_layer, revelation_layer)}")
 
         # Faction reputation levels
@@ -155,7 +155,7 @@ PARAMETERS:
 - Tone: {params.get('tone')}
 - Revelation Layer: {params.get('revelation_layer', 'early')}
 
-Generate a 3-Act adventure outline for The Inheritors now. The session must be framed as a question, not an objective. Use proper Aphtharton nouns. Match monster tiers and revelation depth to the revelation layer provided.
+Generate a 3-Act adventure outline now. The session must be framed as a question, not an objective. Use proper in-world nouns (Collegium, Limes, Meridian, Vincula). Match encounter difficulty and revelation depth to the revelation layer provided.
 """
         
         # Using the schema logic purely for prompt instruction in Phase 1

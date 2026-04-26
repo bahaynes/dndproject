@@ -70,14 +70,13 @@ def create_store_item(db: Session, store_item: schemas.StoreItemCreate):
     return db_store_item
 
 def purchase_item(db: Session, character: Character, store_item: models.StoreItem, quantity: int):
-    if store_item.price * quantity > character.stats.scrip:
-        return {"error": "Not enough scrip"}
+    if store_item.price * quantity > character.stats.gold:
+        return {"error": "Not enough gold"}
 
     if store_item.quantity_available != -1 and store_item.quantity_available < quantity:
         return {"error": "Not enough items in stock"}
 
-    # Deduct scrip
-    character.stats.scrip -= store_item.price * quantity
+    character.stats.gold -= store_item.price * quantity
 
     # Decrement store quantity if not infinite
     if store_item.quantity_available != -1:

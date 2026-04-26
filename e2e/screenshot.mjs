@@ -20,7 +20,7 @@ async function getToken(role) {
       username: role === 'admin' ? 'Screenshot Admin' : 'Screenshot Player',
       role,
       campaign_guild_id: 'screenshot-guild-001',
-      campaign_name: 'The Inheritors',
+      campaign_name: 'Meridian Crew',
     }),
   });
   const data = await r.json();

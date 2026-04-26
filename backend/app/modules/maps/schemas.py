@@ -3,7 +3,7 @@ from typing import Optional, List, Any, Literal
 from ..missions.schemas import Mission
 
 HexState = Literal["wilderness", "claimed_developed", "friendly", "contested", "awakened"]
-ControllingFaction = Literal["Inheritors", "Kathedral", "Vastarei"]
+ControllingFaction = Literal["Collegium", "Limes"]
 
 class HexBase(BaseModel):
     q: int
