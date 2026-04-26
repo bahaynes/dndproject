@@ -114,12 +114,12 @@
 
 	$: statusColor =
 		ship?.status === 'critical' ? 'error' : ship?.status === 'low' ? 'warning' : 'success';
-	$: levelPct = ship
-		? ship.next_threshold
+	$: levelPct = ship && ship.next_threshold && ship.next_threshold > 0
 			? Math.round((ship.essence / ship.next_threshold) * 100)
-			: 100
-		: 0;
-	$: hpPct = ship ? Math.round((ship.current_hp / ship.max_hp) * 100) : 0;
+			: 100;
+	$: hpPct = ship && ship.max_hp && ship.max_hp > 0 
+        ? Math.round((ship.current_hp / ship.max_hp) * 100) 
+        : 100;
 	$: hpColor = hpPct < 25 ? 'error' : hpPct < 50 ? 'warning' : 'success';
 </script>
 

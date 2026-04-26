@@ -15,10 +15,15 @@
     let editName = '';
     let editLevel = 1;
     let editEssence = 0;
+    let editGold = 0;
+    let editMaxHp = 100;
+    let editCurrentHp = 100;
     let editMotd = '';
 
     // Adjust form
     let adjEssenceDelta = 0;
+    let adjGoldDelta = 0;
+    let adjHpDelta = 0;
     let adjDescription = '';
 
     onMount(loadShip);
@@ -30,6 +35,9 @@
             editName = ship!.name;
             editLevel = ship!.level;
             editEssence = ship!.essence;
+            editGold = ship!.gold;
+            editMaxHp = ship!.max_hp;
+            editCurrentHp = ship!.current_hp;
             editMotd = ship!.motd ?? '';
         } catch (e) {}
         loading = false;
@@ -40,7 +48,15 @@
         saveMsg = '';
         saveError = '';
         try {
-            ship = await api('PUT', '/ship/', { name: editName, level: editLevel, essence: editEssence, motd: editMotd || null });
+            ship = await api('PUT', '/ship/', { 
+                name: editName, 
+                level: editLevel, 
+                essence: editEssence,
+                gold: editGold,
+                max_hp: editMaxHp,
+                current_hp: editCurrentHp,
+                motd: editMotd || null 
+            });
             saveMsg = 'Ship configuration saved.';
         } catch (e) {
             saveError = e instanceof Error ? e.message : 'Failed to save.';
@@ -54,10 +70,19 @@
         adjustMsg = '';
         adjustError = '';
         try {
-            ship = await api('POST', '/ship/adjust', { essence_delta: adjEssenceDelta, description: adjDescription });
+            ship = await api('POST', '/ship/adjust', { 
+                essence_delta: adjEssenceDelta, 
+                gold_delta: adjGoldDelta,
+                hp_delta: adjHpDelta,
+                description: adjDescription 
+            });
             editEssence = ship!.essence;
-            adjustMsg = 'Essence adjusted and ledger entry created.';
+            editGold = ship!.gold;
+            editCurrentHp = ship!.current_hp;
+            adjustMsg = 'Resources adjusted and ledger entry created.';
             adjEssenceDelta = 0;
+            adjGoldDelta = 0;
+            adjHpDelta = 0;
             adjDescription = '';
         } catch (e) {
             adjustError = e instanceof Error ? e.message : 'Adjustment failed.';
@@ -66,7 +91,13 @@
     }
 
     $: statusColor = ship?.status === 'critical' ? 'error' : ship?.status === 'low' ? 'warning' : 'success';
-    $: levelPct = ship ? (ship.next_threshold ? Math.round((ship.essence / ship.next_threshold) * 100) : 100) : 0;
+    $: levelPct = ship && ship.next_threshold && ship.next_threshold > 0
+			? Math.round((ship.essence / ship.next_threshold) * 100)
+			: 100;
+	$: hpPct = ship && ship.max_hp && ship.max_hp > 0 
+        ? Math.round((ship.current_hp / ship.max_hp) * 100) 
+        : 100;
+    $: hpColor = hpPct < 25 ? 'error' : hpPct < 50 ? 'warning' : 'success';
 </script>
 
 <div class="container mx-auto p-4 max-w-3xl">
@@ -88,20 +119,41 @@
                 <span class="badge badge-outline">Level {ship.level}</span>
                 <span class="badge badge-{statusColor} capitalize">{ship.status.replace('_', ' ')}</span>
             </div>
-            <div class="mb-2">
-                <div class="text-lg font-bold text-primary">⚡ {ship.essence} Essence</div>
-                <div class="text-xs opacity-60 mt-1">Long rest costs {ship.long_rest_cost} Essence at this tier</div>
-            </div>
-            <div class="mb-2">
-                <div class="flex justify-between text-xs opacity-70 mb-1">
-                    {#if ship.next_threshold !== null}
-                        <span>Level {ship.level} → {ship.level + 1}</span>
-                        <span>{ship.essence} / {ship.next_threshold}</span>
-                    {:else}
-                        <span>Max Level</span><span>Level {ship.level}</span>
-                    {/if}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="bg-base-200 p-3 rounded-lg">
+                    <div class="text-xs opacity-60 uppercase tracking-wider mb-1">Essence</div>
+                    <div class="text-lg font-bold text-primary">⚡ {ship.essence}</div>
                 </div>
-                <progress class="progress progress-primary w-full h-2" value={levelPct} max="100"></progress>
+                <div class="bg-base-200 p-3 rounded-lg">
+                    <div class="text-xs opacity-60 uppercase tracking-wider mb-1">Gold</div>
+                    <div class="text-lg font-bold text-secondary">🪙 {ship.gold}</div>
+                </div>
+                <div class="bg-base-200 p-3 rounded-lg">
+                    <div class="text-xs opacity-60 uppercase tracking-wider mb-1">Hull</div>
+                    <div class="text-lg font-bold text-{hpColor}">❤️ {ship.current_hp} / {ship.max_hp}</div>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between text-xs opacity-70 mb-1">
+                        {#if ship.next_threshold !== null}
+                            <span>Level {ship.level} → {ship.level + 1}</span>
+                            <span>{ship.essence} / {ship.next_threshold} Essence ({levelPct}%)</span>
+                        {:else}
+                            <span>Max Level</span><span>Level {ship.level}</span>
+                        {/if}
+                    </div>
+                    <progress class="progress progress-primary w-full h-2" value={levelPct} max="100"></progress>
+                </div>
+
+                <div>
+                    <div class="flex justify-between text-xs opacity-70 mb-1">
+                        <span>Hull Integrity</span>
+                        <span>{hpPct}%</span>
+                    </div>
+                    <progress class="progress progress-{hpColor} w-full h-2" value={hpPct} max="100"></progress>
+                </div>
             </div>
             {#if ship.motd}<p class="text-sm opacity-60 mt-2 italic">"{ship.motd}"</p>{/if}
         </div>
@@ -125,6 +177,18 @@
                     <div class="label"><span class="label-text">Essence Reserve</span></div>
                     <input class="input input-bordered input-sm" type="number" min="0" bind:value={editEssence} />
                 </label>
+                <label class="form-control">
+                    <div class="label"><span class="label-text">Ship Gold (War Chest)</span></div>
+                    <input class="input input-bordered input-sm" type="number" min="0" bind:value={editGold} />
+                </label>
+                <label class="form-control">
+                    <div class="label"><span class="label-text">Current HP</span></div>
+                    <input class="input input-bordered input-sm" type="number" min="0" max={editMaxHp} bind:value={editCurrentHp} />
+                </label>
+                <label class="form-control">
+                    <div class="label"><span class="label-text">Max HP</span></div>
+                    <input class="input input-bordered input-sm" type="number" min="1" bind:value={editMaxHp} />
+                </label>
                 <label class="form-control md:col-span-2">
                     <div class="label"><span class="label-text">MOTD / Announcement</span></div>
                     <textarea class="textarea textarea-bordered textarea-sm" rows="2" bind:value={editMotd} placeholder="Leave blank to clear..."></textarea>
@@ -145,10 +209,18 @@
         <div class="card-body">
             <h2 class="card-title text-base">Adjust Resources</h2>
             <p class="text-sm opacity-60 mb-3">Each adjustment creates an immutable ledger entry.</p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <label class="form-control">
                     <div class="label"><span class="label-text">Essence Δ</span></div>
                     <input class="input input-bordered input-sm" type="number" bind:value={adjEssenceDelta} placeholder="-4 or +12" />
+                </label>
+                <label class="form-control">
+                    <div class="label"><span class="label-text">Gold Δ</span></div>
+                    <input class="input input-bordered input-sm" type="number" bind:value={adjGoldDelta} placeholder="-100 or +500" />
+                </label>
+                <label class="form-control">
+                    <div class="label"><span class="label-text">HP Δ</span></div>
+                    <input class="input input-bordered input-sm" type="number" bind:value={adjHpDelta} placeholder="-25 or +10" />
                 </label>
             </div>
             <label class="form-control mt-3">
