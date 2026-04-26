@@ -130,16 +130,13 @@
 			<div class="flex flex-col gap-1">
 				<div class="flex items-center gap-2">
 					<span class="inline-block h-3 w-3 rounded-sm" style="background:rgba(59,130,246,0.5)"></span>
-					<span>Kathedral League</span>
+					<span>Collegium</span>
 				</div>
 				<div class="flex items-center gap-2">
 					<span class="inline-block h-3 w-3 rounded-sm" style="background:rgba(245,158,11,0.5)"></span>
-					<span>Vastarei</span>
+					<span>Limes</span>
 				</div>
 				<div class="flex items-center gap-2">
-					<span class="inline-block h-3 w-3 rounded-sm" style="background:rgba(34,197,94,0.4)"></span>
-					<span>Inheritors</span>
-				</div>
 				<div class="mt-1 border-t border-base-content/10 pt-1 flex flex-col gap-1 opacity-70">
 					<span>⚑ Claimed &amp; Developed (0.5h)</span>
 					<span>≡ Friendly Controlled (1h)</span>

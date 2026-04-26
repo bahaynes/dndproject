@@ -41,7 +41,7 @@ class Hex(Base):
     is_discovered = Column(Boolean, default=False)
     notes = Column(String, nullable=True) # DM Notes
     hex_state = Column(String, default="wilderness")  # claimed_developed | friendly | wilderness | contested | awakened
-    controlling_faction = Column(String, nullable=True)  # Inheritors | Kathedral | Vastarei
+    controlling_faction = Column(String, nullable=True)  # Collegium | Limes
     player_notes = Column(JSON, default=list)
 
     @property

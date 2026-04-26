@@ -36,7 +36,6 @@ class CharacterStats(Base):
     id = Column(Integer, primary_key=True, index=True)
     character_id = Column(Integer, ForeignKey("characters.id"), unique=True)
 
-    xp = Column(Integer, default=0)
-    scrip = Column(Integer, default=0)
+    gold = Column(Integer, default=0)
 
     character = relationship("Character", back_populates="stats")

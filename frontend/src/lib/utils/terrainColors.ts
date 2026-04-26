@@ -19,12 +19,10 @@ export function getTerrainColor(terrain: string): string {
 
 export function getFactionBadgeStyle(faction: string | null): string {
 	switch (faction) {
-		case 'Kathedral':
+		case 'Collegium':
 			return 'background:rgba(59,130,246,0.2);border-color:rgba(59,130,246,0.4)';
-		case 'Vastarei':
+		case 'Limes':
 			return 'background:rgba(245,158,11,0.2);border-color:rgba(245,158,11,0.4)';
-		case 'Inheritors':
-			return 'background:rgba(34,197,94,0.2);border-color:rgba(34,197,94,0.4)';
 		default:
 			return '';
 	}

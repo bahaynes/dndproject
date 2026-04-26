@@ -11,13 +11,13 @@ const mockShip = {
 };
 
 const mockSession = {
-    id: 1, name: 'Into the Substrata', description: 'Deep run.',
+    id: 1, name: 'Into the Dark Reach', description: 'Deep run.',
     session_date: new Date(Date.now() + 86400000 * 3).toISOString(),
     status: 'Open', min_players: 4, max_players: 6, players: [],
     proposals: [{
         id: 10, session_id: 1, mission_id: 5, proposed_by_id: 2,
         status: 'proposed',
-        mission: { id: 5, name: 'The Bone Market', tier: 'Tier 1', region: 'Substrata', description: null,
+        mission: { id: 5, name: 'The Bone Market', tier: 'Tier 1', region: 'Outer Rim', description: null,
             status: 'active', cooldown_days: 7, is_retired: false, is_discoverable: true,
             last_run_date: null, rewards: [], players: [] },
         backers: [{ id: 2, name: 'Vesper', description: null, image_url: null, owner_id: 99 }],
@@ -25,10 +25,10 @@ const mockSession = {
 };
 
 const mockMissions = [
-    { id: 5, name: 'The Bone Market', tier: 'Tier 1', region: 'Substrata', description: 'A grim place.',
+    { id: 5, name: 'The Bone Market', tier: 'Tier 1', region: 'Outer Rim', description: 'A grim place.',
       status: 'active', cooldown_days: 7, is_retired: false, is_discoverable: true,
       last_run_date: null, rewards: [], players: [] },
-    { id: 6, name: 'The Pale Gate', tier: 'Tier 2', region: 'Cathedral', description: null,
+    { id: 6, name: 'The Pale Gate', tier: 'Tier 2', region: 'Core Approach', description: null,
       status: 'active', cooldown_days: 14, is_retired: false, is_discoverable: true,
       last_run_date: null, rewards: [], players: [] },
 ];
@@ -54,12 +54,12 @@ vi.mock('$lib/auth', () => ({
                     active_character: {
                         id: 7, name: 'Cassia Vell', class_name: 'Rogue', level: 3,
                         status: 'Active', missions_completed: 5, owner_id: 1,
-                        stats: { id: 1, character_id: 7, xp: 0, scrip: 10 },
+                        stats: { id: 1, character_id: 7 },
                         inventory: [], missions: [], game_sessions: [],
                     },
                     characters: [],
                 },
-                campaign: { id: 1, name: 'The Inheritors' },
+                campaign: { id: 1, name: 'Meridian Crew' },
             });
             return () => {};
         },
@@ -89,8 +89,7 @@ describe('Dashboard', () => {
 
     test('shows upcoming session with its proposal', async () => {
         render(Dashboard);
-        await waitFor(() => expect(screen.getByText('Into the Substrata')).toBeInTheDocument());
-        // 'The Bone Market' appears in the proposal list and the missions section
+        await waitFor(() => expect(screen.getByText('Into the Dark Reach')).toBeInTheDocument());
         expect(screen.getAllByText('The Bone Market').length).toBeGreaterThanOrEqual(1);
     });
 
