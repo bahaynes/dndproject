@@ -18,6 +18,8 @@ class LedgerEntryCreate(BaseModel):
     event_type: str
     description: str
     essence_delta: int = 0
+    gold_delta: int = 0
+    hp_delta: int = 0
     session_id: Optional[int] = None
     ship_snapshot: Optional[Dict[str, Any]] = None
 
@@ -29,6 +31,8 @@ class LedgerEntryOut(BaseModel):
     event_type: str
     description: str
     essence_delta: int
+    gold_delta: int = 0
+    hp_delta: int = 0
     ship_snapshot: Optional[Dict[str, Any]] = None
     created_at: datetime
 

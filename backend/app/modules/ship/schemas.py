@@ -7,6 +7,9 @@ class ShipBase(BaseModel):
     name: str = "The Ship"
     level: int = 1
     essence: int = 0
+    gold: int = 0
+    max_hp: int = 100
+    current_hp: int = 100
     motd: Optional[str] = None
 
 
@@ -14,6 +17,9 @@ class ShipUpdate(BaseModel):
     name: Optional[str] = None
     level: Optional[int] = None
     essence: Optional[int] = None
+    gold: Optional[int] = None
+    max_hp: Optional[int] = None
+    current_hp: Optional[int] = None
     motd: Optional[str] = None
 
 
@@ -32,4 +38,6 @@ class ShipOut(ShipBase):
 
 class ShipAdjust(BaseModel):
     essence_delta: int = 0
+    gold_delta: int = 0
+    hp_delta: int = 0
     description: str

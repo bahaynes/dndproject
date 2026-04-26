@@ -18,8 +18,10 @@ class LedgerEntry(Base):
 
     # Essence delta (positive = gained, negative = spent)
     essence_delta = Column(Integer, default=0, nullable=False)
+    gold_delta = Column(Integer, default=0, nullable=False)
+    hp_delta = Column(Integer, default=0, nullable=False)
 
-    # Ship state snapshot at time of entry: {"level": 1, "essence": 42}
+    # Ship state snapshot at time of entry: {"level": 1, "essence": 42, "gold": 100, "hp": 100}
     ship_snapshot = Column(JSON, nullable=True)
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
