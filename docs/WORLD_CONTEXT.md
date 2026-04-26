@@ -7,6 +7,21 @@ Do not invent lore. Do not contradict this document. If something is undefined, 
 
 ---
 
+## The Pitch
+
+*For players, session zero, or anywhere a one-paragraph summary is needed:*
+
+> Join a sentient starship's crew on the edge of known space. Every week, vote on which
+> mission you run — safe nearby jobs or dangerous far-out heists. You level up with
+> everyone else, magic items you find are yours to keep, and your choices actually shape
+> what happens next. Bring any character you want, play one-shots, die if you're not
+> careful. First mission next week — come see what this ship wants from you.
+
+The mechanical pitch: space Western heists with a cool ship. Level up with your crew.
+Your choices matter. Accessible enough that your group actually shows up to play.
+
+---
+
 ## The Setting
 
 A single crystal sphere containing dozens of worlds (hex map). Travel between worlds
@@ -148,6 +163,19 @@ Net Essence per 3-mission cycle at the target rest rate (one long rest per three
 missions): **10 / 20 / 30 / 40** by tier. Scales linearly because mission income
 and rest cost both double each tier.
 
+**Ship support:** A sworn character can describe any class ability as being channeled
+through Meridian's systems — a warlock's eldritch blast becomes a turret volley, a
+ranger's hunter's mark routes through targeting overlays. If the GM rules the
+narrative fits, the character gets one of two bonuses:
+- **Weapon/attack abilities:** doubled damage dice
+- **Defensive/utility abilities:** proficiency added to a relevant saving throw (if
+  not already proficient) or advantage on a relevant check
+
+This is adjudicated per-use at the table, not a standing feature. The GM should
+approve or deny based on whether the fiction actually connects the ability to the ship.
+Meridian's voice in these moments is dry and functional: *"Targeting system online.
+Try not to waste the shot."*
+
 **Magic items:** The Alliance manufactures and sells common and uncommon items
 from their standard catalog. Rare and legendary items exist only in pre-Calamity
 derelicts — the Alliance has never reverse-engineered one. Essence is the de facto
@@ -156,6 +184,20 @@ currency between Rim crews and Alliance traders.
 Common and uncommon items are purchased outright. Rare and above are recovered from
 derelicts and require Meridian to spend Essence integrating them — restoring
 dormant systems, re-binding arcane patterns, making them usable by mortal crew.
+
+**Equip vs. attune to ship:** Every magic item the crew acquires has two possible
+fates:
+- **Equip to a character** — normal attunement. The character carries and uses the
+  item. It leaves with the character if they die or rotate out.
+- **Attune to the ship** — the item is integrated into Meridian's hull. It provides
+  a persistent, campaign-level benefit that applies to all sworn crew. It does not
+  leave with any individual character. Meridian absorbs it; it's part of her now.
+
+The choice is permanent once made. Ship-attuned items should provide benefits that
+make sense as shipwide systems — navigation, life support, hull reinforcement,
+communications — rather than personal combat bonuses. The GM determines the specific
+persistent benefit when the item is integrated. This decision is always visible in
+the ledger.
 
 | Rarity | Full cost | Alliance copy rights | Net after rights sale |
 |---|---|---|---|
@@ -317,6 +359,11 @@ This is an open-table campaign. Variable attendance is a feature, not a problem.
 - Session results update the ledger immediately and permanently
 - New characters enter at Meridian's current crew level — no level 1 punishment
 - Dead characters are replaced quickly — the ship continues, crew rotates
+
+**Starting level:** The campaign begins at level 3. Meridian's reserves open at the
+level 3 threshold (10 Essence). New players never enter below level 3 regardless of
+when they join. The first few missions exist to push the crew toward level 4 — players
+discover how the economy works before the stakes compound.
 
 **The crew model:** Characters are temporary. Meridian is permanent.
 The campaign's continuity lives in the ship's ledger, not in any individual character.
