@@ -242,7 +242,7 @@
 										{/if}
 										<div class="mt-2 flex gap-2">
 											<div class="badge badge-outline badge-primary">
-												Gold: {viewCharacter.stats.gold} GP
+												Gold: {viewCharacter.stats?.gold ?? 0} GP
 											</div>
 										</div>
 									</div>

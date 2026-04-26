@@ -30,10 +30,18 @@ class UserCreate(UserBase):
     role: str = "player"
     email: Optional[str] = None
 
+class CharacterStatsOut(BaseModel):
+    gold: int = 0
+    class Config:
+        from_attributes = True
+
 class CharacterOut(BaseModel):
     id: int
     name: str
     description: Optional[str] = None
+    class_name: Optional[str] = None
+    level: int = 1
+    stats: Optional[CharacterStatsOut] = None
 
     class Config:
         from_attributes = True

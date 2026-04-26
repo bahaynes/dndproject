@@ -155,7 +155,7 @@
 									>{/if}
 								<span>Level {char.level}</span>
 								<span class="text-base-content/30">·</span>
-								<span class="text-secondary font-bold">💰 {char.stats.gold} GP</span>
+								<span class="text-secondary font-bold">💰 {char.stats?.gold ?? 0} GP</span>
 							</div>
 						</div>
 						<div class="flex flex-col items-end gap-2">
