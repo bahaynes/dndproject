@@ -136,7 +136,6 @@
 					<span class="inline-block h-3 w-3 rounded-sm" style="background:rgba(245,158,11,0.5)"></span>
 					<span>Limes</span>
 				</div>
-				<div class="flex items-center gap-2">
 				<div class="mt-1 border-t border-base-content/10 pt-1 flex flex-col gap-1 opacity-70">
 					<span>⚑ Claimed &amp; Developed (0.5h)</span>
 					<span>≡ Friendly Controlled (1h)</span>
