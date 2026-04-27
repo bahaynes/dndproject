@@ -61,19 +61,31 @@
 			error = 'Session title and date/time are required!';
 			return;
 		}
+
+		let sessionDateIso = '';
+		try {
+			sessionDateIso = new Date(sDate).toISOString();
+		} catch (e) {
+			error = 'Invalid date/time format.';
+			return;
+		}
+
 		try {
 			await api('POST', '/sessions/', {
 				name: sName,
 				description: sDescription,
-				session_date: new Date(sDate).toISOString(),
+				session_date: sessionDateIso,
 				status: 'Open',
-				min_players: sMinPlayers,
-				max_players: sMaxPlayers
+				min_players: sMinPlayers || 4,
+				max_players: sMaxPlayers || 6
 			});
 			showCreate = false;
+			sName = '';
+			sDescription = '';
+			sDate = '';
 			await fetchSessions();
 		} catch (e) {
-			error = 'Failed to create session.';
+			error = e instanceof Error ? e.message : 'Failed to create session.';
 		}
 	}
 
@@ -282,6 +294,9 @@
 				placeholder="What should they expect?"
 			></textarea>
 		</div>
+		{#if error}
+			<div class="alert text-sm alert-error">{error}</div>
+		{/if}
 	</div>
 	<div slot="action">
 		<button class="btn w-full btn-primary" on:click={createSession}>Schedule Session</button>

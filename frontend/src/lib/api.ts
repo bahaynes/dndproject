@@ -21,6 +21,15 @@ export async function api(method: string, path: string, body?: unknown): Promise
 
 		clearTimeout(timeoutId);
 
+		if (res.status === 401) {
+			// Token expired or invalid
+			if (typeof window !== 'undefined') {
+				localStorage.removeItem('accessToken');
+				window.location.href = '/login';
+			}
+			throw new Error('Session expired. Please log in again.');
+		}
+
 		if (!res.ok) {
 			const err = await res.json().catch(() => ({}));
 			throw new Error(err.detail ?? `HTTP ${res.status}`);
