@@ -8,5 +8,6 @@ class CharacterBase(BaseModel):
     description: Optional[str] = None
     image_url: Optional[str] = None
     character_sheet_url: Optional[str] = None
+    ship_ability_notes: Optional[str] = None
     class_name: Optional[str] = None
     level: int = 1

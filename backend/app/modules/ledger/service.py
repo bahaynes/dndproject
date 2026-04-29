@@ -11,6 +11,8 @@ def create_entry(
     event_type: str,
     description: str,
     essence_delta: int = 0,
+    gold_delta: int = 0,
+    hp_delta: int = 0,
     session_id: Optional[int] = None,
     ship_snapshot: Optional[dict] = None,
 ) -> models.LedgerEntry:
@@ -20,6 +22,8 @@ def create_entry(
         event_type=event_type,
         description=description,
         essence_delta=essence_delta,
+        gold_delta=gold_delta,
+        hp_delta=hp_delta,
         ship_snapshot=ship_snapshot,
     )
     db.add(entry)

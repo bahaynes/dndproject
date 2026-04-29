@@ -22,6 +22,7 @@ export interface Character {
     description?: string;
     image_url?: string;
     character_sheet_url?: string;
+    ship_ability_notes?: string;
     class_name?: string;
     level: number;
     status: 'Active' | 'Dead' | 'Benched';
@@ -52,6 +53,9 @@ export interface Ship {
     name: string;
     level: number;
     essence: number;
+    gold: number;
+    max_hp: number;
+    current_hp: number;
     motd?: string;
     status: 'nominal' | 'low' | 'critical';
     long_rest_cost: number;
@@ -67,6 +71,8 @@ export interface LedgerEntry {
     event_type: string;
     description: string;
     essence_delta: number;
+    gold_delta: number;
+    hp_delta: number;
     ship_snapshot?: Record<string, number>;
     created_at: string;
 }

@@ -6,7 +6,8 @@ import httpx
 from ...database import get_db
 from ...config import get_settings
 from ... import security
-from ...dependencies import get_current_user_global
+from ...dependencies import get_current_user_global, get_current_active_admin_user
+from sqlalchemy import func
 
 from . import schemas, service as crud
 from ..auth import service as auth_crud
@@ -244,3 +245,58 @@ async def get_admin_discord_guilds(
             admin_guilds.append(g)
 
     return admin_guilds
+
+@router.get("/stats", response_model=schemas.CampaignStats, tags=["Admin"])
+async def get_campaign_stats(
+    db: Session = Depends(get_db),
+    admin: auth_schemas.User = Depends(get_current_active_admin_user)
+):
+    """
+    Returns aggregated statistics for the current campaign.
+    Restricted to Admin users.
+    """
+    from ..missions.models import Mission
+    from ..characters.models import Character
+    from ..sessions.models import GameSession
+    from ..ledger.models import LedgerEntry
+
+    campaign_id = admin.campaign_id
+
+    # Mission stats
+    total_missions = db.query(func.count(Mission.id)).filter(Mission.campaign_id == campaign_id).scalar() or 0
+    completed_missions = db.query(func.count(Mission.id)).filter(Mission.campaign_id == campaign_id, Mission.status == "Completed").scalar() or 0
+    failed_missions = db.query(func.count(Mission.id)).filter(Mission.campaign_id == campaign_id, Mission.status == "Failed").scalar() or 0
+
+    # Character stats
+    total_characters = db.query(func.count(Character.id)).filter(Character.campaign_id == campaign_id).scalar() or 0
+    active_characters = db.query(func.count(Character.id)).filter(Character.campaign_id == campaign_id, Character.status == "Active").scalar() or 0
+    dead_characters = db.query(func.count(Character.id)).filter(Character.campaign_id == campaign_id, Character.status == "Dead").scalar() or 0
+
+    # Session stats
+    total_sessions = db.query(func.count(GameSession.id)).filter(GameSession.campaign_id == campaign_id, GameSession.status == "Completed").scalar() or 0
+    last_session = db.query(GameSession.session_date).filter(GameSession.campaign_id == campaign_id, GameSession.status == "Completed").order_by(GameSession.session_date.desc()).first()
+    last_session_date = last_session[0].isoformat() if last_session else None
+
+    # Ledger resource totals (Earnings)
+    total_essence = db.query(func.sum(LedgerEntry.essence_delta)).filter(
+        LedgerEntry.campaign_id == campaign_id, 
+        LedgerEntry.essence_delta > 0
+    ).scalar() or 0
+    
+    total_gold = db.query(func.sum(LedgerEntry.gold_delta)).filter(
+        LedgerEntry.campaign_id == campaign_id, 
+        LedgerEntry.gold_delta > 0
+    ).scalar() or 0
+
+    return {
+        "total_missions": total_missions,
+        "completed_missions": completed_missions,
+        "failed_missions": failed_missions,
+        "total_characters": total_characters,
+        "active_characters": active_characters,
+        "dead_characters": dead_characters,
+        "total_essence_earned": total_essence,
+        "total_gold_earned": total_gold,
+        "total_sessions": total_sessions,
+        "last_session_date": last_session_date
+    }

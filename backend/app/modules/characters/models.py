@@ -10,6 +10,7 @@ class Character(Base):
     description = Column(String, nullable=True)
     image_url = Column(String, nullable=True)
     character_sheet_url = Column(String, nullable=True)
+    ship_ability_notes = Column(String, nullable=True)
 
     class_name = Column(String, nullable=True)
     level = Column(Integer, default=1, nullable=False)

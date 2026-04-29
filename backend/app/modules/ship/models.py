@@ -15,6 +15,9 @@ class Ship(Base):
     name = Column(String, nullable=False, default="The Ship")
     level = Column(Integer, default=1, nullable=False)
     essence = Column(Integer, default=0, nullable=False)
+    gold = Column(Integer, default=0, nullable=False)
+    max_hp = Column(Integer, default=100, nullable=False)
+    current_hp = Column(Integer, default=100, nullable=False)
 
     motd = Column(String, nullable=True)  # Message of the day / GM announcement
 

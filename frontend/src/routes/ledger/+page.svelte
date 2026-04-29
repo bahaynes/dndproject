@@ -107,6 +107,8 @@
 						<th>Event</th>
 						<th>Description</th>
 						<th class="text-right">⚡ Essence</th>
+						<th class="text-right">🪙 Gold</th>
+						<th class="text-right">❤️ HP</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -123,6 +125,12 @@
 							<td class="max-w-xs truncate text-sm">{entry.description}</td>
 							<td class="text-right text-sm {deltaClass(entry.essence_delta)}"
 								>{deltaCell(entry.essence_delta)}</td
+							>
+							<td class="text-right text-sm {deltaClass(entry.gold_delta)}"
+								>{deltaCell(entry.gold_delta)}</td
+							>
+							<td class="text-right text-sm {deltaClass(entry.hp_delta)}"
+								>{deltaCell(entry.hp_delta)}</td
 							>
 						</tr>
 					{/each}

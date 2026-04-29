@@ -15,6 +15,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from app.database import SessionLocal
+import app.all_models
+from app.modules.campaigns.models import Campaign
 from app.modules.factions.models import FactionReputation
 from app.modules.missions.models import Mission, MissionReward
 

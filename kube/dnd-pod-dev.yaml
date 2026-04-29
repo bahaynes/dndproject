@@ -13,13 +13,13 @@ spec:
         runAsUser: 1000
         runAsGroup: 1000
         runAsNonRoot: true
-      command: ["sh", "-c", "cp /pyproject.toml . 2>/dev/null || true; uv sync --no-cache && while ! python -c \"import socket; socket.create_connection(('localhost', 5432))\" >/dev/null 2>&1; do echo 'Waiting for Postgres...'; sleep 1; done; alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
+      command: ["sh", "-c", "cp /pyproject.toml . 2>/dev/null || true; uv sync --no-cache && alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"]
       ports:
         - containerPort: 8000
           hostPort: 8000
       env:
         - name: DATABASE_URL
-          value: "postgresql://postgres:postgres@localhost:5432/dnd_westmarches"
+          value: "${DATABASE_URL}"
         - name: PYTHONPATH
           value: "/app"
         - name: DISCORD_CLIENT_ID

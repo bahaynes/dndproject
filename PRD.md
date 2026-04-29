@@ -319,7 +319,7 @@ Displayed as a table or timeline with columns for date, event type, description,
 
 **Purpose:** Adjust ship state, manage missions, post updates.
 
-**Ship editor** with fields for name, current Essence reserve (manual adjustment with required ledger note), gold (manual adjustment with required ledger note), and hull integrity. **Quick actions:** create mission, log session result, record character death, record ship damage, record repair, post ship-wide announcement, manage crew roster, attune item to ship, log Essence sale. **Announcement editor** for the MOTD / ship memo. **Crew roster management** with add, edit, mark dead, and archive actions. **Data tools** for JSON export/import backups.
+**Ship editor** with fields for name, current Essence reserve, gold (shared war chest), max HP, and current HP. **Quick actions:** create mission, log session result, record character death, record ship damage, record repair, post ship-wide announcement, manage crew roster, attune item to ship. **Announcement editor** for the MOTD / ship memo. **Crew roster management** with add, edit, mark dead, and archive actions. **Data tools** for JSON export/import backups.
 
 ### 7.6 Character Management
 
@@ -327,7 +327,7 @@ Displayed as a table or timeline with columns for date, event type, description,
 
 **My characters list** showing each character's name, class, level, status, mission count, last active date, and actions (view, edit, retire, delete). Dead characters show an obituary link and death date.
 
-**Character detail page** with full profile: name, class, level, player, status, backstory/notes, external sheet link, ship-flavored ability notes, inventory (items equipped to this character), and mission history (list of sessions with outcomes).
+**Character detail page** with full profile: name, class, level, player, status, backstory/notes, external sheet link, personal gold stash, ship-flavored ability notes, inventory (items equipped to this character), and mission history (list of sessions with outcomes).
 
 **Create new character** flow with name, class, level, description, image upload, external sheet URL, and optional ship-flavored ability notes.
 
@@ -385,22 +385,23 @@ Parameters: party size, level, tone, revelation layer (early / mid / late campai
 ### 8.3 GM Session Logging Flow
 
 1. GM starts the session.
-2. During or after play, GM records: mission result (success/fail), Essence earned (gross), transit deducted (auto-calculated from hex distance), gold earned, ship damage taken (as hull integrity percentage), items recovered, casualties, and session notes.
-3. System automatically: deducts transit from gross to compute net Essence, updates ship Essence reserve and gold, updates hull integrity, checks if reserve has crossed a level threshold, logs immutable ledger entries, and marks dead characters.
-4. Players receive notification: "Mission complete. Net Essence to reserves: [X]. Gold earned: [Y]. Hull integrity: [Z]%."
+2. During or after play, GM records: mission result (success/fail), Essence earned (gross), transit deducted (auto-calculated from hex distance), gold earned (split between ship war chest and character stashes), ship damage taken (in HP), items recovered, casualties, and session notes.
+3. System automatically: deducts transit, updates ship Essence reserve and gold, updates character gold stashes, updates ship HP, checks if reserve has crossed a level threshold, logs immutable ledger entries, and marks dead characters.
+4. Players receive notification: "Mission complete. Net Essence to reserves: [X]. Gold earned: [Y] (Ship) / [Z] (Personal). Ship HP: [A]/[B]."
 
 ### 8.4 Ship Damage and Repair Flow
 
-1. GM logs ship damage during or after a session (hull integrity percentage lost).
-2. Ledger records the hull delta and new ship state snapshot.
-3. If hull integrity reaches 0%, ship status changes to Grounded — no missions can depart until repairs are made.
-4. GM logs a repair (gold spent, hull integrity restored).
-5. Ledger records the repair as a gold delta and hull delta entry.
+1. Ship HP functions like a character: it has a maximum (increasing with ship level/upgrades) and current value.
+2. GM logs ship damage during or after a session in HP.
+3. Ledger records the HP delta and new ship state snapshot.
+4. If HP reaches 0, ship status changes to Grounded — no missions can depart until repairs are made.
+5. GM logs a repair (gold spent from ship war chest, HP restored).
+6. Ledger records the repair as a gold delta and HP delta entry.
 
 ### 8.5 Essence Sale Flow (Emergency Economy)
 
 1. GM opens the Essence Sale log in Ship Management.
-2. GM records the amount of Essence sold and gold received.
+2. GM records the amount of Essence sold and gold received (added to ship war chest).
 3. System deducts Essence from reserves (which may drop the ship below a level threshold, stalling advancement), adds gold to reserves, and logs a distinct "Essence Sold" ledger entry.
 4. The ledger entry is permanently visible to all players — a record of every concession made to the Collegium.
 
@@ -446,7 +447,7 @@ When an item is recovered from a mission, the crew decides its fate:
 
 - **Users** — Discord auth data, campaign role.
 - **Campaigns** — campaign metadata and settings.
-- **Ships** — ship state per campaign (name, current Essence reserve, gold, hull integrity, derived level).
+- **Ships** — ship state per campaign (name, current Essence reserve, gold, max_hp, current_hp, derived level).
 - **Characters** — player character profiles including optional ship-flavored ability notes.
 - **Items** — item definitions with name, rarity, description, properties.
 - **InventoryItems** — character → item mapping.
@@ -456,7 +457,7 @@ When an item is recovered from a mission, the crew decides its fate:
 - **Sessions** — scheduled sessions with status, capacity, and ship damage taken.
 - **SessionPlayers** — character sign-ups per session.
 - **SessionProposals** — player-submitted mission proposals with backers.
-- **Ledger** — append-only immutable log; each entry has Essence delta, gold delta, hull delta, and ship state snapshot.
+- **Ledger** — append-only immutable log; each entry has Essence delta, gold delta, HP delta, and ship state snapshot.
 - **HexMaps** — campaign map definitions.
 - **Hexes** — individual hex tiles with terrain, coordinates, state, faction, ship support viability, player notes, discovered status, linked missions.
 - **FactionReputations** — ship-level standing per faction.
@@ -520,11 +521,11 @@ The ledger is the source of truth for all ship state. It is append-only and immu
 
 ### MVP (Launch)
 
-- Ship dashboard with character identity banner, Essence reserve / level threshold display, hull integrity, gold reserves, session board, and available contracts.
-- Mission board with full CRUD, sign-ups, Markdown descriptions, Essence payout, gold payout, and ship support viability display.
-- Session scheduling with player sign-ups and GM session logging (including transit auto-deduction and ship damage logging).
-- Immutable ledger with Essence, gold, and hull deltas; filtering and export.
-- Character creation and management with external sheet links, inventory, and ship-flavored ability notes.
+- Ship dashboard with character identity banner, Essence reserve / level threshold display, ship HP (current/max), gold reserves (ship and personal), session board, and available contracts.
+- Mission board with full CRUD, sign-ups, Markdown descriptions, Essence payout, and gold payout display.
+- Session scheduling with player sign-ups and GM session logging (including transit auto-deduction and ship HP damage logging).
+- Immutable ledger with Essence, gold, and HP deltas; filtering and export.
+- Character creation and management with external sheet links, inventory, personal gold, and ship-flavored ability notes.
 - Crew roster view (all characters, sortable/filterable).
 - Item store (browse and purchase with gold; ledger entry auto-created).
 - Role-based access (Player vs. GM).
