@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Body
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 import httpx
 
@@ -25,14 +25,11 @@ async def get_my_campaigns(
     discord_id = current_user_payload.get("sub")
 
     from ..auth import models as auth_models
-    user_records = db.query(auth_models.User).filter(auth_models.User.discord_id == discord_id).all()
+    user_records = db.query(auth_models.User).options(
+        joinedload(auth_models.User.campaign)
+    ).filter(auth_models.User.discord_id == discord_id).all()
 
-    campaigns = []
-    for record in user_records:
-        if record.campaign:
-            campaigns.append(record.campaign)
-
-    return campaigns
+    return [record.campaign for record in user_records if record.campaign]
 
 @router.post("/login", tags=["Campaigns"])
 async def login_to_campaign(
