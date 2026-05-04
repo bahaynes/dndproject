@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime
 
@@ -38,9 +38,9 @@ def get_crew_roster(
     current_user: User = Depends(get_current_active_user),
 ):
     """Return all characters in the campaign (all players), optionally filtered by status."""
-    from ..auth import models as auth_models
     q = (
         db.query(models.Character)
+        .options(joinedload(models.Character.owner))
         .filter(models.Character.campaign_id == current_user.campaign_id)
     )
     if status_filter:
@@ -49,7 +49,6 @@ def get_crew_roster(
     # Attach owner username
     result = []
     for c in chars:
-        owner = db.query(auth_models.User).filter(auth_models.User.id == c.owner_id).first()
         entry = schemas.CharacterRosterEntry(
             id=c.id,
             name=c.name,
@@ -59,7 +58,7 @@ def get_crew_roster(
             date_of_death=c.date_of_death,
             missions_completed=c.missions_completed,
             owner_id=c.owner_id,
-            owner_username=owner.username if owner else None,
+            owner_username=c.owner.username if c.owner else None,
         )
         result.append(entry)
     return result
