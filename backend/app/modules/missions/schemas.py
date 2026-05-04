@@ -15,6 +15,8 @@ class CharacterInMission(CharacterBase):
 class MissionRewardBase(BaseModel):
     item_id: Optional[int] = None
     gold: Optional[int] = None
+    is_hidden: bool = False
+    hint: Optional[str] = None
 
 class MissionRewardCreate(MissionRewardBase):
     pass

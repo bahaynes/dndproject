@@ -43,5 +43,7 @@ class MissionReward(Base):
     item = relationship("Item")
 
     gold = Column(Integer, nullable=True)
+    is_hidden = Column(Boolean, default=False, nullable=False)
+    hint = Column(String, nullable=True)
 
     mission = relationship("Mission", back_populates="rewards")

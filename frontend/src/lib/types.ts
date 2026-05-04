@@ -118,6 +118,8 @@ export interface MissionReward {
     item_id?: number;
     gold?: number;
     item?: Item;
+    is_hidden: boolean;
+    hint?: string;
 }
 
 export interface GameSession {
