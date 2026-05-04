@@ -48,7 +48,7 @@
 	$: suggestedPayout = (mTier && PAYOUTS[mTier]?.[mDifficulty]) ?? null;
 
 	function applyPayout() {
-		if (suggestedPayout !== null) mEssencePayout = suggestedPayout;
+		if (suggestedPayout !== null) mEssencePayout = suggestedPayout as number;
 	}
 
 	const STATUS_LABELS: Record<string, string> = {
@@ -94,8 +94,8 @@
 		mIsRetired = mission.is_retired;
 		mIsDiscoverable = mission.is_discoverable;
 		mPrerequisiteId = mission.prerequisite_id;
-		// Pull first reward row's xp as essence payout
-		mEssencePayout = mission.rewards[0]?.xp ?? 4;
+		// Since xp and scrip were removed from rewards, defaulting essence to 4
+		mEssencePayout = 4;
 		mItemRewardId = mission.rewards.find((r) => r.item_id)?.item_id;
 		mOneshotId = (mission as any).oneshot_id || null;
 		showOneshotGenerator = false;
@@ -141,7 +141,7 @@
 
 	async function saveMission() {
 		try {
-			const rewards = [{ xp: mEssencePayout, scrip: 0, item_id: mItemRewardId || null }];
+			const rewards = [{ is_hidden: false, item_id: mItemRewardId || null }];
 			const body = {
 				name: mName,
 				description: mDescription,
@@ -217,11 +217,6 @@
 										<span class="text-xs text-base-content/60">📍 {mission.region}</span>
 									{/if}
 								</div>
-								{#if mission.rewards[0]?.xp}
-									<div class="mb-2 text-xs text-base-content/65">
-										⚡ {mission.rewards[0].xp} Essence net payout
-									</div>
-								{/if}
 								<div class="text-sm text-base-content/70">
 									<MarkdownRenderer content={mission.description || 'No briefing.'} />
 								</div>

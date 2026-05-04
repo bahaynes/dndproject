@@ -5,6 +5,9 @@
 	import { api } from '$lib/api';
 	import Modal from '$lib/components/Modal.svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
+	import { DragDropManager } from '$lib/dnd.svelte';
+
+	const dnd = new DragDropManager<Mission>();
 
 	let sessions: GameSessionWithPlayers[] = [];
 	let availableMissions: Mission[] = [];
@@ -90,6 +93,14 @@
 			error = err instanceof Error ? err.message : 'An error occurred';
 		}
 	}
+
+	async function handleDrop(e: DragEvent, sessionId: number) {
+		const payload = dnd.getPayload(e);
+		if (!payload) return;
+		selectedSessionId = sessionId;
+		selectedMissionId = payload.id;
+		await proposeMission();
+	}
 </script>
 
 <div class="container mx-auto p-4">
@@ -119,9 +130,51 @@
 	{#if sessions.length === 0 && !error}
 		<p class="mt-4">There are no scheduled sessions at this time. Check back later!</p>
 	{:else}
+		<!-- Available Missions for Dragging -->
+		<div class="mb-8">
+			<h2 class="text-xl font-bold mb-4">Available Missions <span class="text-xs font-normal text-base-content/60">(Drag onto a session to propose)</span></h2>
+			<div class="flex gap-4 overflow-x-auto pb-4">
+				{#each availableMissions as mission}
+					{@const inCooldown = mission.last_run_date && new Date().getTime() - new Date(mission.last_run_date).getTime() < mission.cooldown_days * 24 * 60 * 60 * 1000}
+					<!-- svelte-ignore a11y-no-static-element-interactions -->
+					<div
+						class="card bg-base-200 shadow-sm border border-base-content/10 min-w-[250px] {inCooldown ? 'opacity-50 cursor-not-allowed' : 'cursor-grab hover:bg-base-300'}"
+						draggable={!inCooldown}
+						on:dragstart={(e) => !inCooldown && dnd.handleDragStart(e, mission)}
+						on:dragend={() => dnd.handleDragEnd()}
+					>
+						<div class="card-body p-4">
+							<h3 class="font-bold font-[var(--font-cinzel)]">{mission.name}</h3>
+							<div class="flex justify-between items-center mt-2 text-xs">
+								<span class="badge badge-outline badge-sm">{mission.tier || 'No Tier'}</span>
+								{#if inCooldown}
+									<span class="text-warning font-bold">❄️ Cooldown</span>
+								{/if}
+							</div>
+						</div>
+					</div>
+				{/each}
+			</div>
+		</div>
+
 		<div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
 			{#each sessions as session}
-				<div class="card border border-base-content/10 bg-base-100 shadow-xl">
+				<!-- svelte-ignore a11y-no-static-element-interactions -->
+				<div
+					class="card border border-base-content/10 bg-base-100 shadow-xl transition-colors duration-200"
+					on:dragover|preventDefault={(e) => {
+						if (session.status !== 'Completed' && session.status !== 'Cancelled') {
+							e.dataTransfer!.dropEffect = 'copy';
+						}
+					}}
+					on:drop|preventDefault={(e) => {
+						if (session.status !== 'Completed' && session.status !== 'Cancelled') {
+							handleDrop(e, session.id);
+						}
+					}}
+					class:ring-2={dnd.isDragging && session.status !== 'Completed' && session.status !== 'Cancelled'}
+					class:ring-primary={dnd.isDragging && session.status !== 'Completed' && session.status !== 'Cancelled'}
+				>
 					<div class="card-body">
 						<div class="flex items-start justify-between">
 							<h2 class="card-title text-primary">{session.name}</h2>

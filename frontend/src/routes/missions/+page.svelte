@@ -5,6 +5,7 @@
 	import type { Mission } from '$lib/types';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
+	import RewardCard from '$lib/components/RewardCard.svelte';
 
 	let missions: Mission[] = [];
 	let loading = true;
@@ -106,17 +107,11 @@
 							>
 							<div class="flex flex-wrap gap-2">
 								{#each mission.rewards as reward}
-									{#if reward.xp}
-										<div class="badge badge-outline badge-xs">+{reward.xp} Essence</div>
-									{/if}
-									{#if reward.scrip}
-										<div class="badge badge-outline badge-xs badge-primary">
-											+{reward.scrip} Scrip
-										</div>
-									{/if}
-									{#if reward.item}
-										<div class="badge badge-xs badge-secondary">{reward.item.name}</div>
-									{/if}
+									<RewardCard
+										reward={reward}
+										interactive={mission.status === 'Completed'}
+										isRevealed={!reward.is_hidden}
+									/>
 								{/each}
 							</div>
 						</div>

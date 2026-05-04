@@ -12,7 +12,7 @@ vi.mock('$lib/auth', () => {
 
 // Mock onMount to avoid running fetch on component initialization
 vi.mock('svelte', async (importOriginal) => {
-    const svelte = await importOriginal();
+    const svelte: any = await vi.importActual('svelte');
     return {
         ...svelte,
         onMount: vi.fn(),

@@ -238,9 +238,8 @@
 											</div>
 										{/if}
 										<div class="mt-2 flex gap-2">
-											<div class="badge badge-outline">Essence: {viewCharacter.stats.xp}</div>
 											<div class="badge badge-outline badge-primary">
-												Scrip: {viewCharacter.stats.scrip}
+												Gold: {viewCharacter.stats.gold}
 											</div>
 										</div>
 									</div>
