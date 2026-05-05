@@ -2,20 +2,22 @@
   import { onMount } from 'svelte';
 
   const themes = [
+    { name: 'Arcane SaaS (Dark)', value: 'arcane-saas' },
+    { name: 'Modern Codex (Light)', value: 'modern-codex' },
     { name: 'Frontier (Dark)', value: 'halloween' },
     { name: 'Outpost (Green)', value: 'forest' },
     { name: 'Neutral', value: 'business' },
     { name: 'Light', value: 'fantasy' }
   ];
 
-  let currentTheme = 'halloween';
+  let currentTheme = 'arcane-saas';
 
   onMount(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme && themes.some(t => t.value === savedTheme)) {
       currentTheme = savedTheme;
     } else {
-        currentTheme = 'forest';
+        currentTheme = 'arcane-saas';
     }
     applyTheme(currentTheme);
   });
