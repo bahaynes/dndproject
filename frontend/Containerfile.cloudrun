@@ -1,0 +1,18 @@
+# syntax=docker/dockerfile:1.4
+FROM docker.io/library/node:20-alpine AS builder
+WORKDIR /app
+RUN npm install -g pnpm
+COPY frontend/package.json frontend/pnpm-lock.yaml* ./
+RUN pnpm install --frozen-lockfile
+COPY frontend/ .
+# Inject production API path so adapter-static builds correctly, though here proxy handles it
+RUN pnpm build
+
+FROM docker.io/library/caddy:2-alpine AS production
+WORKDIR /srv
+COPY --from=builder /app/build /srv
+# Copy Cloud Run Caddy config
+COPY frontend/Caddyfile.cloudrun /etc/caddy/Caddyfile
+USER caddy
+EXPOSE 80
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]

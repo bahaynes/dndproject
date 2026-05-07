@@ -98,3 +98,5 @@ e2e/test-results/
 e2e/playwright-report/
 frontend/test-results/
 .claude/
+google-cloud-sdk/
+google-cloud-cli-linux-x86_64.tar.gz

@@ -1,0 +1,5 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'us-central1-docker.pkg.dev/dndproject-495514/dndproject-repo/dnd-backend:latest', '-f', 'backend/Containerfile', '.']
+images:
+- 'us-central1-docker.pkg.dev/dndproject-495514/dndproject-repo/dnd-backend:latest'
