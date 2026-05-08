@@ -89,6 +89,8 @@ jobs:
       - name: Run Alembic Migrations
         if: github.event_name == 'pull_request'
         working-directory: backend
+        env:
+          DATABASE_URL: ${{ steps.create_neon_branch.outputs.db_url_with_pooler }}
         run: |
           pip install uv
           uv sync --group dev
