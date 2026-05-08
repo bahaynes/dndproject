@@ -15,7 +15,6 @@ from ..campaigns import service as campaign_service
 logger = logging.getLogger("app.auth")
 
 router = APIRouter()
-settings = get_settings()
 
 import base64
 import json
@@ -24,6 +23,7 @@ import json
 async def login_via_discord(
     return_to: Optional[str] = None,
 ):
+    settings = get_settings()
     """
     Redirects the user to Discord OAuth2 login page.
     Optionally accepts a 'return_to' query param to redirect back to a specific frontend URL (e.g. Vercel preview).
@@ -141,6 +141,7 @@ async def discord_proxy_callback(code: str, state: str):
 
 @router.get("/discord/callback", tags=["Authentication"])
 async def discord_callback(code: str, request: Request, response: Response, state: Optional[str] = None, db: Session = Depends(get_db)):
+    settings = get_settings()
     """
     Handles the callback from Discord, exchanges code for token, and gets user info.
     Returns a temporary token that allows the user to list/select campaigns.
@@ -275,6 +276,7 @@ async def dev_token(
     request: DevTokenRequest,
     db: Session = Depends(get_db),
 ):
+    settings = get_settings()
     """
     Dev-only endpoint for e2e testing. Returns a valid campaign-scoped JWT,
     creating the campaign and user in the database if they don't exist.
