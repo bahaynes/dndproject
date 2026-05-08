@@ -1,0 +1,202 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+    types: [opened, synchronize, reopened]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+  REPO_NAME: dndproject-repo
+  IMAGE_PREFIX: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/dndproject-repo
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+      pull-requests: write
+
+    environment:
+      name: ${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || 'production' }}
+      url: ${{ steps.deploy-frontend.outputs.url }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js (for frontend build envs)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v1
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Determine Environment Variables
+        id: env-vars
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "APP_ENV=preview" >> $GITHUB_ENV
+            echo "SERVICE_SUFFIX=-pr-${{ github.event.number }}" >> $GITHUB_ENV
+          else
+            echo "APP_ENV=production" >> $GITHUB_ENV
+            echo "SERVICE_SUFFIX=" >> $GITHUB_ENV
+          fi
+
+      - name: Get branch name
+        if: github.event_name == 'pull_request'
+        id: branch_name
+        uses: tj-actions/branch-names@v8
+
+      - name: Get branch expiration date
+        if: github.event_name == 'pull_request'
+        id: get_expiration_date
+        run: echo "EXPIRES_AT=$(date -u --date '+14 days' +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_ENV"
+
+      - name: Create Neon Branch
+        if: github.event_name == 'pull_request'
+        id: create_neon_branch
+        uses: neondatabase/create-branch-action@v6
+        with:
+          project_id: ${{ secrets.NEON_PROJECT_ID }}
+          branch_name: preview/pr-${{ github.event.number }}-${{ steps.branch_name.outputs.current_branch }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+          expires_at: ${{ env.EXPIRES_AT }}
+
+      - name: Set PR Environment Variables
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "DATABASE_URL=${{ steps.create_neon_branch.outputs.db_url_with_pooler }}" >> $GITHUB_ENV
+          # Use proxy callback for Discord in PR environments
+          echo "DISCORD_REDIRECT_URI=https://westmarches.bahaynes.com/api/auth/discord/proxy-callback" >> $GITHUB_ENV
+
+      - name: Run Alembic Migrations
+        if: github.event_name == 'pull_request'
+        working-directory: backend
+        run: |
+          pip install uv
+          uv sync --group dev
+          uv run alembic upgrade head
+
+      - name: Manage Production Database Variables
+        if: github.event_name == 'push'
+        run: |
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
+          echo "DISCORD_REDIRECT_URI=https://westmarches.bahaynes.com/api/auth/discord/callback" >> $GITHUB_ENV
+
+      - name: Build and Push Backend
+        run: |
+          IMAGE_TAG=${{ env.IMAGE_PREFIX }}/dnd-backend:${{ github.sha }}
+          docker build -t $IMAGE_TAG -f backend/Containerfile .
+          docker push $IMAGE_TAG
+          echo "BACKEND_IMAGE=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Deploy Backend to Cloud Run
+        id: deploy-backend
+        run: |
+          gcloud run deploy dnd-backend${{ env.SERVICE_SUFFIX }} \
+            --image ${{ env.BACKEND_IMAGE }} \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }} \
+            --allow-unauthenticated \
+            --port 10000 \
+            --set-env-vars="MODE=prod" \
+            --set-env-vars="APP_ENV=${{ env.APP_ENV }}" \
+            --set-env-vars="DATABASE_URL=${{ env.DATABASE_URL }}" \
+            --set-env-vars="DISCORD_CLIENT_ID=${{ secrets.DISCORD_CLIENT_ID }}" \
+            --set-env-vars="DISCORD_CLIENT_SECRET=${{ secrets.DISCORD_CLIENT_SECRET }}" \
+            --set-env-vars="DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }}" \
+            --set-env-vars="ADMIN_DISCORD_IDS=${{ secrets.ADMIN_DISCORD_IDS }}" \
+            --set-env-vars="LLM_API_KEY=${{ secrets.LLM_API_KEY }}" \
+            --set-env-vars="DISCORD_REDIRECT_URI=${{ env.DISCORD_REDIRECT_URI }}" \
+            --set-env-vars="FRONTEND_URL=https://dnd-frontend${{ env.SERVICE_SUFFIX }}-placeholder.run.app" \
+            --format="value(status.url)" > backend_url.txt
+
+          BACKEND_URL=$(cat backend_url.txt)
+          echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT
+          echo "BACKEND_URL=$BACKEND_URL" >> $GITHUB_ENV
+
+      - name: Configure Frontend Caddyfile
+        run: |
+          BACKEND_HOST=$(echo ${{ env.BACKEND_URL }} | awk -F/ '{print $3}')
+          cat << CADDY_EOF > frontend/Caddyfile.cloudrun
+          {
+              # Cloud Run handles HTTPS externally
+          }
+
+          :80 {
+              encode gzip
+
+              # API requests
+              @api path /api/*
+              handle @api {
+                  reverse_proxy https://${BACKEND_HOST} {
+                      header_up Host ${BACKEND_HOST}
+                  }
+              }
+
+              # All other requests (frontend)
+              handle {
+                  root * /srv
+                  try_files {path} /index.html
+                  file_server
+              }
+          }
+          CADDY_EOF
+
+      - name: Build and Push Frontend
+        run: |
+          IMAGE_TAG=${{ env.IMAGE_PREFIX }}/dnd-frontend:${{ github.sha }}
+          docker build -t $IMAGE_TAG -f frontend/Containerfile.cloudrun .
+          docker push $IMAGE_TAG
+          echo "FRONTEND_IMAGE=$IMAGE_TAG" >> $GITHUB_ENV
+
+      - name: Deploy Frontend to Cloud Run
+        id: deploy-frontend
+        run: |
+          gcloud run deploy dnd-frontend${{ env.SERVICE_SUFFIX }} \
+            --image ${{ env.FRONTEND_IMAGE }} \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }} \
+            --allow-unauthenticated \
+            --port 80 \
+            --format="value(status.url)" > frontend_url.txt
+
+          FRONTEND_URL=$(cat frontend_url.txt)
+          echo "url=$FRONTEND_URL" >> $GITHUB_OUTPUT
+          echo "FRONTEND_URL=$FRONTEND_URL" >> $GITHUB_ENV
+
+      - name: Update Backend FRONTEND_URL
+        run: |
+          gcloud run services update dnd-backend${{ env.SERVICE_SUFFIX }} \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }} \
+            --set-env-vars="FRONTEND_URL=${{ env.FRONTEND_URL }}"
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 **Preview Environment Deployed!**\n\nFrontend: ${process.env.FRONTEND_URL}\nBackend: ${process.env.BACKEND_URL}`
+            })

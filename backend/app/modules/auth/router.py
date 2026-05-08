@@ -17,6 +17,9 @@ logger = logging.getLogger("app.auth")
 router = APIRouter()
 settings = get_settings()
 
+import base64
+import json
+
 @router.get("/discord/login", tags=["Authentication"])
 async def login_via_discord(
     return_to: Optional[str] = None,
@@ -26,12 +29,24 @@ async def login_via_discord(
     Optionally accepts a 'return_to' query param to redirect back to a specific frontend URL (e.g. Vercel preview).
     """
     scope = "identify guilds"
+
+    state_data = {}
+    if return_to:
+        state_data["return_to"] = return_to
+
+    # The callback is usually handled on the same domain that initiated it
+    my_callback_url = f"{settings.FRONTEND_URL}/api/auth/discord/callback"
+    state_data["callback"] = my_callback_url
+
+    state_str = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
+
     discord_auth_url = (
         f"https://discord.com/api/oauth2/authorize"
         f"?client_id={settings.DISCORD_CLIENT_ID}"
         f"&redirect_uri={settings.DISCORD_REDIRECT_URI}"
         f"&response_type=code"
         f"&scope={scope}"
+        f"&state={state_str}"
     )
 
     logger.info(
@@ -83,8 +98,49 @@ async def login_via_discord(
     return response
 
 
+
+@router.get("/discord/proxy-callback", tags=["Authentication"])
+async def discord_proxy_callback(code: str, state: str):
+    """
+    Proxy endpoint to allow PR environments to authenticate via Discord.
+    Discord redirect URI must be a fixed URL (production).
+    This endpoint receives the callback and forwards it to the PR environment specified in the state.
+    """
+    try:
+        import base64
+        import json
+        state_data = json.loads(base64.urlsafe_b64decode(state).decode())
+        callback_url = state_data.get("callback")
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid state")
+
+    if not callback_url:
+        raise HTTPException(status_code=400, detail="Missing callback URL in state")
+
+    # Validate callback_url to prevent open redirect
+    from urllib.parse import urlparse
+    parsed = urlparse(callback_url)
+    hostname = parsed.hostname
+
+    allowed = False
+    if hostname:
+        if hostname == "localhost":
+            allowed = True
+        elif hostname.endswith(".run.app"):
+            allowed = True
+        elif hostname.endswith(".bahaynes.com"):
+            allowed = True
+
+    if not allowed:
+        raise HTTPException(status_code=400, detail="Invalid callback domain")
+
+    # Redirect to the target callback, preserving code and state
+    from urllib.parse import urlencode
+    query_params = urlencode({"code": code, "state": state})
+    return RedirectResponse(url=f"{callback_url}?{query_params}")
+
 @router.get("/discord/callback", tags=["Authentication"])
-async def discord_callback(code: str, request: Request, response: Response, db: Session = Depends(get_db)):
+async def discord_callback(code: str, request: Request, response: Response, state: Optional[str] = None, db: Session = Depends(get_db)):
     """
     Handles the callback from Discord, exchanges code for token, and gets user info.
     Returns a temporary token that allows the user to list/select campaigns.
@@ -161,6 +217,14 @@ async def discord_callback(code: str, request: Request, response: Response, db: 
 
     # Determine redirect URL
     return_to = request.cookies.get("auth_return_to")
+    if state:
+        try:
+            state_data = json.loads(base64.urlsafe_b64decode(state).decode())
+            if state_data.get("return_to"):
+                return_to = state_data.get("return_to")
+        except Exception:
+            pass
+
     base_url = settings.FRONTEND_URL
 
     # Redirect to frontend with token
