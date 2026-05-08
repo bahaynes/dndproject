@@ -1,0 +1,75 @@
+name: Teardown PR Environment
+
+on:
+  pull_request:
+    types: [closed]
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'dndproject-495514' }}
+  REGION: us-central1
+
+jobs:
+  teardown:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      deployments: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Delete Cloud Run Services
+        run: |
+          PR_NUMBER=${{ github.event.number }}
+
+          echo "Deleting dnd-frontend-pr-${PR_NUMBER}..."
+          gcloud run services delete dnd-frontend-pr-${PR_NUMBER} --region ${REGION} --project ${PROJECT_ID} --quiet || echo "Frontend service already deleted or not found."
+
+          echo "Deleting dnd-backend-pr-${PR_NUMBER}..."
+          gcloud run services delete dnd-backend-pr-${PR_NUMBER} --region ${REGION} --project ${PROJECT_ID} --quiet || echo "Backend service already deleted or not found."
+
+      - name: Get branch name
+        id: branch_name
+        uses: tj-actions/branch-names@v8
+
+      - name: Delete Neon Branch
+        uses: neondatabase/delete-branch-action@v3
+        with:
+          project_id: ${{ vars.NEON_PROJECT_ID }}
+          branch: preview/pr-${{ github.event.number }}-${{ steps.branch_name.outputs.current_branch }}
+          api_key: ${{ secrets.NEON_API_KEY }}
+
+      - name: Set Deployment Inactive
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const environment = `pr-${context.issue.number}`;
+
+            // Get all deployments for this environment
+            const deployments = await github.rest.repos.listDeployments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              environment: environment
+            });
+
+            // Mark them all as inactive
+            for (const deployment of deployments.data) {
+              await github.rest.repos.createDeploymentStatus({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                deployment_id: deployment.id,
+                state: 'inactive'
+              });
+            }
