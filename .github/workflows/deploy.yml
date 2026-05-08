@@ -8,10 +8,10 @@ on:
     types: [opened, synchronize, reopened]
 
 env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'dndproject-495514' }}
   REGION: us-central1
   REPO_NAME: dndproject-repo
-  IMAGE_PREFIX: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/dndproject-repo
+  IMAGE_PREFIX: us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID || 'dndproject-495514' }}/dndproject-repo
 
 jobs:
   build-and-deploy:
