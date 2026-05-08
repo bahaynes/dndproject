@@ -89,10 +89,13 @@ jobs:
       - name: Run Alembic Migrations
         if: github.event_name == 'pull_request'
         working-directory: backend
+        env:
+          # Use raw URL without pooler for migrations
+          DATABASE_URL: ${{ steps.create_neon_branch.outputs.db_url }}
         run: |
           pip install uv
           uv sync --group dev
-          DATABASE_URL="${{ steps.create_neon_branch.outputs.db_url_with_pooler }}" uv run alembic upgrade head
+          uv run alembic upgrade head
 
       - name: Manage Production Database Variables
         if: github.event_name == 'push'
