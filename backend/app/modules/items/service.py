@@ -38,6 +38,50 @@ def add_item_to_inventory(db: Session, character_id: int, item_id: int, quantity
     db.refresh(db_inventory_item)
     return db_inventory_item
 
+def add_items_to_inventory_bulk(db: Session, items_to_add: list[dict]):
+    """
+    Bulk adds items to inventories.
+    items_to_add: list of dicts with {"character_id", "item_id", "quantity"}
+    """
+    if not items_to_add:
+        return []
+
+    from sqlalchemy import tuple_
+
+    # Aggregate quantities for same character/item pairs in the input
+    aggregated = {}
+    for entry in items_to_add:
+        key = (entry["character_id"], entry["item_id"])
+        aggregated[key] = aggregated.get(key, 0) + entry.get("quantity", 1)
+
+    pairs = list(aggregated.keys())
+
+    # Batch fetch existing inventory items
+    existing_items = db.query(models.InventoryItem).filter(
+        tuple_(models.InventoryItem.character_id, models.InventoryItem.item_id).in_(pairs)
+    ).all()
+
+    existing_map = {(item.character_id, item.item_id): item for item in existing_items}
+
+    results = []
+    for (char_id, itm_id), qty in aggregated.items():
+        if (char_id, itm_id) in existing_map:
+            db_inventory_item = existing_map[(char_id, itm_id)]
+            db_inventory_item.quantity += qty
+        else:
+            db_inventory_item = models.InventoryItem(
+                character_id=char_id,
+                item_id=itm_id,
+                quantity=qty
+            )
+            db.add(db_inventory_item)
+            # Add to map in case there are duplicates in 'aggregated' (though we already aggregated)
+            existing_map[(char_id, itm_id)] = db_inventory_item
+        results.append(db_inventory_item)
+
+    db.flush()
+    return results
+
 def remove_item_from_inventory(db: Session, inventory_item_id: int, quantity: int = 1):
     db_inventory_item = db.query(models.InventoryItem).filter(models.InventoryItem.id == inventory_item_id).first()
     if not db_inventory_item:

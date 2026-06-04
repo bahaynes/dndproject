@@ -118,12 +118,22 @@ def distribute_mission_rewards(db: Session, mission: models.Mission):
     if mission.status != "Completed":
         return {"error": "Mission is not completed yet"}
 
+    items_to_add = []
     for character in mission.players:
+        # Pre-load character stats to avoid N+1 if not joined
+        # But characters are usually joined with missions.players
         for reward in mission.rewards:
             if reward.gold:
                 character.stats.gold += reward.gold
             if reward.item_id:
-                item_service.add_item_to_inventory(db, character_id=character.id, item_id=reward.item_id, quantity=1)
+                items_to_add.append({
+                    "character_id": character.id,
+                    "item_id": reward.item_id,
+                    "quantity": 1
+                })
+
+    if items_to_add:
+        item_service.add_items_to_inventory_bulk(db, items_to_add)
 
     db.commit()
     return {"message": "Rewards distributed successfully"}
