@@ -157,16 +157,15 @@ def complete_session(
         mission = mission_service.get_mission(db, session.confirmed_mission_id, campaign_id=campaign_id)
         if mission:
             mission.status = "Completed"
+            # Ensure mission players match session players for reward distribution
+            # In some cases they might differ if session was confirmed with different set
+            # But usually they are synced. We use mission.players in distribute_mission_rewards.
+            # To be safe and consistent with previous logic which used session.players:
+            mission.players = list(session.players)
             db.flush()
-            for character in session.players:
-                for reward in mission.rewards:
-                    if reward.gold:
-                        character.stats.gold += reward.gold
-                    if reward.item_id:
-                        from ..items import service as item_service
-                        item_service.add_item_to_inventory(
-                            db, character_id=character.id, item_id=reward.item_id, quantity=1
-                        )
+
+            mission_service.distribute_mission_rewards(db, mission)
+
             # Increment missions_completed for participants
             for character in session.players:
                 character.missions_completed = (character.missions_completed or 0) + 1
