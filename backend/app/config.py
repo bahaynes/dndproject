@@ -1,7 +1,7 @@
 import os
 import logging
 from pydantic import model_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 from dotenv import load_dotenv
 
@@ -11,45 +11,44 @@ _DEFAULT_SECRET_KEY = "a_very_secret_key_that_should_be_in_env_file"
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "DnD West Marches"
-    SECRET_KEY: str = os.getenv("SECRET_KEY", _DEFAULT_SECRET_KEY)
-    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60))
+    SECRET_KEY: str = _DEFAULT_SECRET_KEY
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
 
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./test.db")
+    DATABASE_URL: str = "sqlite:///./test.db"
 
     # Frontend Configuration
-    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
+    FRONTEND_URL: str = "http://localhost:5173"
 
     # Discord Configuration
-    DISCORD_CLIENT_ID: str = os.getenv("DISCORD_CLIENT_ID", "")
-    DISCORD_CLIENT_SECRET: str = os.getenv("DISCORD_CLIENT_SECRET", "")
-    DISCORD_BOT_TOKEN: str = os.getenv("DISCORD_BOT_TOKEN", "")
-    DISCORD_REDIRECT_URI: str = os.getenv("DISCORD_REDIRECT_URI", "http://localhost:5173/api/auth/discord/callback")
+    DISCORD_CLIENT_ID: str = ""
+    DISCORD_CLIENT_SECRET: str = ""
+    DISCORD_BOT_TOKEN: str = ""
+    DISCORD_REDIRECT_URI: str = "http://localhost:5173/api/auth/discord/callback"
 
     # LLM Configuration
-    LLM_API_BASE: str = os.getenv("LLM_API_BASE", "https://openrouter.ai/api/v1")
-    LLM_API_KEY: str = os.getenv("LLM_API_KEY", "")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "deepseek/deepseek-chat")
+    LLM_API_BASE: str = "https://openrouter.ai/api/v1"
+    LLM_API_KEY: str = ""
+    LLM_MODEL: str = "deepseek/deepseek-chat"
 
     # ComfyUI Configuration
-    COMFYUI_URL: str = os.getenv("COMFYUI_URL", "http://localhost:8188")
-    COMFYUI_TIMEOUT: int = int(os.getenv("COMFYUI_TIMEOUT", 300))
+    COMFYUI_URL: str = "http://localhost:8188"
+    COMFYUI_TIMEOUT: int = 300
 
     # One-Shot Generator Configuration
-    ONESHOT_OUTPUT_DIR: str = os.getenv("ONESHOT_OUTPUT_DIR", "/app/data/oneshots")
-    ONESHOT_MAX_CONCURRENT: int = int(os.getenv("ONESHOT_MAX_CONCURRENT", 2))
+    ONESHOT_OUTPUT_DIR: str = "/app/data/oneshots"
+    ONESHOT_MAX_CONCURRENT: int = 2
 
     # Comma-separated list of Discord User IDs allowed to setup campaigns
-    ADMIN_DISCORD_IDS: str = os.getenv("ADMIN_DISCORD_IDS", "")
+    ADMIN_DISCORD_IDS: str = ""
 
     # Debug token for the /api/debug/* endpoints. Leave empty to disable those endpoints.
-    DEBUG_TOKEN: str = os.getenv("DEBUG_TOKEN", "")
+    DEBUG_TOKEN: str = ""
 
     # Environment name — set to "production" to disable dev-only endpoints like /api/auth/dev-token.
-    APP_ENV: str = os.getenv("APP_ENV", "development")
+    APP_ENV: str = "development"
 
-    class Config:
-        case_sensitive = True
+    model_config = SettingsConfigDict(case_sensitive=True, env_file='.env', extra='ignore')
 
     @model_validator(mode="after")
     def validate_and_log_startup_config(self) -> "Settings":
