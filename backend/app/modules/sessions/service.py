@@ -172,12 +172,12 @@ def complete_session(
                 character.missions_completed = (character.missions_completed or 0) + 1
 
     # Handle casualties
-    for char_id in data.casualties:
-        char = db.query(char_models.Character).filter(
-            char_models.Character.id == char_id,
+    if data.casualties:
+        casualty_chars = db.query(char_models.Character).filter(
+            char_models.Character.id.in_(data.casualties),
             char_models.Character.campaign_id == campaign_id,
-        ).first()
-        if char:
+        ).all()
+        for char in casualty_chars:
             char.status = "Dead"
             if char.date_of_death is None:
                 char.date_of_death = datetime.now(timezone.utc)
