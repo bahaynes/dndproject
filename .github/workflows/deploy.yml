@@ -119,16 +119,7 @@ jobs:
             --project ${{ env.PROJECT_ID }} \
             --allow-unauthenticated \
             --port 10000 \
-            --set-env-vars="MODE=prod" \
-            --set-env-vars="APP_ENV=${{ env.APP_ENV }}" \
-            --set-env-vars="DATABASE_URL=${{ env.DATABASE_URL }}" \
-            --set-env-vars="DISCORD_CLIENT_ID=${{ secrets.DISCORD_CLIENT_ID }}" \
-            --set-env-vars="DISCORD_CLIENT_SECRET=${{ secrets.DISCORD_CLIENT_SECRET }}" \
-            --set-env-vars="DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }}" \
-            --set-env-vars="ADMIN_DISCORD_IDS=${{ secrets.ADMIN_DISCORD_IDS }}" \
-            --set-env-vars="LLM_API_KEY=${{ secrets.LLM_API_KEY }}" \
-            --set-env-vars="DISCORD_REDIRECT_URI=${{ env.DISCORD_REDIRECT_URI }}" \
-            --set-env-vars="FRONTEND_URL=https://dnd-frontend${{ env.SERVICE_SUFFIX }}-placeholder.run.app" \
+            --set-env-vars="^|^MODE=prod|APP_ENV=${{ env.APP_ENV }}|DATABASE_URL=${{ env.DATABASE_URL }}|DISCORD_CLIENT_ID=${{ secrets.DISCORD_CLIENT_ID }}|DISCORD_CLIENT_SECRET=${{ secrets.DISCORD_CLIENT_SECRET }}|DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }}|ADMIN_DISCORD_IDS=${{ secrets.ADMIN_DISCORD_IDS }}|LLM_API_KEY=${{ secrets.LLM_API_KEY }}|DISCORD_REDIRECT_URI=${{ env.DISCORD_REDIRECT_URI }}|FRONTEND_URL=https://dnd-frontend${{ env.SERVICE_SUFFIX }}-placeholder.run.app" \
             --format="value(status.url)" > backend_url.txt
 
           BACKEND_URL=$(cat backend_url.txt)
@@ -190,7 +181,7 @@ jobs:
           gcloud run services update dnd-backend${{ env.SERVICE_SUFFIX }} \
             --region ${{ env.REGION }} \
             --project ${{ env.PROJECT_ID }} \
-            --set-env-vars="FRONTEND_URL=${{ env.FRONTEND_URL }}"
+            --update-env-vars="FRONTEND_URL=${{ env.FRONTEND_URL }}"
 
       - name: Comment on PR
         if: github.event_name == 'pull_request'
