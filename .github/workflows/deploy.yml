@@ -99,8 +99,19 @@ jobs:
 
       - name: Manage Production Database Variables
         if: github.event_name == 'push'
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
         run: |
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
+          npm install -g neonctl
+          DB_URL=$(neonctl connection-string --project-id $NEON_PROJECT_ID --branch main --role-name neondb_owner --database-name neondb)
+
+          if [ -z "$DB_URL" ]; then
+            echo "::error::Failed to fetch DATABASE_URL from Neon API. Please check your NEON_API_KEY and NEON_PROJECT_ID."
+            python3 -c "import sys; sys.exit(1)"
+          fi
+
+          echo "DATABASE_URL=$DB_URL" >> $GITHUB_ENV
           echo "DISCORD_REDIRECT_URI=https://westmarches.bahaynes.com/api/auth/discord/callback" >> $GITHUB_ENV
 
       - name: Build and Push Backend
