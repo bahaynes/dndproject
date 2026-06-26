@@ -7,6 +7,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./test.db")
+if not DATABASE_URL:
+    import logging
+    logger = logging.getLogger("app.database")
+    logger.critical("DATABASE_URL is empty. The application cannot start without a valid database connection string.")
+    raise ValueError("DATABASE_URL environment variable is empty. Please check your configuration and secrets.")
 
 # Ensure we use the correct driver for PostgreSQL (psycopg 3)
 if DATABASE_URL.startswith("postgres://"):

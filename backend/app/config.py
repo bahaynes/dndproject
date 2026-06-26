@@ -63,6 +63,10 @@ class Settings(BaseSettings):
         if missing:
             logger.error("Missing required env vars — Discord OAuth will not work: %s", missing)
 
+        if not self.DATABASE_URL:
+            logger.critical("DATABASE_URL is empty in settings. The application cannot start without a valid database connection string.")
+            raise ValueError("DATABASE_URL environment variable is empty. Please check your configuration and secrets.")
+
         # Insecure default secret key
         if self.SECRET_KEY == _DEFAULT_SECRET_KEY:
             logger.warning(
