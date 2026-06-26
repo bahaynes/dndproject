@@ -82,7 +82,18 @@ jobs:
       - name: Set PR Environment Variables
         if: github.event_name == 'pull_request'
         run: |
-          echo "DATABASE_URL=${{ steps.create_neon_branch.outputs.db_url_with_pooler }}" >> $GITHUB_ENV
+          DB_URL_POOLER="${{ steps.create_neon_branch.outputs.db_url_with_pooler }}"
+          DB_URL="${{ steps.create_neon_branch.outputs.db_url }}"
+
+          if [ -n "$DB_URL_POOLER" ]; then
+            echo "DATABASE_URL=$DB_URL_POOLER" >> $GITHUB_ENV
+          elif [ -n "$DB_URL" ]; then
+            echo "DATABASE_URL=$DB_URL" >> $GITHUB_ENV
+          else
+            echo "::error::Both db_url and db_url_with_pooler are empty from the Neon branch creation step."
+            python3 -c "import sys; sys.exit(1)"
+          fi
+
           # Use proxy callback for Discord in PR environments
           echo "DISCORD_REDIRECT_URI=https://westmarches.bahaynes.com/api/auth/discord/proxy-callback" >> $GITHUB_ENV
 
