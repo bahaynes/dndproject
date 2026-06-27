@@ -125,6 +125,14 @@ jobs:
           echo "DATABASE_URL=$DB_URL" >> $GITHUB_ENV
           echo "DISCORD_REDIRECT_URI=https://westmarches.bahaynes.com/api/auth/discord/callback" >> $GITHUB_ENV
 
+      - name: Run Alembic Migrations (Production)
+        if: github.event_name == 'push'
+        working-directory: backend
+        run: |
+          pip install uv
+          uv sync --group dev
+          uv run alembic upgrade head
+
       - name: Build and Push Backend
         run: |
           IMAGE_TAG=${{ env.IMAGE_PREFIX }}/dnd-backend:${{ github.sha }}
