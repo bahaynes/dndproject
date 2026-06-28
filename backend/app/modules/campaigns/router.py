@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
 from typing import List
 import httpx
+import logging
 
 from ...database import get_db
 from ...config import get_settings
@@ -14,6 +15,7 @@ from ..auth import schemas as auth_schemas
 
 router = APIRouter()
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 @router.get("/mine", response_model=List[schemas.Campaign], tags=["Campaigns"])
 async def get_my_campaigns(
@@ -175,8 +177,9 @@ async def setup_campaign(
     Restricted to ADMIN_DISCORD_IDS.
     """
     discord_id = current_user_payload.get("sub")
-    allowed_admins = settings.ADMIN_DISCORD_IDS.split(",")
+    allowed_admins = [admin_id.strip() for admin_id in settings.ADMIN_DISCORD_IDS.split(",") if admin_id.strip()]
     if discord_id not in allowed_admins:
+        logger.warning(f"Unauthorized setup attempt by discord_id: {discord_id}. Allowed admins: {allowed_admins}")
         raise HTTPException(status_code=403, detail="You are not authorized to setup campaigns.")
 
     # Check if already exists
@@ -220,8 +223,9 @@ async def get_admin_discord_guilds(
     Used for the Setup page.
     """
     discord_id = current_user_payload.get("sub")
-    allowed_admins = settings.ADMIN_DISCORD_IDS.split(",")
+    allowed_admins = [admin_id.strip() for admin_id in settings.ADMIN_DISCORD_IDS.split(",") if admin_id.strip()]
     if discord_id not in allowed_admins:
+        logger.warning(f"Unauthorized admin guilds view attempt by discord_id: {discord_id}. Allowed admins: {allowed_admins}")
         raise HTTPException(status_code=403, detail="You are not authorized to view admin guilds.")
 
     async with httpx.AsyncClient() as client:
