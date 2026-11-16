@@ -26,19 +26,6 @@ class Settings(BaseSettings):
     DISCORD_BOT_TOKEN: str = ""
     DISCORD_REDIRECT_URI: str = "http://localhost:5173/api/auth/discord/callback"
 
-    # LLM Configuration
-    LLM_API_BASE: str = "https://openrouter.ai/api/v1"
-    LLM_API_KEY: str = ""
-    LLM_MODEL: str = "deepseek/deepseek-chat"
-
-    # ComfyUI Configuration
-    COMFYUI_URL: str = "http://localhost:8188"
-    COMFYUI_TIMEOUT: int = 300
-
-    # One-Shot Generator Configuration
-    ONESHOT_OUTPUT_DIR: str = "/app/data/oneshots"
-    ONESHOT_MAX_CONCURRENT: int = 2
-
     # Comma-separated list of Discord User IDs allowed to setup campaigns
     ADMIN_DISCORD_IDS: str = ""
 
