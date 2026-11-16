@@ -49,12 +49,7 @@
 		"vitest": "^3.2.4",
 		"vitest-svelte-kit": "^0.0.7"
 	},
-	"pnpm": {
-		"onlyBuiltDependencies": [
-			"@tailwindcss/oxide",
-			"esbuild"
-		]
-	},
+	"packageManager": "pnpm@12.21.0",
 	"dependencies": {
 		"dompurify": "^3.3.1",
 		"snarkdown": "^2.0.0"

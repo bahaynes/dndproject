@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1.4
-FROM docker.io/library/node:20-alpine AS builder
+FROM docker.io/library/node:24-alpine AS builder
 WORKDIR /app
-RUN npm install -g pnpm
-COPY frontend/package.json frontend/pnpm-lock.yaml* ./
+RUN npm install -g pnpm@12
+COPY frontend/package.json frontend/pnpm-lock.yaml* frontend/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY frontend/ .
 # Inject production API path so adapter-static builds correctly, though here proxy handles it
