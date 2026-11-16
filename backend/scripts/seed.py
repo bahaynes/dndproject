@@ -23,75 +23,66 @@ from app.modules.missions.models import Mission, MissionReward
 
 FACTIONS = [
     {
-        "faction_name": "Collegium",
+        "faction_name": "The Guildhall",
         "color": "#3b82f6",
         "description": (
-            "The association of core-world institutions — academies, transit "
-            "authorities, monument custodians. They built a functional system "
-            "and they intend to keep it. Their real power is Vincula access: "
-            "controlling sworn Vincula means controlling who moves between "
-            "worlds. Not evil. Structural."
+            "The chartered expeditionary guild that maintains maps, bounties, "
+            "and safe-conduct passes across the frontier."
         ),
     },
     {
-        "faction_name": "Limes",
+        "faction_name": "Borderland Wardens",
         "color": "#d97706",
         "description": (
-            "Not an organization — a condition. The frontier boundary: "
-            "independent crews, waystation economies, salvagers, anyone the "
-            "Collegium didn't reach in time or who refused the deal. "
-            "The Collegium needs Limes output; they prefer the Limes not "
-            "to know that."
+            "Independent scouts, waystation keepers, and rangers holding the "
+            "outer watchtowers beyond settled lands."
         ),
     },
 ]
 
 
 # ── Opening missions ─────────────────────────────────────────────────────────
-# Net Essence (transit already deducted). Tier 1 standard = 4 net.
-# Gross posted bounty = net + tier transit (1 for Tier 1).
+# Standard D&D 5e Tier 1 rewards (gold + XP per player).
 
 MISSIONS = [
     {
-        "name": "Belated",
+        "name": "The Quiet Convoy",
         "description": (
-            "A supply convoy out of Waystation Krel went quiet three days ago. "
-            "The manifest is routine — water reclamation parts, nothing worth "
-            "hijacking. No one's heard a shot fired. Meridian has a course "
-            "plotted. She hasn't said why she's being quiet about it."
+            "A supply caravan out of Crossroads Keep went silent three days ago. "
+            "The manifest is routine — timber, lamp oil, and rations — nothing worth "
+            "a bandit raid, yet no rider has returned."
         ),
         "tier": "Tier 1",
-        "region": "Near Limes",
+        "region": "Ashwood Trail",
         "cooldown_days": 14,
-        "essence_net": 3,  # Routine difficulty: 2 net + 1 transit = 3 gross posted
+        "gold": 50,
+        "xp": 300,
     },
     {
-        "name": "Last Transmission",
+        "name": "Beacon on the Ridge",
         "description": (
-            "A listening post on the edge of the contested band sent a partial "
-            "burst three weeks ago — coordinates, a Collegium vessel ID, and "
-            "the word 'derelict'. The Collegium hasn't sent a recovery team. "
-            "That's either an oversight or a decision. Either way, the post "
-            "is still broadcasting on loop."
+            "An old watchtower on the northern ridge began flashing its signal lantern "
+            "on loop last night. The Wardens abandoned that post three winters ago; "
+            "someone—or something—has relit the brazier."
         ),
         "tier": "Tier 1",
-        "region": "Limes Threshold",
+        "region": "Northern Ridge",
         "cooldown_days": 14,
-        "essence_net": 5,  # Standard difficulty: 4 net + 1 transit = 5 gross posted
+        "gold": 75,
+        "xp": 450,
     },
     {
         "name": "Clearance Work",
         "description": (
-            "Waystation Krel is expanding a docking bay and hit something "
-            "buried in the rock — old, pre-Calamity construction. "
-            "The station master wants it cleared and catalogued before the "
-            "Collegium notices and starts asking questions about permits. "
-            "Pay is flat. Anything you find in there you keep."
+            "Miners expanding the quarry at Stonebridge broke into a sealed vault "
+            "of pre-kingdom stonework. The foreman wants the chambers cleared and "
+            "surveyed before the Guildhall claims salvage rights."
         ),
         "tier": "Tier 1",
-        "region": "Near Limes",
+        "region": "Stonebridge Quarry",
         "cooldown_days": 7,
-        "essence_net": 4,  # Standard: 4 net + 1 transit = 5 gross, minus some for item upside
+        "gold": 60,
+        "xp": 350,
     },
 ]
 
@@ -135,8 +126,7 @@ def seed_missions(db, campaign_id: int) -> int:
             )
             db.add(mission)
             db.flush()
-            # Essence reward row
-            db.add(MissionReward(mission_id=mission.id, gold=m["essence_net"] * 10))
+            db.add(MissionReward(mission_id=mission.id, gold=m["gold"], xp=m["xp"]))
             created += 1
     db.flush()
     return created

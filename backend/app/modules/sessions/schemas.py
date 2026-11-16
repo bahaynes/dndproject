@@ -37,6 +37,8 @@ class FieldReportUpdate(BaseModel):
 class SessionCompleteRequest(BaseModel):
     result: str  # "success" | "failure"
     essence_earned: int = 0
+    gold_earned: int = 0
+    xp_earned: int = 0
     after_action_report: Optional[str] = None
     casualties: List[int] = []  # character IDs to mark as Dead
 

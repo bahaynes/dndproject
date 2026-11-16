@@ -113,14 +113,22 @@ def create_store_item(db: Session, store_item: schemas.StoreItemCreate):
     db.refresh(db_store_item)
     return db_store_item
 
+def delete_store_item(db: Session, store_item: models.StoreItem):
+    db.delete(store_item)
+    db.commit()
+
+
 def purchase_item(db: Session, character: Character, store_item: models.StoreItem, quantity: int):
-    if store_item.price * quantity > character.stats.gold:
+    from ..ledger.models import LedgerEntry
+
+    total_cost = store_item.price * quantity
+    if total_cost > character.stats.gold:
         return {"error": "Not enough gold"}
 
     if store_item.quantity_available != -1 and store_item.quantity_available < quantity:
         return {"error": "Not enough items in stock"}
 
-    character.stats.gold -= store_item.price * quantity
+    character.stats.gold -= total_cost
 
     # Decrement store quantity if not infinite
     if store_item.quantity_available != -1:
@@ -128,6 +136,15 @@ def purchase_item(db: Session, character: Character, store_item: models.StoreIte
 
     # Add item to character's inventory
     add_item_to_inventory(db, character_id=character.id, item_id=store_item.item_id, quantity=quantity)
+
+    # Record purchase in the Campaign Ledger
+    item_name = store_item.item.name if store_item.item else f"Item #{store_item.item_id}"
+    db.add(LedgerEntry(
+        campaign_id=character.campaign_id,
+        event_type="Purchase",
+        description=f"{character.name} purchased {quantity}x {item_name} for {total_cost} GP",
+        essence_delta=0,
+    ))
 
     db.commit()
     return {"message": "Purchase successful"}

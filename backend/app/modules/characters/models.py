@@ -30,12 +30,27 @@ class Character(Base):
     game_sessions = relationship("GameSession", secondary="game_session_players", back_populates="players")
 
 
+DND5E_XP_THRESHOLDS = [
+    0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000,
+    85000, 100000, 120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000,
+]
+
+
 class CharacterStats(Base):
     __tablename__ = "character_stats"
 
     id = Column(Integer, primary_key=True, index=True)
     character_id = Column(Integer, ForeignKey("characters.id"), unique=True)
 
-    gold = Column(Integer, default=0)
+    gold = Column(Integer, default=0, nullable=False)
+    xp = Column(Integer, default=0, nullable=False)
 
     character = relationship("Character", back_populates="stats")
+
+    @property
+    def next_level_xp(self) -> int | None:
+        current_xp = self.xp or 0
+        for threshold in DND5E_XP_THRESHOLDS[1:]:
+            if current_xp < threshold:
+                return threshold
+        return None
