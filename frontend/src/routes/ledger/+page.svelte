@@ -2,6 +2,11 @@
 	import { api } from '$lib/api';
 	import { onMount } from 'svelte';
 	import type { LedgerEntry } from '$lib/types';
+	import { WORLD_NAV } from '$lib/navigation';
+	import SubNav from '$lib/components/SubNav.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+
 	let entries: LedgerEntry[] = [];
 	let loading = true;
 	let filterType = '';
@@ -19,6 +24,17 @@
 		'LevelUp'
 	];
 
+	const EVENT_LABELS: Record<string, string> = {
+		MissionCompleted: 'Quest Completed',
+		MissionFailed: 'Quest Failed',
+		Purchase: 'Store Purchase',
+		RewardDistribution: 'Rewards',
+		AdminAdjustment: 'DM Adjustment',
+		ShipAdjustment: 'Treasury',
+		CharacterDeath: 'Character Death',
+		LevelUp: 'Level Up'
+	};
+
 	onMount(loadEntries);
 
 	async function loadEntries() {
@@ -33,10 +49,12 @@
 		offset = 0;
 		loadEntries();
 	}
+
 	function nextPage() {
 		offset += PAGE_SIZE;
 		loadEntries();
 	}
+
 	function prevPage() {
 		offset = Math.max(0, offset - PAGE_SIZE);
 		loadEntries();
@@ -45,102 +63,73 @@
 	function formatDate(iso: string) {
 		return new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 	}
-
-	function deltaCell(n: number) {
-		if (n === 0) return '—';
-		return n > 0 ? `+${n}` : `${n}`;
-	}
-
-	function deltaClass(n: number) {
-		if (n > 0) return 'text-success font-semibold';
-		if (n < 0) return 'text-error font-semibold';
-		return 'text-base-content/50';
-	}
-
-	const EVENT_LABELS: Record<string, string> = {
-		MissionCompleted: '✅ Completed',
-		MissionFailed: '❌ Failed',
-		Purchase: '🛒 Purchase',
-		RewardDistribution: '🎁 Rewards',
-		AdminAdjustment: '⚙️ Adjustment',
-		ShipAdjustment: '🚀 Ship',
-		CharacterDeath: '💀 Death',
-		LevelUp: '⬆️ Level Up'
-	};
 </script>
 
-<div class="container mx-auto max-w-5xl p-4">
-	<div class="mb-6 flex items-center justify-between border-b border-base-content/10 pb-4">
-		<h1 class="text-3xl font-[var(--font-cinzel)] font-bold tracking-tight text-primary">
-			📖 Campaign Ledger
-		</h1>
-		<a href="/dashboard" class="btn btn-ghost btn-sm">← Dashboard</a>
-	</div>
+<div class="page-container">
+	<SubNav items={WORLD_NAV} />
 
-	<!-- Filters -->
-	<div class="mb-4 flex flex-wrap gap-3">
-		<select
-			class="select-bordered select select-sm"
-			bind:value={filterType}
-			on:change={applyFilter}
-		>
-			<option value="">All event types</option>
-			{#each EVENT_TYPES as t}
-				<option value={t}>{EVENT_LABELS[t] ?? t}</option>
-			{/each}
-		</select>
-		<button class="btn btn-ghost btn-sm" on:click={applyFilter}>Refresh</button>
-	</div>
+	<PageHeader
+		title="Campaign Ledger"
+		subtitle="Chronological record of completed quests, level-ups, store purchases, and casualties."
+	>
+		<div slot="actions" class="flex items-center gap-2">
+			<select
+				class="select select-bordered select-sm"
+				bind:value={filterType}
+				on:change={applyFilter}
+				aria-label="Filter ledger by event type"
+			>
+				<option value="">All Event Types</option>
+				{#each EVENT_TYPES as t}
+					<option value={t}>{EVENT_LABELS[t] ?? t}</option>
+				{/each}
+			</select>
+			<button class="btn btn-ghost btn-sm" on:click={applyFilter}>Refresh</button>
+		</div>
+	</PageHeader>
 
 	{#if loading}
-		<div class="flex justify-center py-16">
-			<span class="loading loading-lg loading-spinner text-primary"></span>
-		</div>
+		<LoadingSpinner size="lg" />
 	{:else if entries.length === 0}
-		<div class="alert">No ledger entries found.</div>
+		<div class="panel p-10 text-center text-sm text-base-content/60">
+			No ledger entries found.
+		</div>
 	{:else}
-		<div class="overflow-x-auto rounded-lg border border-base-content/10">
+		<div class="panel overflow-x-auto">
 			<table class="table table-sm">
-				<thead class="bg-base-200">
+				<thead class="bg-base-300/70 text-xs text-base-content/65">
 					<tr>
 						<th>Date</th>
 						<th>Event</th>
 						<th>Description</th>
-						<th class="text-right">⚡ Essence</th>
 					</tr>
 				</thead>
 				<tbody>
 					{#each entries as entry}
-						<tr class="hover">
-							<td class="text-xs whitespace-nowrap text-base-content/65"
-								>{formatDate(entry.created_at)}</td
-							>
-							<td
-								><span class="badge badge-outline badge-sm"
-									>{EVENT_LABELS[entry.event_type] ?? entry.event_type}</span
-								></td
-							>
-							<td class="max-w-xs truncate text-sm">{entry.description}</td>
-							<td class="text-right text-sm {deltaClass(entry.essence_delta)}"
-								>{deltaCell(entry.essence_delta)}</td
-							>
+						<tr class="border-b border-base-content/5 hover:bg-base-300/30">
+							<td class="whitespace-nowrap text-xs text-base-content/60 stat-num">
+								{formatDate(entry.created_at)}
+							</td>
+							<td>
+								<span class="badge badge-outline badge-xs">
+									{EVENT_LABELS[entry.event_type] ?? entry.event_type}
+								</span>
+							</td>
+							<td class="text-sm text-base-content/85">{entry.description}</td>
 						</tr>
 					{/each}
 				</tbody>
 			</table>
 		</div>
 
-		<!-- Pagination -->
-		<div class="mt-4 flex items-center justify-between">
-			<button class="btn btn-ghost btn-sm" on:click={prevPage} disabled={offset === 0}
-				>← Prev</button
-			>
-			<span class="text-sm text-base-content/65"
-				>Showing {offset + 1}–{offset + entries.length}</span
-			>
-			<button class="btn btn-ghost btn-sm" on:click={nextPage} disabled={entries.length < PAGE_SIZE}
-				>Next →</button
-			>
+		<div class="mt-4 flex items-center justify-between text-xs text-base-content/65">
+			<button class="btn btn-ghost btn-xs" on:click={prevPage} disabled={offset === 0}>
+				← Prev
+			</button>
+			<span class="stat-num">Showing {offset + 1}–{offset + entries.length}</span>
+			<button class="btn btn-ghost btn-xs" on:click={nextPage} disabled={entries.length < PAGE_SIZE}>
+				Next →
+			</button>
 		</div>
 	{/if}
 </div>

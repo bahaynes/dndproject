@@ -40,13 +40,13 @@ def get_crew_roster(
     """Return all characters in the campaign (all players), optionally filtered by status."""
     q = (
         db.query(models.Character)
-        .options(joinedload(models.Character.owner))
+        .options(joinedload(models.Character.owner), joinedload(models.Character.stats))
         .filter(models.Character.campaign_id == current_user.campaign_id)
     )
     if status_filter:
         q = q.filter(models.Character.status == status_filter)
     chars = q.all()
-    # Attach owner username
+    # Attach owner username and xp
     result = []
     for c in chars:
         entry = schemas.CharacterRosterEntry(
@@ -54,6 +54,7 @@ def get_crew_roster(
             name=c.name,
             class_name=c.class_name,
             level=c.level,
+            xp=c.stats.xp if c.stats else 0,
             status=c.status,
             date_of_death=c.date_of_death,
             missions_completed=c.missions_completed,

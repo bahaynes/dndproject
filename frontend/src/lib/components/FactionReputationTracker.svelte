@@ -1,8 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { auth } from '$lib/auth';
-    import { get } from 'svelte/store';
-    import { API_BASE_URL } from '$lib/config';
+    import { api } from '$lib/api';
 
     interface FactionReputation {
         id: number;
@@ -22,11 +20,8 @@
     };
 
     onMount(async () => {
-        const { token } = get(auth);
-        const res = await fetch(`${API_BASE_URL}/factions/`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) reputations = await res.json();
+        const res = await api('GET', '/factions/').catch(() => []);
+        reputations = Array.isArray(res) ? res : [];
         loading = false;
     });
 

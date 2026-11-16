@@ -1,18 +1,18 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { GameSessionWithPlayers, Mission } from '../../lib/types';
-	import { auth } from '../../lib/auth';
+	import type { GameSessionWithPlayers, Mission } from '$lib/types';
+	import { auth } from '$lib/auth';
 	import { api } from '$lib/api';
+	import { MISSIONS_NAV } from '$lib/navigation';
+	import SubNav from '$lib/components/SubNav.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
-	import { DragDropManager } from '$lib/dnd.svelte';
-
-	const dnd = new DragDropManager<Mission>();
 
 	let sessions: GameSessionWithPlayers[] = [];
 	let availableMissions: Mission[] = [];
 	let error: string | null = null;
-	let myCharacterId: number | undefined;
+	let viewFilter: 'upcoming' | 'completed' = 'upcoming';
 
 	let showProposeModal = false;
 	let selectedSessionId: number | null = null;
@@ -39,7 +39,8 @@
 
 	async function fetchMissions() {
 		try {
-			availableMissions = await api('GET', '/missions/');
+			const all: Mission[] = await api('GET', '/missions/');
+			availableMissions = (all ?? []).filter((m) => !m.is_retired && m.is_discoverable);
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Failed to load missions';
 		}
@@ -53,6 +54,11 @@
 		return proposal?.backers.some((b) => b.id === myCharacterId) || false;
 	}
 
+	function isInSession(session: GameSessionWithPlayers): boolean {
+		if (!myCharacterId) return false;
+		return session.players.some((p) => p.id === myCharacterId);
+	}
+
 	async function toggleBacking(proposalId: number) {
 		error = null;
 		try {
@@ -60,6 +66,26 @@
 			await fetchSessions();
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'An error occurred';
+		}
+	}
+
+	async function joinConfirmedSession(sessionId: number) {
+		error = null;
+		try {
+			await api('POST', `/sessions/${sessionId}/signup`);
+			await fetchSessions();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Failed to join session';
+		}
+	}
+
+	async function leaveConfirmedSession(sessionId: number) {
+		error = null;
+		try {
+			await api('DELETE', `/sessions/${sessionId}/signup`);
+			await fetchSessions();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Failed to leave session';
 		}
 	}
 
@@ -94,257 +120,247 @@
 		}
 	}
 
-	async function handleDrop(e: DragEvent, sessionId: number) {
-		const payload = dnd.getPayload(e);
-		if (!payload) return;
-		selectedSessionId = sessionId;
-		selectedMissionId = payload.id;
-		await proposeMission();
-	}
+	$: filteredSessions = sessions
+		.filter((s) =>
+			viewFilter === 'upcoming'
+				? s.status !== 'Completed' && s.status !== 'Cancelled'
+				: s.status === 'Completed'
+		)
+		.sort((a, b) =>
+			viewFilter === 'upcoming'
+				? new Date(a.session_date).getTime() - new Date(b.session_date).getTime()
+				: new Date(b.session_date).getTime() - new Date(a.session_date).getTime()
+		);
 </script>
 
-<div class="container mx-auto p-4">
-	<h1 class="text-2xl font-bold">Game Sessions</h1>
+<div class="page-container">
+	<SubNav items={MISSIONS_NAV} />
+
+	<PageHeader
+		title="Session Schedule"
+		subtitle="Propose quests for open slots, join confirmed parties, or read past field reports."
+	>
+		<div slot="actions" class="join">
+			<button
+				class="btn btn-sm join-item {viewFilter === 'upcoming' ? 'btn-primary' : 'btn-ghost border border-base-content/15'}"
+				on:click={() => (viewFilter = 'upcoming')}
+			>
+				Upcoming
+			</button>
+			<button
+				class="btn btn-sm join-item {viewFilter === 'completed' ? 'btn-primary' : 'btn-ghost border border-base-content/15'}"
+				on:click={() => (viewFilter = 'completed')}
+			>
+				Past Sessions &amp; AARs
+			</button>
+		</div>
+	</PageHeader>
 
 	{#if error}
-		<div class="my-4 alert alert-error">
-			<div class="flex-1">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					fill="none"
-					viewBox="0 0 24 24"
-					class="mx-2 h-6 w-6 stroke-current"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"
-					></path>
-				</svg>
-				<span>{error}</span>
-			</div>
-		</div>
+		<div class="alert alert-error mb-6 text-sm">{error}</div>
 	{/if}
 
-	{#if sessions.length === 0 && !error}
-		<p class="mt-4">There are no scheduled sessions at this time. Check back later!</p>
-	{:else}
-		<!-- Available Missions for Dragging -->
-		<div class="mb-8">
-			<h2 class="text-xl font-bold mb-4">Available Missions <span class="text-xs font-normal text-base-content/60">(Drag onto a session to propose)</span></h2>
-			<div class="flex gap-4 overflow-x-auto pb-4">
-				{#each availableMissions as mission}
-					{@const inCooldown = mission.last_run_date && new Date().getTime() - new Date(mission.last_run_date).getTime() < mission.cooldown_days * 24 * 60 * 60 * 1000}
-					<!-- svelte-ignore a11y-no-static-element-interactions -->
-					<div
-						class="card bg-base-200 shadow-sm border border-base-content/10 min-w-[250px] {inCooldown ? 'opacity-50 cursor-not-allowed' : 'cursor-grab hover:bg-base-300'}"
-						draggable={!inCooldown}
-						on:dragstart={(e) => !inCooldown && dnd.handleDragStart(e, mission)}
-						on:dragend={() => dnd.handleDragEnd()}
-					>
-						<div class="card-body p-4">
-							<h3 class="font-bold font-[var(--font-cinzel)]">{mission.name}</h3>
-							<div class="flex justify-between items-center mt-2 text-xs">
-								<span class="badge badge-outline badge-sm">{mission.tier || 'No Tier'}</span>
-								{#if inCooldown}
-									<span class="text-warning font-bold">❄️ Cooldown</span>
-								{/if}
-							</div>
-						</div>
-					</div>
-				{/each}
-			</div>
+	{#if filteredSessions.length === 0}
+		<div class="panel p-12 text-center">
+			<p class="text-base font-medium text-base-content/75">
+				{viewFilter === 'upcoming'
+					? 'No upcoming sessions scheduled.'
+					: 'No completed sessions recorded yet.'}
+			</p>
 		</div>
+	{:else}
+		<div class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+			{#each filteredSessions as session}
+				<article class="panel flex flex-col p-5">
+					<div class="mb-2 flex items-start justify-between gap-2">
+						<div>
+							<h2 class="text-base font-semibold text-base-content">{session.name}</h2>
+							<p class="mt-0.5 text-xs text-base-content/60 stat-num">
+								{new Date(session.session_date).toLocaleString(undefined, {
+									dateStyle: 'medium',
+									timeStyle: 'short'
+								})}
+							</p>
+						</div>
+						<span
+							class="badge badge-sm shrink-0 {session.status === 'Confirmed'
+								? 'badge-success'
+								: session.status === 'Completed'
+									? 'badge-ghost'
+									: 'badge-outline border-warning/40 text-warning'}"
+						>
+							{session.status}
+						</span>
+					</div>
 
-		<div class="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-			{#each sessions as session}
-				<!-- svelte-ignore a11y-no-static-element-interactions -->
-				<div
-					class="card border border-base-content/10 bg-base-100 shadow-xl transition-colors duration-200"
-					on:dragover|preventDefault={(e) => {
-						if (session.status !== 'Completed' && session.status !== 'Cancelled') {
-							e.dataTransfer!.dropEffect = 'copy';
-						}
-					}}
-					on:drop|preventDefault={(e) => {
-						if (session.status !== 'Completed' && session.status !== 'Cancelled') {
-							handleDrop(e, session.id);
-						}
-					}}
-					class:ring-2={dnd.isDragging && session.status !== 'Completed' && session.status !== 'Cancelled'}
-					class:ring-primary={dnd.isDragging && session.status !== 'Completed' && session.status !== 'Cancelled'}
-				>
-					<div class="card-body">
-						<div class="flex items-start justify-between">
-							<h2 class="card-title text-primary">{session.name}</h2>
-							<div class="badge {session.status === 'Confirmed' ? 'badge-success' : 'badge-info'}">
-								{session.status}
+					{#if session.description}
+						<div class="prose prose-sm mb-3 max-w-none text-xs text-base-content/70">
+							<MarkdownRenderer content={session.description} />
+						</div>
+					{/if}
+
+					{#if session.status === 'Completed'}
+						{#if session.confirmed_mission}
+							<p class="mb-2 text-xs font-medium text-primary">
+								Quest: {session.confirmed_mission.name}
+							</p>
+						{/if}
+						{#if session.after_action_report}
+							<div class="mb-3 rounded-md border border-base-content/10 bg-base-300/60 p-3 text-xs text-base-content/80">
+								<p class="section-label mb-1">DM Summary</p>
+								<MarkdownRenderer content={session.after_action_report} />
 							</div>
-						</div>
-
-						<div class="mb-4 text-sm text-base-content/70">
-							<MarkdownRenderer content={session.description || 'No description provided.'} />
-						</div>
-						<div class="my-2 rounded bg-base-200 p-2 text-sm">
-							<span class="font-bold">📅 Date:</span>
-							{new Date(session.session_date).toLocaleString()}
-						</div>
-
-						{#if session.status === 'Completed'}
-							<!-- Dispatch from the Mission Board -->
-							{#if session.field_report}
-								<div class="mt-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
-									<div class="mb-2 flex items-center gap-2">
-										<span class="text-xs font-bold tracking-widest text-base-content/65 uppercase"
-											>Dispatch from the Field</span
-										>
-									</div>
-									<div class="prose prose-sm max-w-none font-serif opacity-90">
-										<MarkdownRenderer content={session.field_report} />
-									</div>
+						{/if}
+						{#if session.field_report}
+							<div class="mt-auto rounded-md border border-primary/25 bg-primary/5 p-3 text-xs">
+								<p class="section-label mb-1 text-primary">Field Report</p>
+								<div class="prose prose-sm max-w-none text-base-content/85">
+									<MarkdownRenderer content={session.field_report} />
 								</div>
-							{:else if session.players.some((p) => p.id === myCharacterId)}
-								<div class="mt-4 rounded-xl border border-base-content/10 bg-base-200/50 p-4">
-									<p class="mb-2 text-xs font-bold text-base-content/60 uppercase">
-										File a Field Report
-									</p>
-									<textarea
-										class="textarea-bordered textarea w-full text-sm"
-										rows="4"
-										placeholder="Write your dispatch from the mission, in the voice of your character..."
-										bind:value={fieldReportDraft[session.id]}
-									></textarea>
-									<button
-										class="btn mt-2 w-full btn-sm btn-primary"
-										disabled={!fieldReportDraft[session.id]?.trim() ||
-											submittingFieldReport === session.id}
-										on:click={() => submitFieldReport(session.id)}
-									>
-										{submittingFieldReport === session.id ? 'Submitting...' : 'Post to the Board'}
-									</button>
-								</div>
+							</div>
+						{:else if isInSession(session)}
+							<div class="mt-auto border-t border-base-content/10 pt-3">
+								<label for="fr-{session.id}" class="section-label mb-1.5 block">
+									File a Field Report
+								</label>
+								<textarea
+									id="fr-{session.id}"
+									class="textarea textarea-bordered w-full text-xs"
+									rows="3"
+									placeholder="Write your character's dispatch from this session..."
+									bind:value={fieldReportDraft[session.id]}
+								></textarea>
+								<button
+									class="btn btn-primary btn-xs mt-2 w-full"
+									disabled={!fieldReportDraft[session.id]?.trim() || submittingFieldReport === session.id}
+									on:click={() => submitFieldReport(session.id)}
+								>
+									{submittingFieldReport === session.id ? 'Submitting...' : 'Post Field Report'}
+								</button>
+							</div>
+						{/if}
+					{:else if session.status === 'Confirmed' && session.confirmed_mission}
+						<div class="mt-2 flex-1 rounded-md border border-success/25 bg-success/5 p-3.5">
+							<p class="section-label text-success">Confirmed Quest</p>
+							<p class="mt-0.5 text-sm font-semibold text-base-content">
+								{session.confirmed_mission.name}
+							</p>
+							{#if session.confirmed_mission.tier}
+								<span class="badge badge-outline badge-xs mt-1">{session.confirmed_mission.tier}</span>
 							{/if}
-						{:else if session.status === 'Confirmed' && session.confirmed_mission}
-							<div class="mt-4 rounded-xl border border-success/20 bg-success/10 p-4">
-								<h3 class="font-bold text-success">Confirmed Content</h3>
-								<p class="text-lg font-[var(--font-cinzel)]">{session.confirmed_mission.name}</p>
-								{#if session.confirmed_mission.tier}
-									<div class="mt-1 badge badge-outline badge-sm">
-										{session.confirmed_mission.tier}
-									</div>
-								{/if}
-								<div class="mt-4">
-									<span class="text-xs font-bold text-base-content/60 uppercase"
-										>Heroes Confirmed</span
-									>
-									<div class="mt-1 flex flex-wrap gap-1">
-										{#each session.players as player}
-											<div class="badge badge-ghost badge-sm">{player.name}</div>
-										{/each}
-									</div>
+
+							<div class="mt-3">
+								<p class="section-label mb-1.5">
+									Party ({session.players.length}/{session.max_players})
+								</p>
+								<div class="flex flex-wrap gap-1.5">
+									{#each session.players as player}
+										<span class="rounded bg-base-300 px-2 py-0.5 text-xs text-base-content/85">
+											{player.name}
+										</span>
+									{/each}
 								</div>
 							</div>
-						{:else}
-							<div class="mt-4">
-								<div class="mb-2 flex items-center justify-between">
-									<h3 class="text-xs font-bold text-base-content/60 uppercase">Proposals</h3>
-									{#if session.status !== 'Completed' && session.status !== 'Cancelled'}
-										<button
-											class="btn btn-ghost btn-xs"
-											on:click={() => {
-												selectedSessionId = session.id;
-												showProposeModal = true;
-											}}>+ Propose</button
-										>
-									{/if}
-								</div>
+						</div>
 
+						<div class="mt-3 flex justify-end">
+							{#if isInSession(session)}
+								<button
+									class="btn btn-outline btn-error btn-xs"
+									on:click={() => leaveConfirmedSession(session.id)}
+								>
+									Leave Party
+								</button>
+							{:else if session.players.length < session.max_players}
+								<button
+									class="btn btn-primary btn-xs w-full"
+									disabled={!myCharacterId}
+									on:click={() => joinConfirmedSession(session.id)}
+								>
+									Join Party ({session.players.length}/{session.max_players})
+								</button>
+							{:else}
+								<span class="text-xs text-base-content/50">Party Full</span>
+							{/if}
+						</div>
+					{:else}
+						<div class="mt-2 flex-1 space-y-2.5">
+							<div class="flex items-center justify-between">
+								<span class="section-label">Quest Proposals</span>
+								<button
+									class="btn btn-ghost btn-xs text-primary"
+									disabled={!myCharacterId || availableMissions.length === 0}
+									on:click={() => {
+										selectedSessionId = session.id;
+										selectedMissionId = availableMissions[0]?.id ?? null;
+										showProposeModal = true;
+									}}
+								>
+									+ Propose
+								</button>
+							</div>
+
+							{#if session.proposals.length === 0}
+								<p class="py-3 text-center text-xs text-base-content/50">No quests proposed yet.</p>
+							{:else}
 								{#each session.proposals as proposal}
-									<div class="mb-4 rounded-xl border border-base-content/5 bg-base-200/50 p-3">
-										<div class="flex items-center justify-between">
-											<span class="font-bold">{proposal.mission.name}</span>
-											<span class="text-xs">{proposal.backers.length} / {session.min_players}</span>
-										</div>
-
-										<progress
-											class="progress mt-2 w-full progress-primary"
-											value={proposal.backers.length}
-											max={session.min_players}
-										></progress>
-
-										<div class="mt-3 flex items-center justify-between">
-											<div class="flex -space-x-2">
-												{#each proposal.backers as backer}
-													<div class="placeholder avatar">
-														<div
-															class="h-6 w-6 rounded-full border-2 border-base-100 bg-neutral text-neutral-content"
-														>
-															<span class="text-[8px]">{backer.name.charAt(0)}</span>
-														</div>
-													</div>
-												{/each}
-											</div>
+									<div class="rounded-md border border-base-content/10 bg-base-300/50 p-3">
+										<div class="flex items-start justify-between gap-2">
+											<span class="text-sm font-medium text-base-content">{proposal.mission.name}</span>
 											<button
-												class="btn btn-xs {isBacking(proposal.id)
-													? 'btn-secondary'
-													: 'btn-outline btn-primary'}"
-												on:click={() => toggleBacking(proposal.id)}
+												class="btn btn-xs shrink-0 {isBacking(proposal.id)
+													? 'btn-primary'
+													: 'btn-outline border-base-content/20'}"
 												disabled={!myCharacterId}
+												on:click={() => toggleBacking(proposal.id)}
 											>
-												{isBacking(proposal.id) ? 'Backing' : 'Back This'}
+												{isBacking(proposal.id) ? 'Backing' : 'Back'}
 											</button>
+										</div>
+										<div class="mt-2 flex items-center gap-2">
+											<progress
+												class="progress progress-primary h-1.5 flex-1"
+												value={proposal.backers.length}
+												max={session.min_players}
+											></progress>
+											<span class="text-xs text-base-content/65 stat-num">
+												{proposal.backers.length}/{session.min_players}
+											</span>
 										</div>
 									</div>
 								{/each}
-								{#if session.proposals.length === 0}
-									<div class="py-4 text-center text-xs text-base-content/60 italic">
-										No proposals yet. Be the first!
-									</div>
-								{/if}
-							</div>
-						{/if}
-					</div>
-				</div>
+							{/if}
+						</div>
+					{/if}
+				</article>
 			{/each}
 		</div>
 	{/if}
 </div>
 
-<Modal
-	show={showProposeModal}
-	title="Propose Content for Slot"
-	onClose={() => (showProposeModal = false)}
->
-	<div class="form-control w-full">
-		<label class="label" for="mission-select"
-			><span class="label-text">Select a Mission</span></label
-		>
+<Modal show={showProposeModal} title="Propose a Quest" onClose={() => (showProposeModal = false)}>
+	<div>
+		<label for="sess-propose-mission" class="mb-1 block text-xs font-medium text-base-content/75">
+			Select Quest
+		</label>
 		<select
-			id="mission-select"
+			id="sess-propose-mission"
 			bind:value={selectedMissionId}
-			class="select-bordered select w-full"
+			class="select select-bordered select-sm w-full"
 		>
-			<option value={null}>-- Pick a Mission --</option>
 			{#each availableMissions as mission}
-				{@const inCooldown =
-					mission.last_run_date &&
-					new Date().getTime() - new Date(mission.last_run_date).getTime() <
-						mission.cooldown_days * 24 * 60 * 60 * 1000}
-				<option value={mission.id} disabled={!!inCooldown}>
-					{mission.name} ({mission.tier || 'No Tier'}) {inCooldown ? '- ❄️ Cooldown' : ''}
-				</option>
+				<option value={mission.id}>{mission.name} {mission.tier ? `(${mission.tier})` : ''}</option>
 			{/each}
 		</select>
-		<p class="mt-4 text-sm text-base-content/70 italic">
-			Proposing will add you as the first backer. When a proposal hits {sessions.find(
-				(s) => s.id === selectedSessionId
-			)?.min_players || 4} backers, the session is locked.
-		</p>
 	</div>
 	<div slot="action">
-		<button class="btn w-full btn-primary" on:click={proposeMission} disabled={!selectedMissionId}
-			>Propose Now</button
+		<button class="btn btn-ghost btn-sm" on:click={() => (showProposeModal = false)}>Cancel</button>
+		<button
+			class="btn btn-primary btn-sm"
+			disabled={!selectedMissionId}
+			on:click={proposeMission}
 		>
+			Submit Proposal
+		</button>
 	</div>
 </Modal>

@@ -118,19 +118,35 @@ def distribute_mission_rewards(db: Session, mission: models.Mission):
     if mission.status != "Completed":
         return {"error": "Mission is not completed yet"}
 
+    from ..characters import service as char_service
+    from ..ledger.models import LedgerEntry
+
     items_to_add = []
     for character in mission.players:
-        # Pre-load character stats to avoid N+1 if not joined
-        # But characters are usually joined with missions.players
+        total_gold = 0
+        total_xp = 0
         for reward in mission.rewards:
             if reward.gold:
-                character.stats.gold += reward.gold
+                total_gold += reward.gold
+            if reward.xp:
+                total_xp += reward.xp
             if reward.item_id:
                 items_to_add.append({
                     "character_id": character.id,
                     "item_id": reward.item_id,
                     "quantity": 1
                 })
+
+        new_level = char_service.award_xp_and_gold(
+            db, character, gold_delta=total_gold, xp_delta=total_xp
+        )
+        if new_level is not None:
+            db.add(LedgerEntry(
+                campaign_id=mission.campaign_id,
+                event_type="LevelUp",
+                description=f"{character.name} reached Level {new_level} ({character.stats.xp} XP)",
+                essence_delta=0,
+            ))
 
     if items_to_add:
         item_service.add_items_to_inventory_bulk(db, items_to_add)

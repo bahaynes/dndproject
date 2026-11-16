@@ -89,7 +89,10 @@ def signup_for_session(
     if not character:
         raise HTTPException(status_code=400, detail="User has no active character selected")
 
-    return crud.add_character_to_game_session(db, session=session, character=character)
+    updated_session, error = crud.add_character_to_game_session(db, session=session, character=character)
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    return updated_session
 
 @router.delete("/{session_id}/signup", response_model=schemas.GameSessionWithPlayers, tags=["Game Sessions"])
 def cancel_signup(
@@ -175,6 +178,22 @@ def complete_session(
     session, error = crud.complete_session(
         db, session=db_session, data=data, campaign_id=current_user.campaign_id
     )
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    return session
+
+
+@router.post("/{session_id}/cancel", response_model=schemas.GameSessionWithPlayers, tags=["Admin"])
+def cancel_session(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_admin_user),
+):
+    db_session = crud.get_game_session(db, session_id=session_id)
+    if not db_session or db_session.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Game session not found")
+
+    session, error = crud.cancel_game_session(db, session=db_session)
     if error:
         raise HTTPException(status_code=400, detail=error)
     return session

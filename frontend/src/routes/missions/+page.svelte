@@ -2,168 +2,256 @@
 	import { onMount } from 'svelte';
 	import { auth } from '$lib/auth';
 	import { api } from '$lib/api';
-	import type { Mission } from '$lib/types';
+	import type { GameSessionWithPlayers, Mission } from '$lib/types';
+	import { MISSIONS_NAV } from '$lib/navigation';
+	import SubNav from '$lib/components/SubNav.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import MarkdownRenderer from '$lib/components/MarkdownRenderer.svelte';
-	import RewardCard from '$lib/components/RewardCard.svelte';
+	import Modal from '$lib/components/Modal.svelte';
 
 	let missions: Mission[] = [];
+	let openSessions: GameSessionWithPlayers[] = [];
 	let loading = true;
 	let error = '';
-	let myCharacterId: number | undefined;
+	let successMessage = '';
 
-	// Reactive update for character ID
+	let tierFilter = '';
+	let statusFilter = 'Available';
+
+	let showProposeModal = false;
+	let selectedMission: Mission | null = null;
+	let selectedSessionId: number | null = null;
+
 	$: myCharacterId = $auth.user?.active_character?.id;
 
-	onMount(async () => {
-		await fetchMissions();
-	});
+	onMount(loadData);
 
-	async function fetchMissions() {
+	async function loadData() {
 		loading = true;
 		error = '';
 		try {
-			missions = await api('GET', '/missions/');
+			const [m, s] = await Promise.all([
+				api('GET', '/missions/'),
+				api('GET', '/sessions/').catch(() => [])
+			]);
+			missions = m ?? [];
+			openSessions = (s ?? []).filter(
+				(sess: GameSessionWithPlayers) =>
+					sess.status !== 'Confirmed' && sess.status !== 'Completed' && sess.status !== 'Cancelled'
+			);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to load missions.';
+			error = e instanceof Error ? e.message : 'Failed to load quests.';
 		} finally {
 			loading = false;
 		}
 	}
 
-	async function handleSignup(missionId: number) {
+	function openPropose(mission: Mission) {
+		selectedMission = mission;
+		selectedSessionId = openSessions[0]?.id ?? null;
+		showProposeModal = true;
+	}
+
+	async function submitProposal() {
+		if (!selectedMission || !selectedSessionId) return;
 		error = '';
 		try {
-			await api('POST', `/missions/${missionId}/signup`);
-			await fetchMissions();
+			await api('POST', '/sessions/proposals', {
+				session_id: selectedSessionId,
+				mission_id: selectedMission.id
+			});
+			showProposeModal = false;
+			successMessage = `Proposed "${selectedMission.name}" for the selected session.`;
+			setTimeout(() => (successMessage = ''), 4000);
 		} catch (e) {
-			error = e instanceof Error ? e.message : 'Failed to sign up for mission.';
+			error = e instanceof Error ? e.message : 'Failed to propose quest.';
 		}
 	}
 
-	function isUserInMission(mission: Mission) {
-		if (!myCharacterId) return false;
-		return mission.players.some((p) => p.id === myCharacterId);
+	function inCooldown(m: Mission): boolean {
+		if (!m.last_run_date) return false;
+		return Date.now() - new Date(m.last_run_date).getTime() < m.cooldown_days * 86400000;
 	}
+
+	function missionGold(m: Mission): number {
+		return m.rewards.reduce((sum, r) => sum + (r.gold ?? 0), 0);
+	}
+
+	function missionXp(m: Mission): number {
+		return m.rewards.reduce((sum, r) => sum + (r.xp ?? 0), 0);
+	}
+
+	function missionItems(m: Mission): string[] {
+		return m.rewards.filter((r) => r.item).map((r) => r.item!.name);
+	}
+
+	$: tiers = Array.from(new Set(missions.map((m) => m.tier).filter(Boolean))) as string[];
+	$: filteredMissions = missions.filter((m) => {
+		if (statusFilter && m.status !== statusFilter) return false;
+		if (tierFilter && m.tier !== tierFilter) return false;
+		return true;
+	});
 </script>
 
-<div class="container mx-auto max-w-5xl p-4">
-	<div class="mb-8 flex items-center justify-between border-b border-base-content/10 pb-4">
-		<h1 class="text-4xl font-[var(--font-cinzel)] font-bold text-primary">Mission Board</h1>
-		<button class="btn btn-ghost btn-sm" on:click={fetchMissions}>Refresh</button>
-	</div>
+<div class="page-container">
+	<SubNav items={MISSIONS_NAV} />
+
+	<PageHeader
+		title="Available Quests"
+		subtitle="Browse active contracts and propose them for an upcoming session slot."
+	>
+		<div slot="actions" class="flex flex-wrap items-center gap-2">
+			<select class="select select-bordered select-sm" bind:value={statusFilter} aria-label="Filter by status">
+				<option value="">All Statuses</option>
+				<option value="Available">Available</option>
+				<option value="In Progress">In Progress</option>
+				<option value="Completed">Completed</option>
+			</select>
+			{#if tiers.length > 0}
+				<select class="select select-bordered select-sm" bind:value={tierFilter} aria-label="Filter by tier">
+					<option value="">All Tiers</option>
+					{#each tiers as t}
+						<option value={t}>{t}</option>
+					{/each}
+				</select>
+			{/if}
+			<button class="btn btn-ghost btn-sm" on:click={loadData}>Refresh</button>
+		</div>
+	</PageHeader>
 
 	{#if error}
-		<div class="mb-6 alert alert-error shadow-lg">
-			<div>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-6 w-6 flex-shrink-0 stroke-current"
-					fill="none"
-					viewBox="0 0 24 24"
-					><path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-					/></svg
-				>
-				<span>{error}</span>
-			</div>
-		</div>
+		<div class="alert alert-error mb-6 text-sm">{error}</div>
+	{/if}
+	{#if successMessage}
+		<div class="alert alert-success mb-6 text-sm">{successMessage}</div>
 	{/if}
 
 	{#if loading}
 		<LoadingSpinner size="lg" />
-	{:else if missions.length === 0}
-		<div class="card bg-base-200 p-12 text-center opacity-70">
-			<h2 class="text-xl font-bold">The board is currently empty.</h2>
-			<p>Check back later for new adventurous opportunities from the guild.</p>
+	{:else if filteredMissions.length === 0}
+		<div class="panel p-12 text-center">
+			<p class="text-base font-medium text-base-content/75">No quests match your current filters.</p>
+			<p class="mt-1 text-sm text-base-content/50">Check back after the DM posts new bounties.</p>
 		</div>
 	{:else}
-		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-			{#each missions as mission}
-				<div class="card flex h-full flex-col border border-base-content/10 bg-base-100 shadow-xl">
-					<div class="card-body">
-						<div class="mb-2 flex items-start justify-between">
-							<h2 class="card-title font-[var(--font-cinzel)]">{mission.name}</h2>
-							<div
-								class="badge {mission.status === 'Available'
-									? 'badge-success'
-									: 'badge-warning'} badge-sm"
-							>
-								{mission.status}
-							</div>
-						</div>
-
-						<div class="mb-4 line-clamp-3 text-sm">
-							<MarkdownRenderer content={mission.description || 'No mission brief available.'} />
-						</div>
-
-						<!-- Rewards section -->
-						<div class="mb-4 rounded-lg bg-base-200 p-3">
-							<span class="mb-2 block text-[10px] font-bold text-base-content/60 uppercase"
-								>Potential Rewards</span
-							>
-							<div class="flex flex-wrap gap-2">
-								{#each mission.rewards as reward}
-									<RewardCard
-										reward={reward}
-										interactive={mission.status === 'Completed'}
-										isRevealed={!reward.is_hidden}
-									/>
-								{/each}
-							</div>
-						</div>
-
-						<div class="mt-auto">
-							<div class="mb-4 flex items-center gap-2">
-								<div class="avatar-group -space-x-3 rtl:space-x-reverse">
-									{#each mission.players.slice(0, 3) as player}
-										<div class="placeholder avatar border-base-100">
-											<div
-												class="w-6 rounded-full bg-primary text-[8px] font-bold text-primary-content"
-											>
-												{player.name.charAt(0)}
-											</div>
-										</div>
-									{/each}
-									{#if mission.players.length > 3}
-										<div class="placeholder avatar border-base-100">
-											<div
-												class="w-6 rounded-full bg-neutral text-[8px] font-bold text-neutral-content"
-											>
-												+{mission.players.length - 3}
-											</div>
-										</div>
-									{/if}
-								</div>
-								<span class="text-xs text-base-content/65">
-									{mission.players.length === 0
-										? 'Seeking members'
-										: `${mission.players.length} members signed up`}
-								</span>
-							</div>
-
-							<div class="card-actions justify-end">
-								{#if isUserInMission(mission)}
-									<button class="btn btn-disabled w-full btn-sm">Already Signed Up</button>
-								{:else if mission.status === 'Available'}
-									<button
-										class="btn w-full btn-sm btn-primary"
-										on:click={() => handleSignup(mission.id)}
-										disabled={!myCharacterId}
-									>
-										{!myCharacterId ? 'No Character Found' : 'Sign Up'}
-									</button>
-								{:else}
-									<button class="btn btn-disabled w-full btn-sm">Mission {mission.status}</button>
-								{/if}
-							</div>
-						</div>
+		<div class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+			{#each filteredMissions as mission}
+				{@const gp = missionGold(mission)}
+				{@const xp = missionXp(mission)}
+				{@const items = missionItems(mission)}
+				{@const cooling = inCooldown(mission)}
+				<article class="panel panel-interactive flex flex-col p-5 {cooling ? 'opacity-60' : ''}">
+					<div class="mb-3 flex items-start justify-between gap-2">
+						<h2 class="text-base font-semibold text-base-content">{mission.name}</h2>
+						<span
+							class="badge badge-sm shrink-0 {mission.status === 'Available'
+								? 'badge-success'
+								: mission.status === 'Completed'
+									? 'badge-ghost'
+									: 'badge-warning'}"
+						>
+							{mission.status}
+						</span>
 					</div>
-				</div>
+
+					<div class="mb-3 flex flex-wrap gap-1.5 text-xs">
+						{#if mission.tier}
+							<span class="rounded bg-base-300 px-2 py-0.5 text-base-content/80">{mission.tier}</span>
+						{/if}
+						{#if mission.region}
+							<span class="rounded bg-base-300 px-2 py-0.5 text-base-content/65">{mission.region}</span>
+						{/if}
+						{#if cooling}
+							<span class="rounded bg-warning/15 px-2 py-0.5 text-warning">Cooldown</span>
+						{/if}
+					</div>
+
+					<div class="prose prose-sm mb-4 line-clamp-4 flex-1 max-w-none text-xs text-base-content/75">
+						<MarkdownRenderer content={mission.description || 'No briefing provided.'} />
+					</div>
+
+					<div class="mt-auto border-t border-base-content/10 pt-3">
+						<div class="mb-3 flex flex-wrap items-center gap-2 text-xs">
+							<span class="section-label">Rewards:</span>
+							{#if gp > 0}
+								<span class="rounded bg-primary/15 px-2 py-0.5 font-medium text-primary stat-num">
+									{gp} GP
+								</span>
+							{/if}
+							{#if xp > 0}
+								<span class="rounded bg-secondary/15 px-2 py-0.5 font-medium text-secondary stat-num">
+									{xp} XP
+								</span>
+							{/if}
+							{#each items as itemName}
+								<span class="rounded bg-base-300 px-2 py-0.5 text-base-content/80">{itemName}</span>
+							{/each}
+							{#if gp === 0 && xp === 0 && items.length === 0}
+								<span class="text-base-content/45">Unspecified</span>
+							{/if}
+						</div>
+
+						{#if mission.status === 'Available'}
+							<button
+								class="btn btn-primary btn-sm w-full"
+								disabled={!myCharacterId || cooling || openSessions.length === 0}
+								on:click={() => openPropose(mission)}
+							>
+								{#if !myCharacterId}
+									Activate Character to Propose
+								{:else if cooling}
+									On Cooldown
+								{:else if openSessions.length === 0}
+									No Open Session Slots
+								{:else}
+									Propose for Session
+								{/if}
+							</button>
+						{/if}
+					</div>
+				</article>
 			{/each}
 		</div>
 	{/if}
 </div>
+
+<Modal
+	show={showProposeModal}
+	title="Propose Quest for Session"
+	onClose={() => (showProposeModal = false)}
+>
+	{#if selectedMission}
+		<div class="space-y-4">
+			<p class="text-sm text-base-content/80">
+				Propose <strong class="text-primary">{selectedMission.name}</strong> for an upcoming session slot:
+			</p>
+			<div>
+				<label for="mission-session-select" class="mb-1 block text-xs font-medium text-base-content/70">
+					Open Session Slot
+				</label>
+				<select
+					id="mission-session-select"
+					bind:value={selectedSessionId}
+					class="select select-bordered select-sm w-full"
+				>
+					{#each openSessions as sess}
+						<option value={sess.id}>
+							{sess.name} ({new Date(sess.session_date).toLocaleDateString()})
+						</option>
+					{/each}
+				</select>
+			</div>
+		</div>
+	{/if}
+	<div slot="action">
+		<button class="btn btn-ghost btn-sm" on:click={() => (showProposeModal = false)}>Cancel</button>
+		<button
+			class="btn btn-primary btn-sm"
+			disabled={!selectedSessionId}
+			on:click={submitProposal}
+		>
+			Submit Proposal
+		</button>
+	</div>
+</Modal>

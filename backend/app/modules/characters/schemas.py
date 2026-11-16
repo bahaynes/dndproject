@@ -10,6 +10,7 @@ from ..sessions.schemas import GameSession
 
 class CharacterStatsBase(BaseModel):
     gold: int = 0
+    xp: int = 0
 
 class CharacterStatsCreate(CharacterStatsBase):
     pass
@@ -17,6 +18,7 @@ class CharacterStatsCreate(CharacterStatsBase):
 class CharacterStats(CharacterStatsBase):
     id: int
     character_id: int
+    next_level_xp: Optional[int] = None
     class Config:
         from_attributes = True
 
@@ -43,11 +45,12 @@ class CharacterStatusUpdate(BaseModel):
 
 
 class CharacterRosterEntry(BaseModel):
-    """Lightweight character info for the crew roster."""
+    """Lightweight character info for the party roster."""
     id: int
     name: str
     class_name: Optional[str] = None
     level: int
+    xp: int = 0
     status: str
     date_of_death: Optional[datetime] = None
     missions_completed: int

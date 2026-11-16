@@ -68,3 +68,16 @@ def purchase_store_item(
         raise HTTPException(status_code=400, detail=result["error"])
 
     return result
+
+
+@router.delete("/items/{store_item_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Store"])
+def delete_store_item(
+    store_item_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_admin_user),
+):
+    db_store_item = crud.get_store_item(db, store_item_id=store_item_id)
+    if db_store_item is None or db_store_item.item.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Store item not found")
+
+    crud.delete_store_item(db, db_store_item)

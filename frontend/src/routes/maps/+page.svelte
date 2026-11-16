@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte';
 	import { auth } from '$lib/auth';
 	import { api } from '$lib/api';
+	import { WORLD_NAV } from '$lib/navigation';
+	import SubNav from '$lib/components/SubNav.svelte';
 	import HexGrid from '$lib/components/HexGrid.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import { getFactionBadgeStyle } from '$lib/utils/terrainColors';
@@ -84,9 +86,12 @@
 	}
 </script>
 
-<div class="flex h-[calc(100vh-64px)] flex-col">
+<div class="flex h-[calc(100vh-56px)] flex-col">
+	<div class="mx-auto w-full max-w-6xl px-4 pt-4 sm:px-6">
+		<SubNav items={WORLD_NAV} />
+	</div>
 	{#if maps.length > 1}
-		<div class="flex gap-2 overflow-x-auto border-b border-base-300 bg-base-200 p-2">
+		<div class="flex gap-2 overflow-x-auto border-b border-base-300 bg-base-200 px-4 py-2">
 			{#each maps as map}
 				<button
 					class="btn btn-sm {activeMap?.id === map.id ? 'btn-primary' : 'btn-ghost'}"

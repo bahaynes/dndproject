@@ -15,6 +15,7 @@ class CharacterInMission(CharacterBase):
 class MissionRewardBase(BaseModel):
     item_id: Optional[int] = None
     gold: Optional[int] = None
+    xp: Optional[int] = 0
     is_hidden: bool = False
     hint: Optional[str] = None
 
@@ -38,7 +39,6 @@ class MissionBase(BaseModel):
     is_retired: bool = False
     is_discoverable: bool = True
     prerequisite_id: Optional[int] = None
-    oneshot_id: Optional[int] = None
 
 class MissionCreate(MissionBase):
     rewards: List[MissionRewardCreate] = []

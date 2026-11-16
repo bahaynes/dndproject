@@ -23,7 +23,6 @@ class Mission(Base):
     is_discoverable = Column(Boolean, default=True)  # Hidden until unlocked
     
     prerequisite_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
-    oneshot_id = Column(Integer, ForeignKey("generated_oneshots.id"), nullable=True)
 
     # Scoping
     campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
@@ -43,6 +42,7 @@ class MissionReward(Base):
     item = relationship("Item")
 
     gold = Column(Integer, nullable=True)
+    xp = Column(Integer, nullable=True, default=0)
     is_hidden = Column(Boolean, default=False, nullable=False)
     hint = Column(String, nullable=True)
 

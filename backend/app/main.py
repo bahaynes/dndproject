@@ -29,7 +29,6 @@ from .modules.missions import router as mission_router
 from .modules.sessions import router as session_router
 from .modules.maps import router as map_router
 from .modules.admin import router as admin_router
-from .modules.oneshot import router as oneshot_router
 from .modules.factions import router as faction_router
 from .modules.debug import router as debug_router
 from .modules.ship import router as ship_router
@@ -51,7 +50,6 @@ origins = [
     "http://localhost",
     "http://localhost:5173",  # SvelteKit default dev port
     "http://localhost:3000",
-    "https://*.vercel.app",   # Allow Vercel deployments
     "https://westmarches.bahaynes.com", # Production Custom Domain
     "*",                      # Allow all for testing
 ]
@@ -83,7 +81,6 @@ app.include_router(mission_router.router, prefix="/api/missions")
 app.include_router(session_router.router, prefix="/api/sessions")
 app.include_router(map_router.router, prefix="/api/maps")
 app.include_router(admin_router.router, prefix="/api/admin")
-app.include_router(oneshot_router.router, prefix="/api/oneshot")
 app.include_router(faction_router.router, prefix="/api/factions")
 app.include_router(debug_router.router, prefix="/api/debug")
 app.include_router(ship_router.router, prefix="/api/ship")

@@ -19,16 +19,33 @@ def create_game_session(db: Session, session: schemas.GameSessionCreate, campaig
     return db_session
 
 def add_character_to_game_session(db: Session, session: models.GameSession, character: char_models.Character):
+    if session.status in ("Completed", "Cancelled"):
+        return None, f"Cannot join a {session.status.lower()} session"
+    if character in session.players:
+        return session, None
+    if len(session.players) >= session.max_players:
+        return None, f"Session is full ({session.max_players}/{session.max_players} players)"
     session.players.append(character)
     db.commit()
     db.refresh(session)
-    return session
+    return session, None
+
 
 def remove_character_from_game_session(db: Session, session: models.GameSession, character: char_models.Character):
-    session.players.remove(character)
+    if character in session.players:
+        session.players.remove(character)
+        db.commit()
+        db.refresh(session)
+    return session
+
+
+def cancel_game_session(db: Session, session: models.GameSession):
+    if session.status == "Completed":
+        return None, "Cannot cancel a completed session"
+    session.status = "Cancelled"
     db.commit()
     db.refresh(session)
-    return session
+    return session, None
 
 def update_field_report(db: Session, session: models.GameSession, field_report: str):
     session.field_report = field_report
@@ -139,7 +156,8 @@ def complete_session(
     """
     from ..missions import service as mission_service
     from ..ship import service as ship_service
-    from ..ledger import service as ledger_service
+    from ..characters import service as char_service
+    from ..ledger.models import LedgerEntry
 
     if session.status == "Completed":
         return None, "Session is already completed"
@@ -152,15 +170,11 @@ def complete_session(
     if data.after_action_report:
         session.after_action_report = data.after_action_report
 
-    # Distribute mission rewards (gold + items) on success
+    # Distribute mission rewards (gold + xp + items) on success
     if data.result == "success" and session.confirmed_mission_id:
         mission = mission_service.get_mission(db, session.confirmed_mission_id, campaign_id=campaign_id)
         if mission:
             mission.status = "Completed"
-            # Ensure mission players match session players for reward distribution
-            # In some cases they might differ if session was confirmed with different set
-            # But usually they are synced. We use mission.players in distribute_mission_rewards.
-            # To be safe and consistent with previous logic which used session.players:
             mission.players = list(session.players)
             db.flush()
 
@@ -169,6 +183,21 @@ def complete_session(
             # Increment missions_completed for participants
             for character in session.players:
                 character.missions_completed = (character.missions_completed or 0) + 1
+
+    # Distribute session-level gold & XP (if specified)
+    if data.gold_earned or data.xp_earned:
+        for character in session.players:
+            new_level = char_service.award_xp_and_gold(
+                db, character, gold_delta=data.gold_earned, xp_delta=data.xp_earned
+            )
+            if new_level is not None:
+                db.add(LedgerEntry(
+                    campaign_id=campaign_id,
+                    session_id=session.id,
+                    event_type="LevelUp",
+                    description=f"{character.name} reached Level {new_level} ({character.stats.xp} XP)",
+                    essence_delta=0,
+                ))
 
     # Handle casualties
     if data.casualties:
@@ -183,12 +212,18 @@ def complete_session(
 
     db.flush()
 
-    # Adjust ship resources and auto-create ledger entry
+    # Auto-create ledger entry (and update treasury/ship if essence_earned != 0)
     event_type = "MissionCompleted" if data.result == "success" else "MissionFailed"
     mission_name = session.confirmed_mission.name if session.confirmed_mission else session.name
-    description = f"{event_type}: {mission_name}"
+    reward_parts = []
+    if data.gold_earned:
+        reward_parts.append(f"+{data.gold_earned} GP")
+    if data.xp_earned:
+        reward_parts.append(f"+{data.xp_earned} XP")
+    reward_suffix = f" ({', '.join(reward_parts)} per player)" if reward_parts else ""
+    description = f"{event_type}: {mission_name}{reward_suffix}"
 
-    ship = ship_service.adjust_resources(
+    ship_service.adjust_resources(
         db,
         campaign_id=campaign_id,
         description=description,
