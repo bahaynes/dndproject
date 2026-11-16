@@ -56,7 +56,6 @@ coverage.json
 /frontend/build
 /frontend/dist
 /frontend/.pnpm-store
-/frontend/pnpm-workspace.yaml
 
 # General
 .DS_Store
