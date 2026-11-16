@@ -226,10 +226,11 @@ jobs:
 
       - name: Update Backend FRONTEND_URL
         run: |
+          TARGET_FRONTEND_URL="${{ github.event_name == 'push' && 'https://westmarches.bahaynes.com' || env.FRONTEND_URL }}"
           gcloud run services update dnd-backend${{ env.SERVICE_SUFFIX }} \
             --region ${{ env.REGION }} \
             --project ${{ env.PROJECT_ID }} \
-            --update-env-vars="FRONTEND_URL=${{ env.FRONTEND_URL }}"
+            --update-env-vars="FRONTEND_URL=${TARGET_FRONTEND_URL}"
 
       - name: Comment on PR
         if: github.event_name == 'pull_request'
