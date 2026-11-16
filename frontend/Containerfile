@@ -7,7 +7,7 @@ FROM docker.io/library/node:20-alpine AS builder
 WORKDIR /app
 
 # Install pnpm (alpine-friendly small image for building)
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9
 
 # Copy only package metadata first to leverage docker layer caching
 COPY frontend/package.json frontend/pnpm-lock.yaml* ./
