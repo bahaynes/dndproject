@@ -100,10 +100,12 @@
 	}
 
 	function formatDate(iso: string) {
-		return new Date(iso).toLocaleDateString(undefined, {
-			weekday: 'long',
+		return new Date(iso).toLocaleString(undefined, {
+			weekday: 'short',
 			month: 'short',
-			day: 'numeric'
+			day: 'numeric',
+			hour: 'numeric',
+			minute: '2-digit'
 		});
 	}
 
@@ -204,6 +206,13 @@
 					>
 				</div>
 
+				{#if !char}
+					<div class="mb-4 alert border border-primary/25 bg-primary/10 text-sm">
+						<span>You need an active character before you can propose or sign up for a session.</span>
+						<a href="/characters" class="btn btn-xs btn-primary">Create Character →</a>
+					</div>
+				{/if}
+
 				{#if backingError}
 					<div class="mb-4 alert text-sm alert-error">{backingError}</div>
 				{/if}
@@ -268,14 +277,19 @@
 															on:click={() => toggleBacking(proposal.id)}
 															disabled={!myCharacterId}
 														>
-															{isBacking(proposal.id) ? '✓ Backing' : 'Back This'}
+															{isBacking(proposal.id) ? '✓ Signed Up' : 'Sign Up'}
 														</button>
 													</div>
-													{#if proposal.mission.tier}
-														<span class="badge badge-outline badge-xs text-base-content/70"
-															>{proposal.mission.tier}</span
-														>
-													{/if}
+													<div class="flex flex-wrap items-center gap-1.5">
+														{#if proposal.mission.tier}
+															<span class="badge badge-outline badge-xs text-base-content/70"
+																>{proposal.mission.tier}</span
+															>
+														{/if}
+														{#if proposal.backers.length >= session.min_players}
+															<span class="badge badge-success badge-xs">Ready</span>
+														{/if}
+													</div>
 													<div class="mt-2">
 														<progress
 															class="progress h-1.5 w-full progress-primary"

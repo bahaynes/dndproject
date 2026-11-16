@@ -95,4 +95,23 @@ describe('Layout', () => {
     // Check that user was redirected
     expect(goto).toHaveBeenCalledWith('/login');
   });
+
+  test('renders primary Play and Crew & World navigation links when authenticated', () => {
+    render(Layout, {});
+    expect(screen.getAllByText('Sessions').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Missions').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('World Map').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Crew & World').length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText('DM Tools')).not.toBeInTheDocument();
+  });
+
+  test('renders DM Tools navigation when user role is admin', () => {
+    (auth as any).set({
+      isAuthenticated: true,
+      user: { username: 'dmuser', role: 'admin' },
+    });
+    render(Layout, {});
+    expect(screen.getAllByText('DM Tools').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Manage Sessions').length).toBeGreaterThanOrEqual(1);
+  });
 });

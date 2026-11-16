@@ -5,7 +5,15 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { API_BASE_URL } from '$lib/config';
+	import { page } from '$app/stores';
 	import ThemeSwitcher from '$lib/components/ThemeSwitcher.svelte';
+
+	$: currentPath = $page?.url?.pathname ?? '/';
+
+	function isActive(path: string, exact = false): boolean {
+		if (exact) return currentPath === path;
+		return currentPath === path || currentPath.startsWith(path + '/');
+	}
 
 	// Rehydrate auth from localStorage on every page load.
 	// Only ever looks at accessToken — nothing else.
@@ -43,7 +51,7 @@
 </script>
 
 <div class="flex min-h-screen flex-col">
-	<nav class="navbar border-b border-base-content/10 bg-base-300 shadow-lg">
+	<nav class="navbar sticky top-0 z-30 border-b border-base-content/10 bg-base-300 shadow-lg">
 		<div class="navbar-start">
 			<div class="dropdown">
 				<button tabindex="0" class="btn btn-ghost lg:hidden" aria-label="Mobile Menu">
@@ -62,12 +70,31 @@
 					>
 				</button>
 				<ul
-					class="dropdown-content menu z-[1] mt-3 w-52 menu-sm rounded-box border border-base-content/10 bg-base-200 p-2 shadow"
+					class="dropdown-content menu z-50 mt-3 w-60 menu-sm rounded-box border border-base-content/10 bg-base-200 p-2 shadow-xl"
 				>
 					{#if $auth.isAuthenticated}
-						<li><a href="/dashboard">Dashboard</a></li>
-						<li><a href="/campaigns">Switch Campaign</a></li>
+						<li class="menu-title text-[10px] uppercase opacity-60">Play</li>
+						<li><a href="/dashboard" class:active={isActive('/dashboard', true)}>Dashboard</a></li>
+						<li><a href="/sessions" class:active={isActive('/sessions')}>Sessions</a></li>
+						<li><a href="/missions" class:active={isActive('/missions')}>Missions</a></li>
+						<li><a href="/maps" class:active={isActive('/maps')}>World Map</a></li>
+						<li class="menu-title mt-1 text-[10px] uppercase opacity-60">Crew &amp; World</li>
+						<li><a href="/characters" class:active={isActive('/characters', true)}>Character</a></li>
+						<li><a href="/characters/inventory" class:active={isActive('/characters/inventory')}>Inventory</a></li>
+						<li><a href="/store" class:active={isActive('/store')}>Store</a></li>
+						<li><a href="/factions" class:active={isActive('/factions')}>Factions</a></li>
+						<li><a href="/roster" class:active={isActive('/roster')}>Roster</a></li>
+						<li><a href="/ledger" class:active={isActive('/ledger')}>Ledger</a></li>
+						{#if $auth.user?.role === 'admin'}
+							<li class="menu-title mt-1 text-[10px] uppercase opacity-60">DM Tools</li>
+							<li><a href="/admin/sessions" class:active={isActive('/admin/sessions')}>Manage Sessions</a></li>
+							<li><a href="/admin/missions" class:active={isActive('/admin/missions')}>Manage Missions</a></li>
+							<li><a href="/admin/maps" class:active={isActive('/admin/maps')}>Manage Maps</a></li>
+							<li><a href="/admin/items" class:active={isActive('/admin/items')}>Manage Items</a></li>
+							<li><a href="/admin/ship" class:active={isActive('/admin/ship')}>Ship Config</a></li>
+						{/if}
 						<li><hr class="my-1 opacity-10" /></li>
+						<li><a href="/campaigns" class:active={isActive('/campaigns')}>Switch Campaign</a></li>
 						<li><button on:click={handleLogout} class="text-error">Logout</button></li>
 					{:else}
 						<li><a href="/login">Login</a></li>
@@ -80,12 +107,70 @@
 		</div>
 
 		<div class="navbar-center hidden lg:flex">
-			<ul class="menu menu-horizontal gap-2 px-1">
+			<ul class="menu menu-horizontal items-center gap-1 px-1">
 				{#if $auth.isAuthenticated}
-					<li><a href="/dashboard" class="font-semibold">Dashboard</a></li>
-					<li><a href="/maps" class="font-semibold">World Map</a></li>
-					<li><a href="/factions" class="font-semibold">Factions</a></li>
-					<li><a href="/campaigns" class="font-semibold">Switch Campaign</a></li>
+					<li>
+						<a
+							href="/dashboard"
+							class="font-semibold {isActive('/dashboard', true) ? 'bg-primary/15 text-primary' : ''}"
+							>Dashboard</a
+						>
+					</li>
+					<li>
+						<a
+							href="/sessions"
+							class="font-semibold {isActive('/sessions') ? 'bg-primary/15 text-primary' : ''}"
+							>Sessions</a
+						>
+					</li>
+					<li>
+						<a
+							href="/missions"
+							class="font-semibold {isActive('/missions') ? 'bg-primary/15 text-primary' : ''}"
+							>Missions</a
+						>
+					</li>
+					<li>
+						<a
+							href="/maps"
+							class="font-semibold {isActive('/maps') ? 'bg-primary/15 text-primary' : ''}"
+							>World Map</a
+						>
+					</li>
+					<li>
+						<details>
+							<summary
+								class="font-semibold"
+								class:text-primary={isActive('/characters') ||
+									isActive('/store') ||
+									isActive('/factions') ||
+									isActive('/roster') ||
+									isActive('/ledger')}>Crew &amp; World</summary
+							>
+							<ul class="z-50 w-44 rounded-box border border-base-content/10 bg-base-200 p-2 shadow-xl">
+								<li><a href="/characters" class:active={isActive('/characters', true)}>Character</a></li>
+								<li><a href="/characters/inventory" class:active={isActive('/characters/inventory')}>Inventory</a></li>
+								<li><a href="/store" class:active={isActive('/store')}>Store</a></li>
+								<li><a href="/factions" class:active={isActive('/factions')}>Factions</a></li>
+								<li><a href="/roster" class:active={isActive('/roster')}>Roster</a></li>
+								<li><a href="/ledger" class:active={isActive('/ledger')}>Ledger</a></li>
+							</ul>
+						</details>
+					</li>
+					{#if $auth.user?.role === 'admin'}
+						<li>
+							<details>
+								<summary class="font-semibold" class:text-primary={isActive('/admin')}>DM Tools</summary>
+								<ul class="z-50 w-44 rounded-box border border-base-content/10 bg-base-200 p-2 shadow-xl">
+									<li><a href="/admin/sessions" class:active={isActive('/admin/sessions')}>Manage Sessions</a></li>
+									<li><a href="/admin/missions" class:active={isActive('/admin/missions')}>Manage Missions</a></li>
+									<li><a href="/admin/maps" class:active={isActive('/admin/maps')}>Manage Maps</a></li>
+									<li><a href="/admin/items" class:active={isActive('/admin/items')}>Manage Items</a></li>
+									<li><a href="/admin/ship" class:active={isActive('/admin/ship')}>Ship Config</a></li>
+								</ul>
+							</details>
+						</li>
+					{/if}
 				{/if}
 			</ul>
 		</div>
