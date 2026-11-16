@@ -134,6 +134,7 @@ def seed_missions(db, campaign_id: int) -> int:
 
 def seed_campaign(campaign_id: int) -> None:
     from app.modules.campaigns.models import Campaign  # noqa: import side effect
+    from app.modules.admin.service import load_baseline_world, import_world
 
     db = SessionLocal()
     try:
@@ -142,15 +143,15 @@ def seed_campaign(campaign_id: int) -> None:
             print(f"Campaign {campaign_id} not found.", file=sys.stderr)
             sys.exit(1)
 
-        print(f"Seeding campaign '{campaign.name}' (id={campaign_id})…")
+        print(f"Seeding campaign '{campaign.name}' (id={campaign_id}) with Baseline World…")
 
-        factions_created = seed_factions(db, campaign_id)
-        missions_created = seed_missions(db, campaign_id)
+        bundle = load_baseline_world()
+        res = import_world(db, campaign_id, bundle, mode="merge")
 
-        db.commit()
-
-        print(f"  Factions: {factions_created} created (skipped existing)")
-        print(f"  Missions: {missions_created} created (skipped existing)")
+        print(f"  Factions: {res.factions_created} created, {res.factions_updated} updated")
+        print(f"  Items:    {res.items_created} created, {res.items_updated} updated")
+        print(f"  Quests:   {res.missions_created} created, {res.missions_updated} updated")
+        print(f"  Maps:     {res.maps_created} created, {res.maps_updated} updated ({res.hexes_upserted} hexes)")
         print("Done.")
     finally:
         db.close()

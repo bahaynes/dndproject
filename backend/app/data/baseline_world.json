@@ -1,0 +1,869 @@
+{
+  "schema_version": 1,
+  "world_name": "The Ashenvale Frontier",
+  "hub": {
+    "name": "Crossroads Keep",
+    "motd": "Welcome to Crossroads Keep, the last chartered outpost on the edge of the Ashenvale Frontier. Beyond the palisade lie uncharted ruins, rival factions, and old roads waiting to be reclaimed. Pick a contract from the Quest Board, check the frontier map, and sign up for Monday's expedition!"
+  },
+  "factions": [
+    {
+      "faction_name": "The Guildhall",
+      "level": 0,
+      "color": "#3b82f6",
+      "description": "The chartered expeditionary guild that maintains maps, bounties, and safe-conduct passes across the frontier."
+    },
+    {
+      "faction_name": "Borderland Wardens",
+      "level": 0,
+      "color": "#d97706",
+      "description": "Independent scouts, waystation keepers, and rangers holding the outer watchtowers beyond settled lands."
+    },
+    {
+      "faction_name": "The Lantern Circle",
+      "level": 0,
+      "color": "#10b981",
+      "description": "Arcane surveyors and scholars cataloguing pre-kingdom ruins, ley anomalies, and recovered relics."
+    }
+  ],
+  "items": [
+    {
+      "name": "Potion of Healing",
+      "description": "Restores 2d4 + 2 hit points when consumed as an action.",
+      "store_price": 50,
+      "store_quantity": -1
+    },
+    {
+      "name": "Torches (Bundle of 10)",
+      "description": "Provides bright light in a 20-foot radius and dim light for an additional 20 feet for 1 hour each.",
+      "store_price": 1,
+      "store_quantity": -1
+    },
+    {
+      "name": "Rations (5 Days)",
+      "description": "Dry jerky, hardtack, and dried fruit for five days on the frontier.",
+      "store_price": 3,
+      "store_quantity": -1
+    },
+    {
+      "name": "Rope, Hempen (50 ft.)",
+      "description": "50 feet of sturdy hempen rope with 2 hit points and DC 17 Strength check to burst.",
+      "store_price": 1,
+      "store_quantity": -1
+    },
+    {
+      "name": "Healer's Kit",
+      "description": "10 uses; stabilize a dying creature without making a Medicine check.",
+      "store_price": 5,
+      "store_quantity": -1
+    },
+    {
+      "name": "Antitoxin (Vial)",
+      "description": "Advantage on saving throws against poison for 1 hour.",
+      "store_price": 50,
+      "store_quantity": -1
+    },
+    {
+      "name": "Climber's Kit",
+      "description": "Pitons, boot tips, gloves, and harness for scaling cliff faces and quarry walls.",
+      "store_price": 25,
+      "store_quantity": -1
+    },
+    {
+      "name": "Spell Scroll (1st Level)",
+      "description": "A single-use 1st-level arcane or divine scroll issued by the Lantern Circle.",
+      "store_price": 75,
+      "store_quantity": 3
+    }
+  ],
+  "missions": [
+    {
+      "name": "The Quiet Convoy",
+      "description": "A supply caravan out of Crossroads Keep went silent three days ago near Ashwood Crossing. The manifest is routine\u2014timber, lamp oil, and rations\u2014nothing worth a bandit raid, yet no rider has returned.",
+      "status": "Available",
+      "tier": "Tier 1",
+      "region": "Ashwood Crossing",
+      "cooldown_days": 14,
+      "is_discoverable": true,
+      "is_retired": false,
+      "prerequisite_name": null,
+      "rewards": [
+        {
+          "gold": 50,
+          "xp": 300,
+          "item_name": null,
+          "is_hidden": false,
+          "hint": "Guildhall standard recovery bounty"
+        }
+      ]
+    },
+    {
+      "name": "Beacon on the Ridge",
+      "description": "An old Warden watchtower on the northern ridge began flashing its signal lantern on loop last night. The Wardens abandoned that post three winters ago; someone\u2014or something\u2014has relit the brazier.",
+      "status": "Available",
+      "tier": "Tier 1",
+      "region": "Northern Ridge",
+      "cooldown_days": 14,
+      "is_discoverable": true,
+      "is_retired": false,
+      "prerequisite_name": null,
+      "rewards": [
+        {
+          "gold": 75,
+          "xp": 450,
+          "item_name": null,
+          "is_hidden": false,
+          "hint": "Warden hazard pay"
+        }
+      ]
+    },
+    {
+      "name": "Clearance Work",
+      "description": "Miners expanding Stonebridge Quarry broke into a sealed vault of pre-kingdom stonework. The foreman wants the chambers cleared and surveyed before the Guildhall claims salvage rights.",
+      "status": "Available",
+      "tier": "Tier 1",
+      "region": "Stonebridge Quarry",
+      "cooldown_days": 7,
+      "is_discoverable": true,
+      "is_retired": false,
+      "prerequisite_name": null,
+      "rewards": [
+        {
+          "gold": 60,
+          "xp": 350,
+          "item_name": null,
+          "is_hidden": false,
+          "hint": "Quarry foreman retainer"
+        }
+      ]
+    },
+    {
+      "name": "Whispers in the Mire",
+      "description": "Marsh scouts report eerie green lantern-lights drifting over a half-sunken temple east of the Ashwood. Recover any intact carvings and find out what is drawing locals toward the reeds.",
+      "status": "Available",
+      "tier": "Tier 1",
+      "region": "Sunken Mire",
+      "cooldown_days": 14,
+      "is_discoverable": true,
+      "is_retired": false,
+      "prerequisite_name": null,
+      "rewards": [
+        {
+          "gold": 100,
+          "xp": 600,
+          "item_name": null,
+          "is_hidden": false,
+          "hint": "Joint Guildhall & Lantern Circle contract"
+        }
+      ]
+    },
+    {
+      "name": "The Surveyed Vault",
+      "description": "The Lantern Circle has pinpointed a dormant obsidian cairn in the western crags. Escort their surveyor or clear the antechamber so the obelisk readings can be recorded.",
+      "status": "Available",
+      "tier": "Tier 1",
+      "region": "Obsidian Cairn",
+      "cooldown_days": 21,
+      "is_discoverable": true,
+      "is_retired": false,
+      "prerequisite_name": null,
+      "rewards": [
+        {
+          "gold": 125,
+          "xp": 750,
+          "item_name": null,
+          "is_hidden": false,
+          "hint": "Lantern Circle expedition stipend"
+        },
+        {
+          "gold": 0,
+          "xp": 0,
+          "item_name": "Spell Scroll (1st Level)",
+          "is_hidden": true,
+          "hint": "Sealed scroll tube in the inner reliquary"
+        }
+      ]
+    }
+  ],
+  "maps": [
+    {
+      "name": "The Ashenvale Frontier",
+      "width": 20,
+      "height": 20,
+      "hex_size": 60,
+      "default_terrain": "plains",
+      "hexes": [
+        {
+          "q": -4,
+          "r": 0,
+          "terrain": "desert",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": 1,
+          "terrain": "desert",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": 2,
+          "terrain": "desert",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": 3,
+          "terrain": "desert",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": 4,
+          "terrain": "desert",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": -1,
+          "terrain": "plains",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 0,
+          "terrain": "desert",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 1,
+          "terrain": "desert",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 2,
+          "terrain": "desert",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 3,
+          "terrain": "desert",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 4,
+          "terrain": "desert",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": -2,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": -1,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "awakened",
+          "controlling_faction": "The Lantern Circle",
+          "linked_location_name": "Obsidian Cairn",
+          "linked_mission_name": "The Surveyed Vault",
+          "notes": "Arcane survey site humming with dormant ley resonance. Lantern Circle wants a full sweep."
+        },
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "plains",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": 1,
+          "terrain": "plains",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": 2,
+          "terrain": "plains",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": 3,
+          "terrain": "plains",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": 4,
+          "terrain": "plains",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": -3,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": -2,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": -1,
+          "terrain": "plains",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "friendly",
+          "controlling_faction": "The Guildhall",
+          "linked_location_name": "Stonebridge Quarry",
+          "linked_mission_name": "Clearance Work",
+          "notes": "Active limestone quarry; miners breached a sealed pre-kingdom vault beneath the lower terrace."
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "swamp",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "swamp",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "swamp",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": -4,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": -3,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": -2,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "contested",
+          "controlling_faction": null,
+          "linked_location_name": "Old Watchtower",
+          "linked_mission_name": "Beacon on the Ridge",
+          "notes": "Abandoned Warden signal tower. Its brazier has been flashing SOS on loop since last night."
+        },
+        {
+          "q": 0,
+          "r": -1,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "claimed_developed",
+          "controlling_faction": "The Guildhall",
+          "linked_location_name": "Crossroads Keep",
+          "linked_mission_name": null,
+          "notes": "Chartered frontier stronghold, tavern, and Guildhall mission board. Safe long rests."
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "water",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "water",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "water",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": -4,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": -3,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": -2,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": -1,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "friendly",
+          "controlling_faction": "Borderland Wardens",
+          "linked_location_name": "Ashwood Crossing",
+          "linked_mission_name": "The Quiet Convoy",
+          "notes": "Timber bridge over the Ashwater. Patrols report the supply convoy vanished 2 miles east."
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "plains",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "swamp",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "swamp",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": -4,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": -3,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": -2,
+          "terrain": "swamp",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": "Sunken Shrine of Vael",
+          "linked_mission_name": "Whispers in the Mire",
+          "notes": "Half-submerged temple complex; eerie lantern-lights drift above the reeds at dusk."
+        },
+        {
+          "q": 2,
+          "r": -1,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "swamp",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "terrain": "swamp",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "terrain": "swamp",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": -4,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": -3,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": -2,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": -1,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": 0,
+          "terrain": "swamp",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": 1,
+          "terrain": "swamp",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": -4,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": -3,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": -2,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": -1,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": 0,
+          "terrain": "swamp",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        }
+      ]
+    }
+  ]
+}

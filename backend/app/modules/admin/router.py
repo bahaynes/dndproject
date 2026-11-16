@@ -8,17 +8,31 @@ from . import schemas, service as crud
 
 router = APIRouter()
 
-@router.post("/seed", tags=["Admin"])
+@router.post("/seed", response_model=schemas.WorldImportResult, tags=["Admin"])
 def seed_world_data(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_admin_user),
 ):
-    """Idempotent: seeds factions and opening missions from the world bible."""
-    from scripts.seed import seed_factions, seed_missions
-    factions = seed_factions(db, current_user.campaign_id)
-    missions = seed_missions(db, current_user.campaign_id)
-    db.commit()
-    return {"factions_created": factions, "missions_created": missions}
+    """Idempotent: seeds the baseline frontier world (hub, factions, store, quests, hex map)."""
+    bundle = crud.load_baseline_world()
+    return crud.import_world(db, current_user.campaign_id, bundle, mode="merge")
+
+
+@router.get("/world/export", response_model=schemas.WorldBundle, tags=["Admin"])
+def export_world_endpoint(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_admin_user),
+):
+    return crud.export_world(db, current_user.campaign_id)
+
+
+@router.post("/world/import", response_model=schemas.WorldImportResult, tags=["Admin"])
+def import_world_endpoint(
+    req: schemas.WorldImportRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_admin_user),
+):
+    return crud.import_world(db, current_user.campaign_id, req.bundle, mode=req.mode)
 
 
 @router.get("/export", response_model=schemas.GameDataExport, tags=["Admin"], dependencies=[Depends(get_current_active_admin_user)])
