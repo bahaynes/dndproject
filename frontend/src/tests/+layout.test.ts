@@ -7,6 +7,7 @@ import { describe, beforeEach, test, expect, vi } from 'vitest';
 // Mock dependencies
 vi.mock('$app/navigation', () => ({
   goto: vi.fn(),
+  afterNavigate: vi.fn(),
 }));
 
 // Mock localStorage

@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import Modal from '$lib/components/Modal.svelte';
+	import { formatSessionDateTime } from '$lib/date';
 	import type { Ship, GameSessionWithPlayers, Mission } from '$lib/types';
 
 	let ship: Ship | null = null;
@@ -100,13 +101,7 @@
 	}
 
 	function formatDate(iso: string) {
-		return new Date(iso).toLocaleString(undefined, {
-			weekday: 'short',
-			month: 'short',
-			day: 'numeric',
-			hour: 'numeric',
-			minute: '2-digit'
-		});
+		return formatSessionDateTime(iso);
 	}
 
 	function inCooldown(m: Mission): boolean {

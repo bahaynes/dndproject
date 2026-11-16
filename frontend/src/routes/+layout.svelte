@@ -2,11 +2,13 @@
 	import '../app.css';
 	import { auth, login, logout } from '$lib/auth';
 	import { browser } from '$app/environment';
-	import { goto } from '$app/navigation';
+	import { goto, afterNavigate } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { API_BASE_URL } from '$lib/config';
 	import { page } from '$app/stores';
 	import ThemeSwitcher from '$lib/components/ThemeSwitcher.svelte';
+
+	let navEl: HTMLElement | null = null;
 
 	$: currentPath = $page?.url?.pathname ?? '/';
 
@@ -14,6 +16,18 @@
 		if (exact) return currentPath === path;
 		return currentPath === path || currentPath.startsWith(path + '/');
 	}
+
+	function closeMenus() {
+		if (!browser) return;
+		navEl?.querySelectorAll('details[open]').forEach((el) => el.removeAttribute('open'));
+		if (document.activeElement instanceof HTMLElement) {
+			document.activeElement.blur();
+		}
+	}
+
+	afterNavigate(() => {
+		closeMenus();
+	});
 
 	// Rehydrate auth from localStorage on every page load.
 	// Only ever looks at accessToken — nothing else.
@@ -45,13 +59,23 @@
 	});
 
 	function handleLogout() {
+		closeMenus();
 		logout();
 		if (browser) goto('/login');
 	}
 </script>
 
 <div class="flex min-h-screen flex-col">
-	<nav class="navbar sticky top-0 z-30 border-b border-base-content/10 bg-base-300 shadow-lg">
+	<!-- svelte-ignore a11y-click-events-have-key-events a11y-no-noninteractive-element-interactions -->
+	<nav
+		bind:this={navEl}
+		on:click={(e) => {
+			if (e.target instanceof Element && e.target.closest('a')) {
+				closeMenus();
+			}
+		}}
+		class="navbar sticky top-0 z-30 border-b border-base-content/10 bg-base-300 shadow-lg"
+	>
 		<div class="navbar-start">
 			<div class="dropdown">
 				<button tabindex="0" class="btn btn-ghost lg:hidden" aria-label="Mobile Menu">

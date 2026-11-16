@@ -50,7 +50,12 @@
 <div class="container mx-auto max-w-5xl p-4">
 	<div class="mb-8 flex items-center justify-between border-b border-base-content/10 pb-4">
 		<h1 class="text-4xl font-[var(--font-cinzel)] font-bold text-primary">Mission Board</h1>
-		<button class="btn btn-ghost btn-sm" on:click={fetchMissions}>Refresh</button>
+		<div class="flex items-center gap-2">
+			{#if $auth.user?.role === 'admin'}
+				<a href="/admin/missions" class="btn btn-sm btn-primary">+ Manage Missions</a>
+			{/if}
+			<button class="btn btn-ghost btn-sm" on:click={fetchMissions}>Refresh</button>
+		</div>
 	</div>
 
 	{#if error}
