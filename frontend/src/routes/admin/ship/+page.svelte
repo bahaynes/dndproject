@@ -1,169 +1,131 @@
 <script lang="ts">
-    import { api } from '$lib/api';
-    import { onMount } from 'svelte';
-    import type { Ship } from '$lib/types';
-    let ship: Ship | null = null;
-    let loading = true;
-    let saving = false;
-    let adjusting = false;
-    let saveMsg = '';
-    let adjustMsg = '';
-    let saveError = '';
-    let adjustError = '';
+	import { api } from '$lib/api';
+	import { onMount } from 'svelte';
+	import type { Ship } from '$lib/types';
+	import PageHeader from '$lib/components/PageHeader.svelte';
+	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
-    // Edit form
-    let editName = '';
-    let editLevel = 1;
-    let editEssence = 0;
-    let editMotd = '';
+	let settings: Ship | null = null;
+	let loading = true;
+	let saving = false;
+	let seeding = false;
+	let saveMsg = '';
+	let saveError = '';
+	let seedMsg = '';
 
-    // Adjust form
-    let adjEssenceDelta = 0;
-    let adjDescription = '';
+	// Form
+	let editName = '';
+	let editMotd = '';
 
-    onMount(loadShip);
+	onMount(loadSettings);
 
-    async function loadShip() {
-        loading = true;
-        try {
-            ship = await api('GET', '/ship/');
-            editName = ship!.name;
-            editLevel = ship!.level;
-            editEssence = ship!.essence;
-            editMotd = ship!.motd ?? '';
-        } catch (e) {}
-        loading = false;
-    }
+	async function loadSettings() {
+		loading = true;
+		try {
+			settings = await api('GET', '/ship/');
+			editName = settings!.name;
+			editMotd = settings!.motd ?? '';
+		} catch (e) {}
+		loading = false;
+	}
 
-    async function saveShip() {
-        saving = true;
-        saveMsg = '';
-        saveError = '';
-        try {
-            ship = await api('PUT', '/ship/', { name: editName, level: editLevel, essence: editEssence, motd: editMotd || null });
-            saveMsg = 'Ship configuration saved.';
-        } catch (e) {
-            saveError = e instanceof Error ? e.message : 'Failed to save.';
-        }
-        saving = false;
-    }
+	async function saveSettings() {
+		saving = true;
+		saveMsg = '';
+		saveError = '';
+		try {
+			settings = await api('PUT', '/ship/', {
+				name: editName,
+				level: settings?.level ?? 1,
+				essence: settings?.essence ?? 0,
+				motd: editMotd || null
+			});
+			saveMsg = 'Campaign settings saved.';
+		} catch (e) {
+			saveError = e instanceof Error ? e.message : 'Failed to save.';
+		}
+		saving = false;
+	}
 
-    async function adjustShip() {
-        if (!adjDescription.trim()) { adjustError = 'Description is required.'; return; }
-        adjusting = true;
-        adjustMsg = '';
-        adjustError = '';
-        try {
-            ship = await api('POST', '/ship/adjust', { essence_delta: adjEssenceDelta, description: adjDescription });
-            editEssence = ship!.essence;
-            adjustMsg = 'Essence adjusted and ledger entry created.';
-            adjEssenceDelta = 0;
-            adjDescription = '';
-        } catch (e) {
-            adjustError = e instanceof Error ? e.message : 'Adjustment failed.';
-        }
-        adjusting = false;
-    }
-
-    $: statusColor = ship?.status === 'critical' ? 'error' : ship?.status === 'low' ? 'warning' : 'success';
-    $: levelPct = ship ? (ship.next_threshold ? Math.round((ship.essence / ship.next_threshold) * 100) : 100) : 0;
+	async function seedStarterData() {
+		seeding = true;
+		seedMsg = '';
+		saveError = '';
+		try {
+			const res = await api('POST', '/admin/seed');
+			seedMsg = `Seeded ${res.factions_created} factions and ${res.missions_created} starter quests.`;
+		} catch (e) {
+			saveError = e instanceof Error ? e.message : 'Failed to seed starter data.';
+		}
+		seeding = false;
+	}
 </script>
 
-<div class="container mx-auto p-4 max-w-3xl">
-    <div class="flex justify-between items-center mb-6 border-b border-base-content/10 pb-4">
-        <h1 class="text-3xl font-bold font-[var(--font-cinzel)] tracking-tight text-primary">🚀 Ship Configuration</h1>
-        <a href="/dashboard" class="btn btn-sm btn-ghost">← Dashboard</a>
-    </div>
+<PageHeader
+	title="Campaign Settings"
+	subtitle="Configure the DM bulletin (MOTD) shown on the Dashboard or seed starter quests and factions."
+/>
 
-    {#if loading}
-        <div class="flex justify-center py-16"><span class="loading loading-spinner loading-lg text-primary"></span></div>
-    {:else}
+{#if loading}
+	<LoadingSpinner size="lg" />
+{:else}
+	<div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+		<section class="panel p-5 space-y-4">
+			<h2 class="text-base font-semibold text-base-content">Bulletin &amp; Display</h2>
 
-    <!-- Current Status -->
-    {#if ship}
-    <div class="card bg-base-100 border border-base-content/10 shadow-md mb-6">
-        <div class="card-body">
-            <div class="flex items-center gap-3 mb-3">
-                <span class="text-xl font-bold">{ship.name}</span>
-                <span class="badge badge-outline">Level {ship.level}</span>
-                <span class="badge badge-{statusColor} capitalize">{ship.status.replace('_', ' ')}</span>
-            </div>
-            <div class="mb-2">
-                <div class="text-lg font-bold text-primary">⚡ {ship.essence} Essence</div>
-                <div class="text-xs opacity-60 mt-1">Long rest costs {ship.long_rest_cost} Essence at this tier</div>
-            </div>
-            <div class="mb-2">
-                <div class="flex justify-between text-xs opacity-70 mb-1">
-                    {#if ship.next_threshold !== null}
-                        <span>Level {ship.level} → {ship.level + 1}</span>
-                        <span>{ship.essence} / {ship.next_threshold}</span>
-                    {:else}
-                        <span>Max Level</span><span>Level {ship.level}</span>
-                    {/if}
-                </div>
-                <progress class="progress progress-primary w-full h-2" value={levelPct} max="100"></progress>
-            </div>
-            {#if ship.motd}<p class="text-sm opacity-60 mt-2 italic">"{ship.motd}"</p>{/if}
-        </div>
-    </div>
-    {/if}
+			<div>
+				<label for="camp-hub-name" class="mb-1 block text-xs font-medium text-base-content/75">
+					Hub / Base Name
+				</label>
+				<input
+					id="camp-hub-name"
+					class="input input-bordered input-sm w-full"
+					bind:value={editName}
+					placeholder="e.g. Crossroads Keep"
+				/>
+			</div>
 
-    <!-- Edit Form -->
-    <div class="card bg-base-100 border border-base-content/10 shadow-md mb-6">
-        <div class="card-body">
-            <h2 class="card-title text-base">Edit Ship</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label class="form-control">
-                    <div class="label"><span class="label-text">Ship Name</span></div>
-                    <input class="input input-bordered input-sm" bind:value={editName} />
-                </label>
-                <label class="form-control">
-                    <div class="label"><span class="label-text">Level</span></div>
-                    <input class="input input-bordered input-sm" type="number" min="1" max="20" bind:value={editLevel} />
-                </label>
-                <label class="form-control">
-                    <div class="label"><span class="label-text">Essence Reserve</span></div>
-                    <input class="input input-bordered input-sm" type="number" min="0" bind:value={editEssence} />
-                </label>
-                <label class="form-control md:col-span-2">
-                    <div class="label"><span class="label-text">MOTD / Announcement</span></div>
-                    <textarea class="textarea textarea-bordered textarea-sm" rows="2" bind:value={editMotd} placeholder="Leave blank to clear..."></textarea>
-                </label>
-            </div>
-            {#if saveMsg}<div class="alert alert-success mt-3 text-sm">{saveMsg}</div>{/if}
-            {#if saveError}<div class="alert alert-error mt-3 text-sm">{saveError}</div>{/if}
-            <div class="card-actions justify-end mt-4">
-                <button class="btn btn-primary btn-sm" on:click={saveShip} disabled={saving}>
-                    {saving ? 'Saving...' : 'Save Configuration'}
-                </button>
-            </div>
-        </div>
-    </div>
+			<div>
+				<label for="camp-motd" class="mb-1 block text-xs font-medium text-base-content/75">
+					DM Bulletin (MOTD)
+				</label>
+				<textarea
+					id="camp-motd"
+					class="textarea textarea-bordered w-full text-sm"
+					rows="3"
+					bind:value={editMotd}
+					placeholder="Announcement shown to all players on the Dashboard..."
+				></textarea>
+			</div>
 
-    <!-- Adjust Resources -->
-    <div class="card bg-base-100 border border-base-content/10 shadow-md">
-        <div class="card-body">
-            <h2 class="card-title text-base">Adjust Resources</h2>
-            <p class="text-sm opacity-60 mb-3">Each adjustment creates an immutable ledger entry.</p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label class="form-control">
-                    <div class="label"><span class="label-text">Essence Δ</span></div>
-                    <input class="input input-bordered input-sm" type="number" bind:value={adjEssenceDelta} placeholder="-4 or +12" />
-                </label>
-            </div>
-            <label class="form-control mt-3">
-                <div class="label"><span class="label-text">Description <span class="text-error">*</span></span></div>
-                <input class="input input-bordered input-sm" bind:value={adjDescription} placeholder="e.g. Fuel burned on Hex 3 mission" />
-            </label>
-            {#if adjustMsg}<div class="alert alert-success mt-3 text-sm">{adjustMsg}</div>{/if}
-            {#if adjustError}<div class="alert alert-error mt-3 text-sm">{adjustError}</div>{/if}
-            <div class="card-actions justify-end mt-4">
-                <button class="btn btn-warning btn-sm" on:click={adjustShip} disabled={adjusting}>
-                    {adjusting ? 'Adjusting...' : 'Apply Adjustment'}
-                </button>
-            </div>
-        </div>
-    </div>
+			{#if saveMsg}
+				<div class="alert alert-success text-xs">{saveMsg}</div>
+			{/if}
+			{#if saveError}
+				<div class="alert alert-error text-xs">{saveError}</div>
+			{/if}
 
-    {/if}
-</div>
+			<div class="flex justify-end">
+				<button class="btn btn-primary btn-sm" on:click={saveSettings} disabled={saving}>
+					{saving ? 'Saving...' : 'Save Settings'}
+				</button>
+			</div>
+		</section>
+
+		<section class="panel p-5 space-y-4">
+			<h2 class="text-base font-semibold text-base-content">Quick Start Seed</h2>
+			<p class="text-xs leading-relaxed text-base-content/70">
+				Populate a new campaign with starter D&amp;D 5e Tier 1 quests and baseline factions. Safe to
+				run multiple times—existing records are skipped.
+			</p>
+			{#if seedMsg}
+				<div class="alert alert-success text-xs">{seedMsg}</div>
+			{/if}
+			<div>
+				<button class="btn btn-outline btn-primary btn-sm" on:click={seedStarterData} disabled={seeding}>
+					{seeding ? 'Seeding...' : 'Seed Starter Campaign Data'}
+				</button>
+			</div>
+		</section>
+	</div>
+{/if}

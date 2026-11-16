@@ -82,9 +82,9 @@ describe('Dashboard', () => {
         expect(screen.getByText(/Level 3/)).toBeInTheDocument();
     });
 
-    test('shows Mission Board section heading', async () => {
+    test('shows Upcoming Sessions section heading', async () => {
         render(Dashboard);
-        await waitFor(() => expect(screen.getByText('Mission Board')).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText('Upcoming Sessions')).toBeInTheDocument());
     });
 
     test('shows upcoming session with its proposal', async () => {
@@ -93,14 +93,14 @@ describe('Dashboard', () => {
         expect(screen.getAllByText('The Bone Market').length).toBeGreaterThanOrEqual(1);
     });
 
-    test('shows available contracts section', async () => {
+    test('shows available quests section', async () => {
         render(Dashboard);
-        await waitFor(() => expect(screen.getByText('Available Contracts')).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText('Available Quests')).toBeInTheDocument());
         expect(screen.getByText('The Pale Gate')).toBeInTheDocument();
     });
 
-    test('shows ship name in ship compact panel', async () => {
+    test('shows campaign bulletin MOTD', async () => {
         render(Dashboard);
-        await waitFor(() => expect(screen.getByText('🚀 The Meridian')).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText('Stay sharp.')).toBeInTheDocument());
     });
 });

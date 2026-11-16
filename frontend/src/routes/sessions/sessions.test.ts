@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/svelte';
 import { vi } from 'vitest';
+import { readable } from 'svelte/store';
 import PlayerSessions from './+page.svelte';
 
 // Mock the auth store
 vi.mock('$lib/auth', () => {
-    const { readable } = require('svelte/store');
     return {
         auth: readable({ user: { role: 'player', character: { id: 1 } }, token: 'fake-token' })
     };
@@ -22,7 +22,7 @@ vi.mock('svelte', async () => {
 describe('PlayerSessions Component', () => {
     it('renders the main heading', () => {
         render(PlayerSessions);
-        const heading = screen.getByText('Game Sessions');
+        const heading = screen.getByRole('heading', { name: 'Session Schedule' });
         expect(heading).toBeTruthy();
     });
 });

@@ -46,13 +46,20 @@
 		{ value: 'contested', label: 'Contested (3h)' },
 		{ value: 'awakened', label: 'Awakened (variable)' }
 	];
-	const FACTIONS = ['None', 'Inheritors', 'Kathedral', 'Vastarei'];
+	let factionNames: string[] = ['None'];
 
 	onMount(async () => {
-		await Promise.all([fetchMaps(), fetchMissions()]);
+		await Promise.all([fetchMaps(), fetchMissions(), fetchFactions()]);
 		if (maps.length > 0) activeMap = maps[0];
 		loading = false;
 	});
+
+	async function fetchFactions() {
+		try {
+			const res: Array<{ faction_name: string }> = await api('GET', '/factions/');
+			factionNames = ['None', ...res.map((f) => f.faction_name)];
+		} catch (e) {}
+	}
 
 	async function fetchMissions() {
 		try {
@@ -74,14 +81,11 @@
 		if (hexIndex === -1) return;
 
 		if (selectedTool === 'paint') {
-			// Update local state
 			const newHexes = [...activeMap.hexes];
 			newHexes[hexIndex] = { ...newHexes[hexIndex], terrain: activeTerrain };
 			activeMap.hexes = newHexes;
 			isDirty = true;
-
-			// In a real app we might debut this or save immediately
-			// For now, we just update local state and have a "Save" button
+			dirtyHexes.add(`${q},${r}`);
 		} else if (selectedTool === 'fog') {
 			const newHexes = [...activeMap.hexes];
 			newHexes[hexIndex] = {
@@ -291,7 +295,7 @@
 						on:change={updateSelectedHex}
 						class="select-bordered select select-sm"
 					>
-						{#each FACTIONS as f}
+						{#each factionNames as f}
 							<option value={f === 'None' ? null : f}>{f}</option>
 						{/each}
 					</select>

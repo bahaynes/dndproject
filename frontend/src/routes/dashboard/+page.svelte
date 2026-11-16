@@ -4,14 +4,16 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import Modal from '$lib/components/Modal.svelte';
-	import type { Ship, GameSessionWithPlayers, Mission } from '$lib/types';
+	import FactionReputationTracker from '$lib/components/FactionReputationTracker.svelte';
+	import type { Ship, GameSessionWithPlayers, Mission, LedgerEntry } from '$lib/types';
 
-	let ship: Ship | null = null;
+	let bulletin: Ship | null = null;
 	let upcomingSessions: GameSessionWithPlayers[] = [];
 	let availableMissions: Mission[] = [];
+	let recentLedger: LedgerEntry[] = [];
 	let loading = true;
 	let showOnboarding = false;
-	let backingError: string | null = null;
+	let actionError: string | null = null;
 
 	// Propose modal
 	let showProposeModal = false;
@@ -24,13 +26,16 @@
 	$: char = user?.active_character;
 	$: myCharacterId = char?.id;
 
+	$: xpCurrent = char?.stats?.xp ?? 0;
+	$: xpNext = char?.stats?.next_level_xp ?? null;
+	$: xpPct = xpNext ? Math.min(100, Math.round((xpCurrent / xpNext) * 100)) : 100;
+
 	onMount(() => {
 		if (!localStorage.getItem('accessToken')) {
 			goto('/login');
 		}
 	});
 
-	// Fires when auth hydrates (may be before or after onMount)
 	$: if ($auth.token && !dataLoaded) {
 		dataLoaded = true;
 		loadData();
@@ -52,17 +57,19 @@
 	}
 
 	async function loadData() {
-		const [s, sessions, missions] = await Promise.all([
+		const [s, sessions, missions, ledger] = await Promise.all([
 			api('GET', '/ship/').catch(() => null),
 			api('GET', '/sessions/').catch(() => []),
-			api('GET', '/missions/').catch(() => [])
+			api('GET', '/missions/').catch(() => []),
+			api('GET', '/ledger/?limit=5').catch(() => [])
 		]);
-		ship = s;
+		bulletin = s;
 		const all: GameSessionWithPlayers[] = sessions ?? [];
 		upcomingSessions = all
 			.filter((s) => s.status !== 'Completed' && s.status !== 'Cancelled')
 			.sort((a, b) => new Date(a.session_date).getTime() - new Date(b.session_date).getTime());
 		availableMissions = (missions ?? []).filter((m: Mission) => !m.is_retired && m.is_discoverable);
+		recentLedger = ledger ?? [];
 		loading = false;
 	}
 
@@ -75,18 +82,44 @@
 		return false;
 	}
 
+	function isInSession(session: GameSessionWithPlayers): boolean {
+		if (!myCharacterId) return false;
+		return session.players.some((p) => p.id === myCharacterId);
+	}
+
 	async function toggleBacking(proposalId: number) {
-		backingError = null;
+		actionError = null;
 		try {
 			await api('POST', `/sessions/proposals/${proposalId}/toggle_back`);
 			await loadData();
 		} catch (e) {
-			backingError = e instanceof Error ? e.message : 'Failed to update backing.';
+			actionError = e instanceof Error ? e.message : 'Failed to update backing.';
+		}
+	}
+
+	async function joinConfirmedSession(sessionId: number) {
+		actionError = null;
+		try {
+			await api('POST', `/sessions/${sessionId}/signup`);
+			await loadData();
+		} catch (e) {
+			actionError = e instanceof Error ? e.message : 'Failed to join session.';
+		}
+	}
+
+	async function leaveConfirmedSession(sessionId: number) {
+		actionError = null;
+		try {
+			await api('DELETE', `/sessions/${sessionId}/signup`);
+			await loadData();
+		} catch (e) {
+			actionError = e instanceof Error ? e.message : 'Failed to leave session.';
 		}
 	}
 
 	async function proposeMission() {
 		if (!selectedSessionId || !selectedMissionId) return;
+		actionError = null;
 		try {
 			await api('POST', '/sessions/proposals', {
 				session_id: selectedSessionId,
@@ -95,13 +128,20 @@
 			showProposeModal = false;
 			await loadData();
 		} catch (e) {
-			backingError = e instanceof Error ? e.message : 'Failed to propose mission.';
+			actionError = e instanceof Error ? e.message : 'Failed to propose quest.';
 		}
+	}
+
+	function openProposeForMission(missionId: number) {
+		const openSessions = upcomingSessions.filter((s) => s.status !== 'Confirmed');
+		selectedMissionId = missionId;
+		selectedSessionId = openSessions[0]?.id ?? null;
+		showProposeModal = true;
 	}
 
 	function formatDate(iso: string) {
 		return new Date(iso).toLocaleDateString(undefined, {
-			weekday: 'long',
+			weekday: 'short',
 			month: 'short',
 			day: 'numeric'
 		});
@@ -112,436 +152,373 @@
 		return Date.now() - new Date(m.last_run_date).getTime() < m.cooldown_days * 86400000;
 	}
 
-	$: statusColor =
-		ship?.status === 'critical' ? 'error' : ship?.status === 'low' ? 'warning' : 'success';
-	$: levelPct = ship
-		? ship.next_threshold
-			? Math.round((ship.essence / ship.next_threshold) * 100)
-			: 100
-		: 0;
+	function missionGold(m: Mission): number {
+		return m.rewards.reduce((sum, r) => sum + (r.gold ?? 0), 0);
+	}
+
+	function missionXp(m: Mission): number {
+		return m.rewards.reduce((sum, r) => sum + (r.xp ?? 0), 0);
+	}
 </script>
 
-<div class="min-h-screen">
-	{#if loading}
-		<div class="flex justify-center py-32">
-			<span class="loading loading-lg loading-spinner text-primary"></span>
-		</div>
-	{:else if user}
-		<!-- Character Identity Banner -->
-		<div class="border-b border-base-content/10 bg-base-200/60 px-4 py-8">
-			<div class="container mx-auto max-w-5xl xl:max-w-screen-xl 2xl:max-w-screen-2xl">
+{#if loading}
+	<div class="flex justify-center py-32">
+		<span class="loading loading-spinner loading-lg text-primary"></span>
+	</div>
+{:else if user}
+	<!-- Campaign & Character Status Header -->
+	<div class="border-b border-base-content/10 bg-base-200/70">
+		<div class="page-container py-6">
+			<div class="flex flex-col justify-between gap-6 md:flex-row md:items-center">
 				{#if char}
-					<div class="flex flex-wrap items-center justify-between gap-4">
-						<div>
-							<p class="mb-1 text-xs tracking-widest text-base-content/55 uppercase">
-								Active Crew Member
-							</p>
-							<h1 class="text-3xl font-[var(--font-cinzel)] font-bold tracking-tight text-primary">
-								{char.name}
-							</h1>
-							<div class="mt-1 flex items-center gap-3 text-sm text-base-content/75">
-								{#if char.class_name}<span>{char.class_name}</span><span
-										class="text-base-content/30">·</span
-									>{/if}
-								<span>Level {char.level}</span>
-								<span class="text-base-content/30">·</span>
-								<span
-									>{char.missions_completed} mission{char.missions_completed !== 1 ? 's' : ''} completed</span
-								>
-							</div>
+					<div class="min-w-0 flex-1">
+						<p class="section-label mb-1">Active Adventurer · {campaign?.name ?? 'Campaign'}</p>
+						<div class="flex flex-wrap items-baseline gap-3">
+							<h1 class="text-2xl font-semibold text-base-content sm:text-3xl">{char.name}</h1>
+							<span class="badge badge-outline badge-sm border-primary/40 text-primary stat-num">
+								Level {char.level}
+							</span>
+							{#if char.class_name}
+								<span class="text-sm text-base-content/70">{char.class_name}</span>
+							{/if}
 						</div>
-						<div class="flex flex-col items-end gap-1">
-							{#if ship}
-								<div class="flex items-center gap-2">
-									<span class="text-xs text-base-content/60">Ship Essence</span>
-									<span class="badge badge-{statusColor} badge-sm">⚡ {ship.essence}</span>
-								</div>
-								{#if ship.next_threshold}
-									<div class="flex items-center gap-2 text-xs text-base-content/60">
-										<span>Level {ship.level} → {ship.level + 1}</span>
-										<progress
-											class="progress h-1.5 w-24 progress-primary"
-											value={levelPct}
-											max="100"
-										></progress>
+
+						<!-- 5e XP & Gold Strip -->
+						<div class="mt-3 flex flex-wrap items-center gap-6">
+							<div class="flex items-center gap-3">
+								<div class="w-40">
+									<div class="mb-1 flex justify-between text-xs text-base-content/65 stat-num">
+										<span>{xpCurrent.toLocaleString()} XP</span>
+										{#if xpNext}
+											<span>{xpNext.toLocaleString()}</span>
+										{:else}
+											<span>MAX</span>
+										{/if}
 									</div>
-								{/if}
-							{/if}
-							{#if ship?.motd}
-								<p class="max-w-xs text-right text-xs text-base-content/60 italic">"{ship.motd}"</p>
-							{/if}
+									<progress class="progress progress-primary h-1.5 w-full" value={xpPct} max="100"></progress>
+								</div>
+							</div>
+							<div class="text-sm">
+								<span class="text-base-content/55">Gold:</span>
+								<span class="ml-1 font-semibold text-primary stat-num">{char.stats?.gold ?? 0} GP</span>
+							</div>
+							<div class="text-sm text-base-content/65">
+								<span class="stat-num">{char.missions_completed}</span> completed
+							</div>
 						</div>
 					</div>
 				{:else}
-					<div class="flex flex-wrap items-center justify-between gap-4">
-						<div>
-							<h1 class="text-3xl font-[var(--font-cinzel)] font-bold tracking-tight text-primary">
-								{campaign?.name ?? 'West Marches'}
-							</h1>
-							<p class="mt-1 text-sm text-base-content/70">You haven't joined the crew yet.</p>
-						</div>
-						<a href="/characters" class="btn btn-sm btn-primary">Create Your Character →</a>
+					<div>
+						<p class="section-label mb-1">Campaign Board</p>
+						<h1 class="text-2xl font-semibold text-base-content sm:text-3xl">
+							{campaign?.name ?? 'West Marches'}
+						</h1>
+						<p class="mt-1 text-sm text-base-content/65">Create or activate a character to join sessions.</p>
+						<a href="/characters" class="btn btn-primary btn-sm mt-3">Create Character</a>
+					</div>
+				{/if}
+
+				{#if bulletin?.motd}
+					<div class="panel max-w-sm px-4 py-3">
+						<p class="section-label mb-1">Campaign Bulletin</p>
+						<p class="text-sm text-base-content/85">{bulletin.motd}</p>
 					</div>
 				{/if}
 			</div>
 		</div>
+	</div>
 
-		<div
-			class="container mx-auto max-w-5xl space-y-12 px-4 py-10 xl:max-w-screen-xl 2xl:max-w-screen-2xl"
-		>
-			<!-- Session Board — Visual Centerpiece -->
-			<section>
-				<div class="mb-5 flex items-baseline justify-between">
-					<div>
-						<h2 class="text-2xl font-[var(--font-cinzel)] font-bold text-primary">Mission Board</h2>
-						<p class="mt-1 text-xs text-base-content/60">
-							Back a proposal to put it on the slate. Needs {upcomingSessions[0]?.min_players ?? 4} crew
-							minimum.
-						</p>
-					</div>
-					<a href="/sessions" class="text-xs text-primary transition-colors hover:underline"
-						>All sessions →</a
-					>
+	<div class="page-container space-y-10">
+		{#if actionError}
+			<div class="alert alert-error text-sm">{actionError}</div>
+		{/if}
+
+		<!-- Upcoming Sessions -->
+		<section>
+			<div class="mb-4 flex items-baseline justify-between">
+				<div>
+					<h2 class="text-lg font-semibold text-base-content">Upcoming Sessions</h2>
+					<p class="mt-0.5 text-xs text-base-content/60">
+						Back a proposed quest to confirm a session, or join an open seat on a confirmed party.
+					</p>
 				</div>
+				<a href="/sessions" class="text-xs font-medium text-primary hover:underline">Full schedule →</a>
+			</div>
 
-				{#if backingError}
-					<div class="mb-4 alert text-sm alert-error">{backingError}</div>
-				{/if}
+			{#if upcomingSessions.length === 0}
+				<div class="panel p-8 text-center">
+					<p class="text-sm text-base-content/60">No upcoming sessions scheduled yet.</p>
+				</div>
+			{:else}
+				<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+					{#each upcomingSessions as session}
+						<div class="panel flex flex-col p-5">
+							<div class="mb-3 flex items-start justify-between gap-3">
+								<div>
+									<h3 class="text-base font-semibold text-base-content">{session.name}</h3>
+									<p class="mt-0.5 text-xs text-base-content/65 stat-num">
+										{formatDate(session.session_date)} · {session.players.length}/{session.max_players} seats
+									</p>
+								</div>
+								<span
+									class="badge badge-sm {session.status === 'Confirmed'
+										? 'badge-success'
+										: 'badge-outline border-warning/40 text-warning'}"
+								>
+									{session.status}
+								</span>
+							</div>
 
-				{#if upcomingSessions.length === 0}
-					<div class="rounded-xl border border-base-content/10 bg-base-200/40 p-8 text-center">
-						<p class="text-sm text-base-content/60 italic">
-							No sessions on the board. The DM will post one soon.
-						</p>
-					</div>
-				{:else}
-					<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
-						{#each upcomingSessions as session}
-							<div class="card border border-base-content/10 bg-base-100 shadow-sm">
-								<div class="card-body p-5">
-									<!-- Session header -->
-									<div class="mb-3 flex items-start justify-between">
+							{#if session.status === 'Confirmed' && session.confirmed_mission}
+								<div class="mt-1 flex-1 rounded-md border border-success/25 bg-success/5 p-3.5">
+									<div class="flex items-start justify-between gap-2">
 										<div>
-											<h3 class="text-base leading-tight font-[var(--font-cinzel)] font-bold">
-												{session.name}
-											</h3>
-											<p class="mt-1 text-xs text-base-content/65">
-												📅 {formatDate(session.session_date)}
-											</p>
-										</div>
-										<span class="badge shrink-0 badge-outline badge-sm capitalize"
-											>{session.status}</span
-										>
-									</div>
-
-									{#if session.status === 'Confirmed' && session.confirmed_mission}
-										<!-- Confirmed session -->
-										<div class="rounded-lg border border-success/20 bg-success/10 p-3">
-											<p class="mb-1 text-xs font-bold tracking-widest text-success/70 uppercase">
-												Confirmed
-											</p>
-											<p class="font-[var(--font-cinzel)] font-bold">
+											<p class="section-label text-success">Confirmed Quest</p>
+											<p class="mt-0.5 text-sm font-semibold text-base-content">
 												{session.confirmed_mission.name}
 											</p>
-											{#if session.confirmed_mission.tier}
-												<span class="mt-1 badge badge-outline badge-xs"
-													>{session.confirmed_mission.tier}</span
+										</div>
+										{#if session.confirmed_mission.tier}
+											<span class="badge badge-outline badge-xs">{session.confirmed_mission.tier}</span>
+										{/if}
+									</div>
+
+									<div class="mt-3 flex flex-wrap gap-1.5">
+										{#each session.players as player}
+											<span class="rounded bg-base-300 px-2 py-0.5 text-xs text-base-content/85">
+												{player.name}
+											</span>
+										{/each}
+									</div>
+								</div>
+
+								<div class="mt-3 flex items-center justify-end gap-2">
+									{#if isInSession(session)}
+										<button
+											class="btn btn-outline btn-error btn-xs"
+											on:click={() => leaveConfirmedSession(session.id)}
+										>
+											Leave Party
+										</button>
+									{:else if session.players.length < session.max_players}
+										<button
+											class="btn btn-primary btn-xs"
+											disabled={!myCharacterId}
+											on:click={() => joinConfirmedSession(session.id)}
+										>
+											Join Party ({session.players.length}/{session.max_players})
+										</button>
+									{:else}
+										<span class="text-xs text-base-content/50">Party Full</span>
+									{/if}
+								</div>
+							{:else}
+								<div class="flex-1 space-y-2.5">
+									{#each session.proposals as proposal}
+										<div class="rounded-md border border-base-content/10 bg-base-300/50 p-3">
+											<div class="flex items-start justify-between gap-2">
+												<div class="min-w-0">
+													<p class="truncate text-sm font-medium text-base-content">
+														{proposal.mission.name}
+													</p>
+													{#if proposal.mission.tier}
+														<span class="text-xs text-base-content/55">{proposal.mission.tier}</span>
+													{/if}
+												</div>
+												<button
+													class="btn btn-xs shrink-0 {isBacking(proposal.id)
+														? 'btn-primary'
+														: 'btn-outline border-base-content/20'}"
+													on:click={() => toggleBacking(proposal.id)}
+													disabled={!myCharacterId}
 												>
-											{/if}
-											<div class="mt-2 flex flex-wrap gap-1">
-												{#each session.players as player}
-													<span class="badge badge-ghost badge-xs">{player.name}</span>
-												{/each}
+													{isBacking(proposal.id) ? 'Backing' : 'Back'}
+												</button>
+											</div>
+											<div class="mt-2 flex items-center gap-2">
+												<progress
+													class="progress progress-primary h-1.5 flex-1"
+													value={proposal.backers.length}
+													max={session.min_players}
+												></progress>
+												<span class="text-xs text-base-content/65 stat-num">
+													{proposal.backers.length}/{session.min_players}
+												</span>
 											</div>
 										</div>
-									{:else}
-										<!-- Proposals -->
-										<div class="space-y-3">
-											{#each session.proposals as proposal}
-												<div class="rounded-lg border border-base-content/5 bg-base-200/50 p-3">
-													<div class="mb-1 flex items-start justify-between">
-														<span class="text-sm font-semibold">{proposal.mission.name}</span>
-														<button
-															class="btn ml-2 shrink-0 btn-xs {isBacking(proposal.id)
-																? 'btn-secondary'
-																: 'btn-outline btn-primary'}"
-															on:click={() => toggleBacking(proposal.id)}
-															disabled={!myCharacterId}
-														>
-															{isBacking(proposal.id) ? '✓ Backing' : 'Back This'}
-														</button>
-													</div>
-													{#if proposal.mission.tier}
-														<span class="badge badge-outline badge-xs text-base-content/70"
-															>{proposal.mission.tier}</span
-														>
-													{/if}
-													<div class="mt-2">
-														<progress
-															class="progress h-1.5 w-full progress-primary"
-															value={proposal.backers.length}
-															max={session.min_players}
-														></progress>
-														<p class="mt-1 text-xs text-base-content/65">
-															{proposal.backers.length} / {session.min_players} crew
-														</p>
-													</div>
-												</div>
-											{/each}
+									{/each}
 
-											{#if session.proposals.length === 0}
-												<p class="py-2 text-center text-xs text-base-content/50 italic">
-													No proposals yet.
-												</p>
-											{/if}
-										</div>
-
-										<div class="mt-3">
-											<button
-												class="btn w-full border border-base-content/10 btn-ghost btn-xs"
-												disabled={!myCharacterId}
-												on:click={() => {
-													selectedSessionId = session.id;
-													showProposeModal = true;
-												}}
-											>
-												+ Propose a Mission
-											</button>
-										</div>
+									{#if session.proposals.length === 0}
+										<p class="py-3 text-center text-xs text-base-content/50">
+											No quest proposals yet.
+										</p>
 									{/if}
 								</div>
-							</div>
-						{/each}
-					</div>
-				{/if}
-			</section>
 
-			<!-- Available Missions -->
-			{#if availableMissions.length > 0}
-				<section>
-					<div class="mb-5 flex items-baseline justify-between">
-						<div>
-							<h2 class="text-2xl font-[var(--font-cinzel)] font-bold text-primary">
-								Available Contracts
-							</h2>
-							<p class="mt-1 text-xs text-base-content/60">
-								Cleared for dispatch — sign up before the slate fills.
-							</p>
-						</div>
-						<a href="/missions" class="text-xs text-primary transition-colors hover:underline"
-							>Full board →</a
-						>
-					</div>
-					<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-						{#each availableMissions.slice(0, 6) as mission}
-							<div
-								class="rounded-lg border border-base-content/10 bg-base-100 p-4 {inCooldown(mission)
-									? 'opacity-50'
-									: ''}"
-							>
-								<div class="flex items-start justify-between gap-2">
-									<p class="text-sm leading-tight font-semibold">{mission.name}</p>
-									{#if inCooldown(mission)}
-										<span class="badge shrink-0 badge-ghost badge-xs">❄️ Cooldown</span>
-									{/if}
-								</div>
-								<div class="mt-2 flex flex-wrap gap-1">
-									{#if mission.tier}<span class="badge badge-outline badge-xs">{mission.tier}</span
-										>{/if}
-									{#if mission.region}<span class="badge badge-ghost badge-xs text-base-content/65"
-											>{mission.region}</span
-										>{/if}
-								</div>
-								{#if mission.description}
-									<p class="mt-2 line-clamp-2 text-xs text-base-content/65">
-										{mission.description}
-									</p>
-								{/if}
-							</div>
-						{/each}
-					</div>
-				</section>
-			{/if}
-
-			<!-- Bottom row: Ship + Quick Nav + Admin -->
-			<section class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-				<!-- Ship compact -->
-				{#if ship}
-					<div class="card border border-base-content/10 bg-base-100 shadow-sm">
-						<div class="card-body p-5">
-							<h3 class="mb-3 text-sm font-[var(--font-cinzel)] font-bold">🚀 {ship.name}</h3>
-							<div class="mb-1 flex items-center justify-between text-xs">
-								<span class="text-base-content/65">⚡ Essence Reserve</span>
-								<span class="badge badge-{statusColor} badge-xs">{ship.essence}</span>
-							</div>
-							{#if ship.next_threshold}
-								<progress class="progress h-1.5 w-full progress-primary" value={levelPct} max="100"
-								></progress>
-								<p class="mt-1 text-xs text-base-content/60">
-									Level {ship.level} → {ship.level + 1} · {ship.essence_to_next_level} to go
-								</p>
-							{:else}
-								<p class="mt-1 text-xs text-base-content/60">Max Level</p>
+								<button
+									class="btn btn-ghost btn-xs mt-3 w-full border border-base-content/10"
+									disabled={!myCharacterId || availableMissions.length === 0}
+									on:click={() => {
+										selectedSessionId = session.id;
+										selectedMissionId = availableMissions[0]?.id ?? null;
+										showProposeModal = true;
+									}}
+								>
+									+ Propose a Quest
+								</button>
 							{/if}
-							<p class="mt-1 text-xs text-base-content/60">
-								Long rest: {ship.long_rest_cost} Essence
-							</p>
 						</div>
-					</div>
-				{/if}
+					{/each}
+				</div>
+			{/if}
+		</section>
 
-				<!-- Quick Nav -->
-				<div class="card border border-base-content/10 bg-base-100 shadow-sm">
-					<div class="card-body p-5">
-						<h3 class="mb-3 text-sm font-[var(--font-cinzel)] font-bold">Navigation</h3>
-						<div class="grid grid-cols-2 gap-1 text-xs">
-							<a
-								href="/characters"
-								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
-								>⚔️ Character</a
-							>
-							<a
-								href="/sessions"
-								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
-								>📅 Sessions</a
-							>
-							<a
-								href="/missions"
-								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
-								>📋 Missions</a
-							>
-							<a
-								href="/store"
-								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
-								>🛒 Store</a
-							>
-							<a
-								href="/maps"
-								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
-								>🗺️ Maps</a
-							>
-							<a
-								href="/factions"
-								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
-								>⚖️ Factions</a
-							>
-							<a
-								href="/ledger"
-								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
-								>📖 Ledger</a
-							>
-							<a
-								href="/roster"
-								class="rounded p-2 font-medium text-primary transition-colors duration-150 hover:bg-base-200 focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:outline-none"
-								>👥 Roster</a
-							>
-						</div>
+		<!-- Available Quests -->
+		{#if availableMissions.length > 0}
+			<section>
+				<div class="mb-4 flex items-baseline justify-between">
+					<div>
+						<h2 class="text-lg font-semibold text-base-content">Available Quests</h2>
+						<p class="mt-0.5 text-xs text-base-content/60">
+							Active bounties and expeditions ready to propose for an upcoming session.
+						</p>
 					</div>
+					<a href="/missions" class="text-xs font-medium text-primary hover:underline">All quests →</a>
 				</div>
 
-				<!-- Admin Tools — neutral, not danger red -->
-				{#if user.role === 'admin'}
-					<div class="card border border-base-content/10 bg-base-200/50 shadow-sm">
-						<div class="card-body p-5">
-							<h3 class="mb-3 text-sm font-[var(--font-cinzel)] font-bold text-base-content/65">
-								⚙️ DM Tools
-							</h3>
-							<div class="space-y-1">
-								<a
-									href="/admin/sessions"
-									class="btn w-full justify-start btn-ghost transition-colors btn-xs hover:bg-base-300"
-									>Sessions</a
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+					{#each availableMissions.slice(0, 6) as mission}
+						{@const gp = missionGold(mission)}
+						{@const xp = missionXp(mission)}
+						{@const cooling = inCooldown(mission)}
+						<div class="panel panel-interactive flex flex-col p-4 {cooling ? 'opacity-55' : ''}">
+							<div class="flex items-start justify-between gap-2">
+								<h3 class="text-sm font-semibold text-base-content">{mission.name}</h3>
+								{#if cooling}
+									<span class="badge badge-ghost badge-xs shrink-0">Cooldown</span>
+								{/if}
+							</div>
+
+							<div class="mt-2 flex flex-wrap gap-1.5 text-xs">
+								{#if mission.tier}
+									<span class="rounded bg-base-300 px-2 py-0.5 text-base-content/80">{mission.tier}</span>
+								{/if}
+								{#if mission.region}
+									<span class="rounded bg-base-300 px-2 py-0.5 text-base-content/65">{mission.region}</span>
+								{/if}
+								{#if gp > 0}
+									<span class="rounded bg-primary/15 px-2 py-0.5 text-primary stat-num">{gp} GP</span>
+								{/if}
+								{#if xp > 0}
+									<span class="rounded bg-secondary/15 px-2 py-0.5 text-secondary stat-num">{xp} XP</span>
+								{/if}
+							</div>
+
+							{#if mission.description}
+								<p class="mt-2.5 line-clamp-2 flex-1 text-xs text-base-content/65">
+									{mission.description}
+								</p>
+							{/if}
+
+							<div class="mt-3 pt-2 border-t border-base-content/10 flex justify-end">
+								<button
+									class="btn btn-ghost btn-xs text-primary"
+									disabled={!myCharacterId || cooling || upcomingSessions.every((s) => s.status === 'Confirmed')}
+									on:click={() => openProposeForMission(mission.id)}
 								>
-								<a
-									href="/admin/missions"
-									class="btn w-full justify-start btn-ghost transition-colors btn-xs hover:bg-base-300"
-									>Missions</a
-								>
-								<a
-									href="/admin/items"
-									class="btn w-full justify-start btn-ghost transition-colors btn-xs hover:bg-base-300"
-									>Items</a
-								>
-								<a
-									href="/admin/ship"
-									class="btn w-full justify-start btn-ghost transition-colors btn-xs hover:bg-base-300"
-									>Ship Config</a
-								>
-								<a
-									href="/admin/maps"
-									class="btn w-full justify-start btn-ghost transition-colors btn-xs hover:bg-base-300"
-									>Maps</a
-								>
+									Propose →
+								</button>
 							</div>
 						</div>
-					</div>
-				{/if}
+					{/each}
+				</div>
 			</section>
-		</div>
-	{:else}
-		<p class="p-8 text-base-content/60">Loading...</p>
-	{/if}
-</div>
+		{/if}
 
-<!-- Propose Mission Modal -->
-<Modal show={showProposeModal} title="Propose a Mission" onClose={() => (showProposeModal = false)}>
-	<div class="form-control w-full">
-		<label class="label" for="mission-select">
-			<span class="label-text">Select a Mission</span>
-		</label>
-		<select
-			id="mission-select"
-			bind:value={selectedMissionId}
-			class="select-bordered select w-full"
-		>
-			<option value={null}>— Pick a Mission —</option>
-			{#each availableMissions as mission}
-				<option value={mission.id} disabled={inCooldown(mission)}>
-					{mission.name}
-					{mission.tier ? `(${mission.tier})` : ''}{inCooldown(mission) ? ' — ❄️ Cooldown' : ''}
-				</option>
-			{/each}
-		</select>
-		<p class="mt-3 text-sm text-base-content/65 italic">Proposing adds you as the first backer.</p>
+		<!-- Bottom Summary: Faction Standing + Recent Ledger -->
+		<section class="grid grid-cols-1 gap-6 md:grid-cols-2">
+			<div class="panel p-5">
+				<FactionReputationTracker />
+			</div>
+
+			<div class="panel p-5">
+				<div class="mb-3 flex items-center justify-between">
+					<h2 class="section-label">Recent Ledger Activity</h2>
+					<a href="/ledger" class="text-xs font-medium text-primary hover:underline">View ledger →</a>
+				</div>
+				{#if recentLedger.length === 0}
+					<p class="text-xs text-base-content/50">No ledger entries recorded yet.</p>
+				{:else}
+					<ul class="divide-y divide-base-content/10 text-xs">
+						{#each recentLedger as entry}
+							<li class="flex items-center justify-between gap-3 py-2">
+								<span class="truncate text-base-content/80">{entry.description}</span>
+								<span class="shrink-0 text-base-content/45 stat-num">
+									{new Date(entry.created_at).toLocaleDateString()}
+								</span>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</div>
+		</section>
+	</div>
+{/if}
+
+<!-- Propose Quest Modal -->
+<Modal show={showProposeModal} title="Propose a Quest" onClose={() => (showProposeModal = false)}>
+	<div class="space-y-4">
+		<div>
+			<label for="propose-session" class="mb-1 block text-xs font-medium text-base-content/75">
+				Session Slot
+			</label>
+			<select
+				id="propose-session"
+				bind:value={selectedSessionId}
+				class="select select-bordered select-sm w-full"
+			>
+				{#each upcomingSessions.filter((s) => s.status !== 'Confirmed') as s}
+					<option value={s.id}>{s.name} ({formatDate(s.session_date)})</option>
+				{/each}
+			</select>
+		</div>
+
+		<div>
+			<label for="propose-mission" class="mb-1 block text-xs font-medium text-base-content/75">
+				Select Quest
+			</label>
+			<select
+				id="propose-mission"
+				bind:value={selectedMissionId}
+				class="select select-bordered select-sm w-full"
+			>
+				{#each availableMissions.filter((m) => !inCooldown(m)) as m}
+					<option value={m.id}>{m.name} {m.tier ? `(${m.tier})` : ''}</option>
+				{/each}
+			</select>
+		</div>
 	</div>
 	<div slot="action">
-		<button class="btn w-full btn-primary" on:click={proposeMission} disabled={!selectedMissionId}>
-			Propose Now
+		<button class="btn btn-ghost btn-sm" on:click={() => (showProposeModal = false)}>Cancel</button>
+		<button
+			class="btn btn-primary btn-sm"
+			disabled={!selectedSessionId || !selectedMissionId}
+			on:click={proposeMission}
+		>
+			Submit Proposal
 		</button>
 	</div>
 </Modal>
 
-<!-- Onboarding modal -->
-{#if showOnboarding}
-	<div class="modal-open modal">
-		<div class="modal-box max-w-lg">
-			<h3 class="mb-1 text-2xl font-[var(--font-cinzel)] font-bold text-primary">
-				Welcome aboard.
-			</h3>
-			<p class="mb-4 text-sm text-base-content/65">— {ship?.name ?? 'Your Captain'}</p>
-			<div class="prose prose-sm mb-6 max-w-none text-base-content/80">
-				<p>
-					"New crew. Good. I'll keep this brief. What we earn goes into the reserves. What we spend
-					comes out of them. The ledger doesn't lie."
-				</p>
-				<p>
-					"First thing: make yourself a character record. After that, check the mission board. Vote
-					on what runs. Show up when the session starts."
-				</p>
-				<p class="text-xs text-base-content/60">"Questions? Ask your crewmates first."</p>
-			</div>
-			<div class="flex flex-col gap-3">
-				<a href="/characters" class="btn w-full btn-primary" on:click={dismissOnboarding}>
-					Create Your Character
-				</a>
-				<a href="/missions" class="btn w-full btn-outline" on:click={dismissOnboarding}>
-					📋 View Mission Board
-				</a>
-				<button class="btn mt-2 text-base-content/55 btn-ghost btn-xs" on:click={dismissOnboarding}>
-					Dismiss — I know what I'm doing
-				</button>
-			</div>
-		</div>
-		<button class="modal-backdrop" aria-label="Close" on:click={dismissOnboarding}></button>
+<!-- First-Run Onboarding Modal -->
+<Modal show={showOnboarding} title="Welcome to the Campaign" onClose={dismissOnboarding}>
+	<div class="space-y-3 text-sm text-base-content/80">
+		<p>Create your adventurer to join upcoming sessions, earn Gold and XP, and track your inventory.</p>
 	</div>
-{/if}
+	<div slot="action">
+		<button class="btn btn-ghost btn-sm" on:click={dismissOnboarding}>Later</button>
+		<a href="/characters" class="btn btn-primary btn-sm" on:click={dismissOnboarding}>
+			Create Character
+		</a>
+	</div>
+</Modal>

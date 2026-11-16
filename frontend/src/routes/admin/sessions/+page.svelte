@@ -3,6 +3,7 @@
 	import { auth } from '$lib/auth';
 	import { api } from '$lib/api';
 	import type { GameSessionWithPlayers } from '$lib/types';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import { goto } from '$app/navigation';
@@ -12,32 +13,29 @@
 	let error = '';
 	let success = '';
 
-	// Complete session modal
-	let showComplete = false;
-	let completingSession: GameSessionWithPlayers | null = null;
-	let cResult: 'success' | 'failure' = 'success';
-	let cEssenceEarned = 0;
-	let cAfterAction = '';
-	let cCasualties: number[] = [];
-	let completing = false;
-
 	// Create Session Form
+	let showCreateSession = false;
 	let sName = '';
-	let sDescription = '';
+	let sDesc = '';
 	let sDate = '';
 	let sMinPlayers = 4;
 	let sMaxPlayers = 6;
-	let showCreate = false;
+
+	// Complete Session Modal
+	let showCompleteModal = false;
+	let completingSession: GameSessionWithPlayers | null = null;
+	let cResult: 'success' | 'failure' = 'success';
+	let cGoldEarned = 0;
+	let cXpEarned = 0;
+	let cAar = '';
+	let cCasualties: number[] = [];
+	let completing = false;
 
 	let dataLoaded = false;
 
 	onMount(() => {
 		if (!localStorage.getItem('accessToken')) goto('/dashboard');
 	});
-
-	$: if ($auth.isAuthenticated && $auth.user?.role !== 'admin') {
-		goto('/dashboard');
-	}
 
 	$: if ($auth.isAuthenticated && $auth.user?.role === 'admin' && !dataLoaded) {
 		dataLoaded = true;
@@ -57,33 +55,75 @@
 
 	async function createSession() {
 		error = '';
-		if (!sName || !sDate) {
-			error = 'Session title and date/time are required!';
-			return;
-		}
 		try {
 			await api('POST', '/sessions/', {
 				name: sName,
-				description: sDescription,
-				session_date: new Date(sDate).toISOString(),
-				status: 'Open',
+				description: sDesc,
+				session_date: sDate ? new Date(sDate).toISOString() : new Date().toISOString(),
 				min_players: sMinPlayers,
 				max_players: sMaxPlayers
 			});
-			showCreate = false;
+			success = 'Session slot scheduled.';
+			showCreateSession = false;
+			sName = '';
+			sDesc = '';
+			sDate = '';
 			await fetchSessions();
 		} catch (e) {
 			error = 'Failed to create session.';
 		}
 	}
 
+	async function forceConfirm(proposalId: number) {
+		try {
+			await api('POST', `/sessions/proposals/${proposalId}/force_confirm`);
+			success = 'Session confirmed!';
+			await fetchSessions();
+		} catch (e) {
+			error = 'Failed to confirm proposal.';
+		}
+	}
+
+	async function vetoProposal(proposalId: number) {
+		try {
+			await api('POST', `/sessions/proposals/${proposalId}/veto`);
+			success = 'Proposal vetoed.';
+			await fetchSessions();
+		} catch (e) {
+			error = 'Failed to veto proposal.';
+		}
+	}
+
+	async function kickPlayer(sessionId: number, charId: number) {
+		try {
+			await api('DELETE', `/sessions/${sessionId}/kick/${charId}`);
+			success = 'Player removed from session.';
+			await fetchSessions();
+		} catch (e) {
+			error = 'Failed to remove player.';
+		}
+	}
+
+	async function cancelSession(sessionId: number) {
+		error = '';
+		try {
+			await api('POST', `/sessions/${sessionId}/cancel`);
+			success = 'Session slot cancelled.';
+			await fetchSessions();
+		} catch (e) {
+			error = e instanceof Error ? e.message : 'Failed to cancel session.';
+		}
+	}
+
 	function openCompleteModal(session: GameSessionWithPlayers) {
 		completingSession = session;
 		cResult = 'success';
-		cEssenceEarned = 0;
-		cAfterAction = '';
+		const missionRewards = session.confirmed_mission?.rewards ?? [];
+		cGoldEarned = missionRewards.reduce((sum, r) => sum + (r.gold ?? 0), 0);
+		cXpEarned = missionRewards.reduce((sum, r) => sum + (r.xp ?? 0), 0);
+		cAar = '';
 		cCasualties = [];
-		showComplete = true;
+		showCompleteModal = true;
 	}
 
 	function toggleCasualty(charId: number) {
@@ -101,11 +141,14 @@
 		try {
 			await api('POST', `/sessions/${completingSession.id}/complete`, {
 				result: cResult,
-				essence_earned: cEssenceEarned,
-				after_action_report: cAfterAction || null,
+				essence_earned: 0,
+				gold_earned: cGoldEarned,
+				xp_earned: cXpEarned,
+				after_action_report: cAar || null,
 				casualties: cCasualties
 			});
-			showComplete = false;
+			success = 'Session completed — Gold, XP, and Ledger updated.';
+			showCompleteModal = false;
 			await fetchSessions();
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to complete session.';
@@ -113,259 +156,277 @@
 			completing = false;
 		}
 	}
-
-	async function forceConfirm(proposalId: number) {
-		try {
-			await api('POST', `/sessions/proposals/${proposalId}/force_confirm`);
-			await fetchSessions();
-		} catch (e) {}
-	}
-
-	async function vetoProposal(proposalId: number) {
-		try {
-			await api('POST', `/sessions/proposals/${proposalId}/veto`);
-			await fetchSessions();
-		} catch (e) {}
-	}
-
-	async function kickPlayer(sessionId: number, characterId: number) {
-		try {
-			await api('DELETE', `/sessions/${sessionId}/kick/${characterId}`);
-			await fetchSessions();
-		} catch (e) {}
-	}
 </script>
 
-<div class="container mx-auto max-w-6xl p-4">
-	<div class="mb-8 flex items-center justify-between">
-		<h1 class="text-4xl font-[var(--font-cinzel)] font-bold text-primary">Session Management</h1>
-		<button class="btn btn-primary" on:click={() => (showCreate = true)}>+ Schedule Session</button>
-	</div>
+<PageHeader
+	title="Manage Sessions"
+	subtitle="Schedule game slots, confirm proposals, and distribute Gold & XP upon completion."
+>
+	<button slot="actions" class="btn btn-primary btn-sm" on:click={() => (showCreateSession = true)}>
+		+ Schedule Slot
+	</button>
+</PageHeader>
 
-	{#if loading}
-		<LoadingSpinner size="lg" />
-	{:else}
-		<div class="grid grid-cols-1 gap-6">
-			{#each sessions as session}
-				<div class="card overflow-hidden bg-base-200 shadow-xl">
-					<div class="flex h-full flex-col md:flex-row">
-						<div
-							class="flex min-w-[150px] flex-col items-center justify-center bg-primary/10 p-6 text-center"
-						>
-							<span class="text-xs font-bold text-base-content/65 uppercase"
-								>{new Date(session.session_date).toLocaleDateString('en-US', {
-									month: 'short'
-								})}</span
+{#if error}
+	<div class="alert alert-error mb-4 text-sm">{error}</div>
+{/if}
+{#if success}
+	<div class="alert alert-success mb-4 text-sm">{success}</div>
+{/if}
+
+{#if loading}
+	<LoadingSpinner size="lg" />
+{:else if sessions.length === 0}
+	<div class="panel p-12 text-center text-sm text-base-content/60">
+		No sessions scheduled yet.
+	</div>
+{:else}
+	<div class="space-y-4">
+		{#each sessions as session}
+			<div class="panel overflow-hidden">
+				<div class="flex flex-col md:flex-row">
+					<div
+						class="flex min-w-32 flex-col items-center justify-center border-b border-base-content/10 bg-base-300/60 p-4 text-center md:border-r md:border-b-0"
+					>
+						<span class="section-label">
+							{new Date(session.session_date).toLocaleDateString('en-US', { month: 'short' })}
+						</span>
+						<span class="text-2xl font-semibold text-primary stat-num">
+							{new Date(session.session_date).getDate()}
+						</span>
+						<span class="text-xs text-base-content/55 stat-num">
+							{new Date(session.session_date).getFullYear()}
+						</span>
+					</div>
+
+					<div class="flex-1 p-5 space-y-4">
+						<div class="flex items-start justify-between gap-2">
+							<div>
+								<h2 class="text-base font-semibold text-base-content">{session.name}</h2>
+								{#if session.description}
+									<p class="mt-0.5 text-xs text-base-content/65">{session.description}</p>
+								{/if}
+							</div>
+							<span
+								class="badge badge-sm shrink-0 {session.status === 'Completed'
+									? 'badge-success'
+									: session.status === 'Cancelled'
+										? 'badge-error'
+										: session.status === 'Confirmed'
+											? 'badge-primary'
+											: 'badge-outline'}"
 							>
-							<span class="text-3xl font-bold">{new Date(session.session_date).getDate()}</span>
-							<span class="text-xs text-base-content/60"
-								>{new Date(session.session_date).getFullYear()}</span
-							>
+								{session.status}
+							</span>
 						</div>
 
-						<div class="card-body flex-grow">
-							<div class="flex items-start justify-between">
-								<h2 class="card-title text-2xl font-bold">{session.name}</h2>
-								<div
-									class="badge {session.status === 'Completed' ? 'badge-success' : 'badge-info'}"
-								>
-									{session.status}
+						{#if session.status === 'Confirmed' && session.confirmed_mission}
+							<div class="rounded-md border border-success/25 bg-success/5 p-3">
+								<p class="section-label text-success">Confirmed Quest</p>
+								<p class="text-sm font-semibold text-base-content">{session.confirmed_mission.name}</p>
+								<div class="mt-2 flex flex-wrap gap-1.5">
+									{#each session.players as p}
+										<span class="badge badge-ghost badge-sm gap-1.5">
+											{p.name}
+											<button
+												class="text-error hover:underline"
+												aria-label="Remove {p.name}"
+												on:click={() => kickPlayer(session.id, p.id)}
+											>
+												×
+											</button>
+										</span>
+									{/each}
 								</div>
 							</div>
-
-							<p class="mb-4 text-sm text-base-content/70">
-								{session.description || 'No description provided.'}
-							</p>
-
-							<div class="flex flex-col gap-4">
-								{#if session.status === 'Confirmed' && session.confirmed_mission}
-									<div class="rounded-lg border border-success/20 bg-success/5 p-3">
-										<span class="text-xs font-bold text-success uppercase opacity-70"
-											>Running Mission</span
-										>
-										<h3 class="text-lg font-bold">{session.confirmed_mission.name}</h3>
-										<div class="mt-2 flex flex-wrap gap-2">
-											{#each session.players as p}
-												<div class="badge gap-2 badge-ghost badge-sm">
-													{p.name}
-													<button
-														class="text-error hover:scale-110"
-														on:click={() => kickPlayer(session.id, p.id)}>×</button
-													>
-												</div>
-											{/each}
+						{:else if session.proposals.length > 0}
+							<div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+								{#each session.proposals as proposal}
+									<div class="rounded-md border border-base-content/10 bg-base-300/50 p-3">
+										<div class="flex items-start justify-between gap-2">
+											<div>
+												<p class="text-sm font-medium text-base-content">{proposal.mission.name}</p>
+												<span class="text-xs text-base-content/60 stat-num">
+													{proposal.backers.length} backers
+												</span>
+											</div>
+											<span class="badge badge-xs badge-outline">{proposal.status}</span>
+										</div>
+										<div class="mt-2.5 flex gap-2">
+											<button
+												class="btn btn-primary btn-xs"
+												on:click={() => forceConfirm(proposal.id)}
+											>
+												Confirm
+											</button>
+											<button
+												class="btn btn-outline btn-error btn-xs"
+												on:click={() => vetoProposal(proposal.id)}
+											>
+												Veto
+											</button>
 										</div>
 									</div>
-								{:else}
-									<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-										{#each session.proposals as proposal}
-											<div class="rounded border border-base-content/5 bg-base-300/30 p-3">
-												<div class="flex items-start justify-between">
-													<div>
-														<h4 class="font-bold">{proposal.mission.name}</h4>
-														<span class="text-xs text-base-content/60"
-															>{proposal.backers.length} backers</span
-														>
-													</div>
-													<div class="badge badge-xs">{proposal.status}</div>
-												</div>
-												<div class="mt-3 flex gap-2">
-													<button
-														class="btn btn-xs btn-primary"
-														on:click={() => forceConfirm(proposal.id)}>Force Confirm</button
-													>
-													<button
-														class="btn btn-outline btn-xs btn-error"
-														on:click={() => vetoProposal(proposal.id)}>Veto</button
-													>
-												</div>
-											</div>
-										{/each}
-									</div>
-								{/if}
-
-								<div class="mt-2 ml-auto flex gap-2">
-									{#if session.status === 'Confirmed'}
-										<button
-											class="btn btn-sm btn-success"
-											on:click={() => openCompleteModal(session)}>Finalize & Complete</button
-										>
-									{/if}
-									<button class="btn text-error btn-ghost btn-sm">Cancel Slot</button>
-								</div>
+								{/each}
 							</div>
-						</div>
+						{/if}
+
+						{#if session.status !== 'Completed' && session.status !== 'Cancelled'}
+							<div class="flex justify-end gap-2 border-t border-base-content/10 pt-3">
+								{#if session.status === 'Confirmed'}
+									<button class="btn btn-success btn-xs" on:click={() => openCompleteModal(session)}>
+										Complete &amp; Award Rewards
+									</button>
+								{/if}
+								<button
+									class="btn btn-ghost btn-xs text-error"
+									on:click={() => cancelSession(session.id)}
+								>
+									Cancel Slot
+								</button>
+							</div>
+						{/if}
 					</div>
 				</div>
-			{/each}
-			{#if sessions.length === 0}
-				<div
-					class="rounded-box border-2 border-dashed border-base-content/10 bg-base-200 py-20 text-center"
-				>
-					<h2 class="text-2xl font-bold text-base-content/60">No sessions scheduled yet.</h2>
-				</div>
-			{/if}
-		</div>
-	{/if}
-</div>
+			</div>
+		{/each}
+	</div>
+{/if}
 
-<Modal show={showCreate} title="Schedule Game Session" onClose={() => (showCreate = false)}>
-	<div class="form-control gap-4">
+<!-- Schedule Slot Modal -->
+<Modal show={showCreateSession} title="Schedule Session Slot" onClose={() => (showCreateSession = false)}>
+	<div class="space-y-4">
 		<div>
-			<label class="label"><span class="label-text">Session Title</span></label>
+			<label for="s-name" class="mb-1 block text-xs font-medium text-base-content/75">Session Title</label>
 			<input
+				id="s-name"
 				type="text"
 				bind:value={sName}
-				class="input-bordered input w-full"
-				placeholder="e.g. The Spooky Swamp Crawl"
+				class="input input-bordered input-sm w-full"
+				placeholder="e.g. Friday Night Expedition"
 			/>
 		</div>
-		<div class="grid grid-cols-2 gap-4">
+		<div class="grid grid-cols-2 gap-3">
 			<div>
-				<label class="label"><span class="label-text">Min Players</span></label>
-				<input type="number" bind:value={sMinPlayers} class="input-bordered input w-full" />
+				<label for="s-min" class="mb-1 block text-xs font-medium text-base-content/75">Min Players</label>
+				<input id="s-min" type="number" bind:value={sMinPlayers} class="input input-bordered input-sm w-full stat-num" />
 			</div>
 			<div>
-				<label class="label"><span class="label-text">Max Players</span></label>
-				<input type="number" bind:value={sMaxPlayers} class="input-bordered input w-full" />
+				<label for="s-max" class="mb-1 block text-xs font-medium text-base-content/75">Max Players</label>
+				<input id="s-max" type="number" bind:value={sMaxPlayers} class="input input-bordered input-sm w-full stat-num" />
 			</div>
 		</div>
 		<div>
-			<label class="label"><span class="label-text">Date and Time</span></label>
-			<input type="datetime-local" bind:value={sDate} class="input-bordered input w-full" />
+			<label for="s-date" class="mb-1 block text-xs font-medium text-base-content/75">Date &amp; Time</label>
+			<input id="s-date" type="datetime-local" bind:value={sDate} class="input input-bordered input-sm w-full" />
 		</div>
 		<div>
-			<label class="label"><span class="label-text">Briefing</span></label>
+			<label for="s-desc" class="mb-1 block text-xs font-medium text-base-content/75">Notes</label>
 			<textarea
-				bind:value={sDescription}
-				class="textarea-bordered textarea h-24 w-full"
-				placeholder="What should they expect?"
+				id="s-desc"
+				bind:value={sDesc}
+				class="textarea textarea-bordered w-full text-sm"
+				rows="3"
+				placeholder="Session details or tier restrictions..."
 			></textarea>
 		</div>
 	</div>
 	<div slot="action">
-		<button class="btn w-full btn-primary" on:click={createSession}>Schedule Session</button>
+		<button class="btn btn-ghost btn-sm" on:click={() => (showCreateSession = false)}>Cancel</button>
+		<button class="btn btn-primary btn-sm" disabled={!sName.trim()} on:click={createSession}>
+			Create Slot
+		</button>
 	</div>
 </Modal>
 
 <!-- Complete Session Modal -->
-<Modal show={showComplete} title="Complete Session" onClose={() => (showComplete = false)}>
+<Modal
+	show={showCompleteModal}
+	title="Complete Session — {completingSession?.name ?? ''}"
+	onClose={() => (showCompleteModal = false)}
+>
 	{#if completingSession}
-		<div class="form-control gap-4">
-			<!-- Result -->
+		<div class="space-y-4">
 			<div>
-				<label class="label"><span class="label-text font-semibold">Mission Result</span></label>
+				<span class="mb-1.5 block text-xs font-medium text-base-content/75">Outcome</span>
 				<div class="flex gap-4">
-					<label class="flex cursor-pointer items-center gap-2">
-						<input type="radio" class="radio radio-success" bind:group={cResult} value="success" />
-						<span class="font-medium text-success">✅ Success</span>
+					<label class="flex cursor-pointer items-center gap-2 text-sm">
+						<input type="radio" class="radio radio-success radio-sm" bind:group={cResult} value="success" />
+						<span>Success</span>
 					</label>
-					<label class="flex cursor-pointer items-center gap-2">
-						<input type="radio" class="radio radio-warning" bind:group={cResult} value="failure" />
-						<span class="font-medium text-warning">❌ Failure</span>
+					<label class="flex cursor-pointer items-center gap-2 text-sm">
+						<input type="radio" class="radio radio-error radio-sm" bind:group={cResult} value="failure" />
+						<span>Failure</span>
 					</label>
 				</div>
 			</div>
 
-			<!-- Resources -->
-			<div>
-				<label class="label"
-					><span class="label-text">⚡ Essence Earned (net, after transit)</span></label
-				>
-				<input
-					type="number"
-					class="input-bordered input input-sm w-full"
-					bind:value={cEssenceEarned}
-				/>
-				<p class="mt-1 text-xs text-base-content/60">
-					Positive = Essence returned to reserves. Negative = reserves were spent.
-				</p>
+			<div class="grid grid-cols-2 gap-3">
+				<div>
+					<label for="c-gold" class="mb-1 block text-xs font-medium text-base-content/75">
+						Bonus Gold / Player (GP)
+					</label>
+					<input
+						id="c-gold"
+						type="number"
+						min="0"
+						bind:value={cGoldEarned}
+						class="input input-bordered input-sm w-full stat-num"
+					/>
+				</div>
+				<div>
+					<label for="c-xp" class="mb-1 block text-xs font-medium text-base-content/75">
+						Bonus XP / Player
+					</label>
+					<input
+						id="c-xp"
+						type="number"
+						min="0"
+						bind:value={cXpEarned}
+						class="input input-bordered input-sm w-full stat-num"
+					/>
+				</div>
 			</div>
 
-			<!-- Casualties -->
 			{#if completingSession.players.length > 0}
 				<div>
-					<label class="label"><span class="label-text">💀 Casualties (mark as Dead)</span></label>
+					<span class="mb-1.5 block text-xs font-medium text-base-content/75">
+						Casualties (mark as Dead)
+					</span>
 					<div class="flex flex-wrap gap-2">
-						{#each completingSession.players as p}
-							<label
-								class="flex cursor-pointer items-center gap-2 rounded border border-base-content/20 px-3 py-1 {cCasualties.includes(
-									p.id
-								)
-									? 'border-error/40 bg-error/20'
-									: ''}"
-							>
+						{#each completingSession.players as player}
+							<label class="flex cursor-pointer items-center gap-1.5 rounded border border-base-content/15 px-2.5 py-1 text-xs">
 								<input
 									type="checkbox"
-									class="checkbox checkbox-sm checkbox-error"
-									checked={cCasualties.includes(p.id)}
-									on:change={() => toggleCasualty(p.id)}
+									class="checkbox checkbox-error checkbox-xs"
+									checked={cCasualties.includes(player.id)}
+									on:change={() => toggleCasualty(player.id)}
 								/>
-								<span class="text-sm">{p.name}</span>
+								<span>{player.name}</span>
 							</label>
 						{/each}
 					</div>
 				</div>
 			{/if}
 
-			<!-- After-Action Report -->
 			<div>
-				<label class="label"><span class="label-text">After-Action Report (optional)</span></label>
+				<label for="c-aar" class="mb-1 block text-xs font-medium text-base-content/75">
+					After-Action Report (optional)
+				</label>
 				<textarea
-					class="textarea-bordered textarea h-20 w-full"
-					bind:value={cAfterAction}
-					placeholder="What happened? How did it go?"
+					id="c-aar"
+					class="textarea textarea-bordered w-full text-sm"
+					rows="3"
+					bind:value={cAar}
+					placeholder="Summary of events, faction consequences, and notable loot..."
 				></textarea>
 			</div>
-
-			{#if error}
-				<div class="alert text-sm alert-error">{error}</div>
-			{/if}
 		</div>
 	{/if}
 	<div slot="action">
-		<button class="btn w-full btn-success" on:click={submitComplete} disabled={completing}>
-			{completing ? 'Processing...' : 'Log Session Result'}
+		<button class="btn btn-ghost btn-sm" on:click={() => (showCompleteModal = false)}>Cancel</button>
+		<button class="btn btn-success btn-sm" disabled={completing} on:click={submitComplete}>
+			{completing ? 'Completing...' : 'Finalize & Award'}
 		</button>
 	</div>
 </Modal>

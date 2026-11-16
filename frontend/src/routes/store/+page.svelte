@@ -3,6 +3,9 @@
 	import { auth } from '$lib/auth';
 	import { api } from '$lib/api';
 	import type { StoreItem } from '$lib/types';
+	import { ADVENTURERS_NAV } from '$lib/navigation';
+	import SubNav from '$lib/components/SubNav.svelte';
+	import PageHeader from '$lib/components/PageHeader.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 
@@ -19,15 +22,14 @@
 	$: activeCharacterId = activeCharacter?.id;
 	$: characterGold = activeCharacter?.stats?.gold ?? 0;
 
-	onMount(async () => {
-		await fetchStoreItems();
-	});
+	onMount(fetchStoreItems);
 
 	async function fetchStoreItems() {
 		loading = true;
 		try {
 			storeItems = await api('GET', '/store/items/');
 		} catch (e) {
+			error = e instanceof Error ? e.message : 'Failed to load store items.';
 		} finally {
 			loading = false;
 		}
@@ -40,12 +42,21 @@
 	}
 
 	async function handlePurchase() {
-		if (!selectedItem || !activeCharacterId) return;
+		if (!selectedItem || !activeCharacterId || !activeCharacter) return;
 		error = '';
 		successMessage = '';
+		const totalCost = selectedItem.price * purchaseQuantity;
 		try {
 			await api('POST', `/store/items/${selectedItem.id}/purchase?quantity=${purchaseQuantity}`);
-			successMessage = `Successfully purchased ${purchaseQuantity}x ${selectedItem.item.name}!`;
+			successMessage = `Purchased ${purchaseQuantity}x ${selectedItem.item.name} for ${totalCost} GP.`;
+			// Update local character gold immediately
+			if ($auth.user && $auth.token && activeCharacter.stats) {
+				const updatedChar = {
+					...activeCharacter,
+					stats: { ...activeCharacter.stats, gold: Math.max(0, activeCharacter.stats.gold - totalCost) }
+				};
+				auth.login({ ...$auth.user, active_character: updatedChar }, $auth.token, $auth.campaign ?? undefined);
+			}
 			showPurchaseConfirm = false;
 			await fetchStoreItems();
 			setTimeout(() => (successMessage = ''), 5000);
@@ -55,174 +66,135 @@
 	}
 </script>
 
-<div class="container mx-auto max-w-5xl p-4">
-	<div
-		class="mb-8 flex flex-col items-start justify-between gap-4 border-b border-base-content/10 pb-4 md:flex-row md:items-center"
-	>
-		<div>
-			<h1 class="text-4xl font-[var(--font-cinzel)] font-bold text-primary">Company Store</h1>
-			<p class="text-sm text-base-content/65">
-				Acquire equipment and supplies. Prices in GP.
-			</p>
-		</div>
+<div class="page-container">
+	<SubNav items={ADVENTURERS_NAV} />
 
-		{#if activeCharacter}
-			<div class="stats border border-primary/20 bg-base-200 shadow">
-				<div class="stat px-4 py-2">
-					<div class="stat-title text-[10px] font-bold text-primary uppercase">Your Gold</div>
-					<div class="stat-value text-2xl text-primary">
-						{characterGold} <span class="text-xs">GP</span>
-					</div>
+	<PageHeader
+		title="Quartermaster Store"
+		subtitle="Acquire equipment, consumables, and supplies using Gold (GP)."
+	>
+		<div slot="actions">
+			{#if activeCharacter}
+				<div class="panel px-4 py-2 text-right">
+					<p class="section-label">Available Gold</p>
+					<p class="text-lg font-semibold text-primary stat-num">{characterGold} GP</p>
 				</div>
-			</div>
-		{/if}
-	</div>
+			{/if}
+		</div>
+	</PageHeader>
 
 	{#if error}
-		<div class="mb-6 alert alert-error shadow-lg">
-			<div>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-6 w-6 flex-shrink-0 stroke-current"
-					fill="none"
-					viewBox="0 0 24 24"
-					><path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-					/></svg
-				>
-				<span>{error}</span>
-			</div>
-		</div>
+		<div class="alert alert-error mb-6 text-sm">{error}</div>
 	{/if}
-
 	{#if successMessage}
-		<div class="mb-6 alert alert-success shadow-lg">
-			<div>
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					class="h-6 w-6 flex-shrink-0 stroke-current"
-					fill="none"
-					viewBox="0 0 24 24"
-					><path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-					/></svg
-				>
-				<span>{successMessage}</span>
-			</div>
-		</div>
+		<div class="alert alert-success mb-6 text-sm">{successMessage}</div>
 	{/if}
 
 	{#if loading}
 		<LoadingSpinner size="lg" />
 	{:else if storeItems.length === 0}
-		<div class="card bg-base-200 p-12 text-center opacity-70">
-			<h2 class="text-xl font-bold">The store shelves are empty.</h2>
-			<p>The quartermaster hasn't stocked any items for this campaign yet.</p>
+		<div class="panel p-12 text-center">
+			<p class="text-base font-medium text-base-content/75">The store shelves are empty.</p>
+			<p class="mt-1 text-sm text-base-content/50">The DM hasn't stocked any items for this campaign yet.</p>
 		</div>
 	{:else}
-		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+		<div class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
 			{#each storeItems as item}
-				<div
-					class="group card border border-base-content/10 bg-base-100 shadow-xl transition-all hover:border-primary/50"
-				>
-					<div class="card-body">
-						<div class="mb-2 flex items-start justify-between">
-							<h2 class="card-title text-xl font-bold">{item.item.name}</h2>
-							<div class="badge font-bold badge-primary">{item.price} GP</div>
-						</div>
-
-						<p class="mb-4 line-clamp-2 h-12 text-sm text-base-content/70">
-							{item.item.description || 'No description provided.'}
-						</p>
-
-						<div class="mt-auto flex items-center justify-between">
-							<div class="text-xs">
-								{#if item.quantity_available > 0}
-									<span class="font-bold text-success">In Stock: {item.quantity_available}</span>
-								{:else}
-									<span class="font-bold text-warning">Out of Stock</span>
-								{/if}
-							</div>
-
-							<div class="card-actions">
-								<button
-									class="btn btn-sm btn-primary"
-									disabled={item.quantity_available <= 0 || !activeCharacterId}
-									on:click={() => openPurchaseModal(item)}
-								>
-									Purchase
-								</button>
-							</div>
-						</div>
+				<article class="panel panel-interactive flex flex-col p-5">
+					<div class="mb-2 flex items-start justify-between gap-2">
+						<h2 class="text-base font-semibold text-base-content">{item.item.name}</h2>
+						<span class="badge badge-outline border-primary/40 text-primary badge-sm shrink-0 stat-num">
+							{item.price} GP
+						</span>
 					</div>
-				</div>
+
+					<p class="mb-4 line-clamp-3 flex-1 text-xs text-base-content/70">
+						{item.item.description || 'No description provided.'}
+					</p>
+
+					<div class="mt-auto flex items-center justify-between border-t border-base-content/10 pt-3">
+						<span class="text-xs stat-num {item.quantity_available === 0 ? 'text-warning' : 'text-base-content/60'}">
+							{#if item.quantity_available === -1}
+								Unlimited stock
+							{:else if item.quantity_available > 0}
+								{item.quantity_available} in stock
+							{:else}
+								Out of stock
+							{/if}
+						</span>
+
+						<button
+							class="btn btn-primary btn-xs"
+							disabled={item.quantity_available === 0 || !activeCharacterId}
+							on:click={() => openPurchaseModal(item)}
+						>
+							Purchase
+						</button>
+					</div>
+				</article>
 			{/each}
 		</div>
 	{/if}
 </div>
 
-<!-- Purchase Confirmation Modal -->
-<Modal
-	show={showPurchaseConfirm}
-	title="Confirm Purchase"
-	onClose={() => (showPurchaseConfirm = false)}
->
+<Modal show={showPurchaseConfirm} title="Confirm Purchase" onClose={() => (showPurchaseConfirm = false)}>
 	{#if selectedItem}
-		<div class="text-center">
-			<p class="mb-4 text-lg">
-				Are you sure you want to purchase <strong>{selectedItem.item.name}</strong>?
+		<div class="space-y-4">
+			<p class="text-sm text-base-content/85">
+				Purchase <strong class="text-primary">{selectedItem.item.name}</strong>?
 			</p>
 
-			<div class="form-control mx-auto mb-6 w-full max-w-xs">
-				<label class="label">
-					<span class="label-text">How many?</span>
-					<span class="label-text-alt text-base-content/65"
-						>Total Cost: {selectedItem.price * purchaseQuantity} GP</span
-					>
-				</label>
+			<div>
+				<div class="mb-1 flex justify-between text-xs text-base-content/70">
+					<label for="purchase-qty">Quantity</label>
+					<span class="stat-num">Total: {selectedItem.price * purchaseQuantity} GP</span>
+				</div>
 				<div class="flex items-center gap-2">
 					<button
 						class="btn btn-square btn-sm"
-						on:click={() => (purchaseQuantity = Math.max(1, purchaseQuantity - 1))}>-</button
+						on:click={() => (purchaseQuantity = Math.max(1, purchaseQuantity - 1))}
 					>
+						-
+					</button>
 					<input
+						id="purchase-qty"
 						type="number"
 						bind:value={purchaseQuantity}
 						min="1"
-						max={selectedItem.quantity_available}
-						class="input-bordered input input-sm w-full text-center"
+						max={selectedItem.quantity_available === -1 ? 99 : selectedItem.quantity_available}
+						class="input input-bordered input-sm flex-1 text-center stat-num"
 					/>
 					<button
 						class="btn btn-square btn-sm"
 						on:click={() =>
 							(purchaseQuantity = Math.min(
-								selectedItem?.quantity_available || 1,
+								selectedItem?.quantity_available === -1
+									? 99
+									: selectedItem?.quantity_available || 1,
 								purchaseQuantity + 1
-							))}>+</button
+							))}
 					>
+						+
+					</button>
 				</div>
 			</div>
 
 			{#if characterGold < selectedItem.price * purchaseQuantity}
-				<p class="animate-pulse text-sm font-bold text-warning">Not enough gold.</p>
+				<p class="text-xs font-medium text-error">Insufficient Gold ({characterGold} GP available).</p>
 			{/if}
 		</div>
 	{/if}
 
 	<div slot="action">
-		<button class="btn btn-ghost" on:click={() => (showPurchaseConfirm = false)}>Cancel</button>
+		<button class="btn btn-ghost btn-sm" on:click={() => (showPurchaseConfirm = false)}>Cancel</button>
 		<button
-			class="btn btn-primary"
-			disabled={!selectedItem || !activeCharacterId || characterGold < (selectedItem?.price ?? 0) * purchaseQuantity}
+			class="btn btn-primary btn-sm"
+			disabled={!selectedItem ||
+				!activeCharacterId ||
+				characterGold < (selectedItem?.price ?? 0) * purchaseQuantity}
 			on:click={handlePurchase}
 		>
-			Confirm
+			Confirm Purchase
 		</button>
 	</div>
 </Modal>

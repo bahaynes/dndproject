@@ -3,9 +3,9 @@
 	import { auth, login, logout } from '$lib/auth';
 	import { browser } from '$app/environment';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import { onMount } from 'svelte';
 	import { API_BASE_URL } from '$lib/config';
-	import ThemeSwitcher from '$lib/components/ThemeSwitcher.svelte';
 
 	// Rehydrate auth from localStorage on every page load.
 	// Only ever looks at accessToken — nothing else.
@@ -40,82 +40,146 @@
 		logout();
 		if (browser) goto('/login');
 	}
+
+	$: pathname = $page?.url?.pathname ?? '/';
+
+	function isActive(prefixes: string[]): boolean {
+		return prefixes.some((p) => pathname === p || pathname.startsWith(p + '/'));
+	}
 </script>
 
-<div class="flex min-h-screen flex-col">
-	<nav class="navbar border-b border-base-content/10 bg-base-300 shadow-lg">
-		<div class="navbar-start">
-			<div class="dropdown">
-				<button tabindex="0" class="btn btn-ghost lg:hidden" aria-label="Mobile Menu">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-5 w-5"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke="currentColor"
-						><path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M4 6h16M4 12h8m-8 6h16"
-						/></svg
+<div class="flex min-h-screen flex-col bg-base-100 text-base-content">
+	<nav class="sticky top-0 z-30 border-b border-base-content/10 bg-base-200/95 backdrop-blur">
+		<div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+			<!-- Left: Mobile menu + Brand -->
+			<div class="flex items-center gap-2">
+				<div class="dropdown lg:hidden">
+					<button tabindex="0" class="btn btn-ghost btn-sm btn-square" aria-label="Mobile Menu">
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							class="h-5 w-5"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M4 6h16M4 12h8m-8 6h16"
+							/>
+						</svg>
+					</button>
+					<ul
+						class="dropdown-content menu z-40 mt-2 w-56 rounded-lg border border-base-content/10 bg-base-200 p-2 shadow-lg"
 					>
-				</button>
-				<ul
-					class="dropdown-content menu z-[1] mt-3 w-52 menu-sm rounded-box border border-base-content/10 bg-base-200 p-2 shadow"
+						{#if $auth.isAuthenticated}
+							<li><a href="/dashboard" class:active={isActive(['/dashboard'])}>Dashboard</a></li>
+							<li><a href="/missions" class:active={isActive(['/missions', '/sessions'])}>Missions &amp; Schedule</a></li>
+							<li><a href="/characters" class:active={isActive(['/characters', '/roster', '/store'])}>Adventurers &amp; Store</a></li>
+							<li><a href="/maps" class:active={isActive(['/maps', '/factions', '/ledger'])}>World &amp; Chronicle</a></li>
+							{#if $auth.user?.role === 'admin'}
+								<li><a href="/admin/sessions" class:active={isActive(['/admin'])}>DM Console</a></li>
+							{/if}
+							<li><hr class="my-1 border-base-content/10" /></li>
+							<li><a href="/campaigns">Switch Campaign</a></li>
+							<li><button on:click={handleLogout} class="text-error">Logout</button></li>
+						{:else}
+							<li><a href="/login">Login</a></li>
+						{/if}
+					</ul>
+				</div>
+
+				<a
+					href={$auth.isAuthenticated ? '/dashboard' : '/'}
+					class="flex items-center gap-2 font-[var(--font-cinzel)] text-base font-semibold tracking-wider text-primary sm:text-lg"
 				>
-					{#if $auth.isAuthenticated}
-						<li><a href="/dashboard">Dashboard</a></li>
-						<li><a href="/campaigns">Switch Campaign</a></li>
-						<li><hr class="my-1 opacity-10" /></li>
-						<li><button on:click={handleLogout} class="text-error">Logout</button></li>
-					{:else}
-						<li><a href="/login">Login</a></li>
-					{/if}
-				</ul>
+					West Marches
+				</a>
 			</div>
-			<a href="/" class="btn text-xl font-[var(--font-cinzel)] tracking-wider btn-ghost"
-				>DnD Westmarches</a
-			>
-		</div>
 
-		<div class="navbar-center hidden lg:flex">
-			<ul class="menu menu-horizontal gap-2 px-1">
-				{#if $auth.isAuthenticated}
-					<li><a href="/dashboard" class="font-semibold">Dashboard</a></li>
-					<li><a href="/maps" class="font-semibold">World Map</a></li>
-					<li><a href="/factions" class="font-semibold">Factions</a></li>
-					<li><a href="/campaigns" class="font-semibold">Switch Campaign</a></li>
-				{/if}
-			</ul>
-		</div>
-
-		<div class="navbar-end gap-2">
+			<!-- Center: Primary Workspace Nav (Desktop) -->
 			{#if $auth.isAuthenticated}
-				<div class="flex items-center gap-3">
+				<div class="hidden items-center gap-1 lg:flex">
+					<a
+						href="/dashboard"
+						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/dashboard'])
+							? 'bg-primary/15 text-primary'
+							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
+					>
+						Dashboard
+					</a>
+					<a
+						href="/missions"
+						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/missions', '/sessions'])
+							? 'bg-primary/15 text-primary'
+							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
+					>
+						Missions &amp; Schedule
+					</a>
+					<a
+						href="/characters"
+						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/characters', '/roster', '/store'])
+							? 'bg-primary/15 text-primary'
+							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
+					>
+						Adventurers &amp; Store
+					</a>
+					<a
+						href="/maps"
+						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/maps', '/factions', '/ledger'])
+							? 'bg-primary/15 text-primary'
+							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
+					>
+						World &amp; Chronicle
+					</a>
+					{#if $auth.user?.role === 'admin'}
+						<a
+							href="/admin/sessions"
+							class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/admin'])
+								? 'bg-primary/15 text-primary'
+								: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
+						>
+							DM Console
+						</a>
+					{/if}
+				</div>
+			{/if}
+
+			<!-- Right: Campaign + User Menu -->
+			<div class="flex items-center gap-3">
+				{#if $auth.isAuthenticated}
 					{#if $auth.campaign}
-						<div class="badge hidden badge-outline px-3 py-3 font-bold badge-primary md:flex">
+						<a
+							href="/campaigns"
+							class="hidden rounded border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/20 md:inline-block"
+							title="Switch Campaign"
+						>
 							{$auth.campaign.name}
-						</div>
+						</a>
 					{/if}
 
 					<div class="hidden flex-col items-end leading-tight md:flex">
-						<span class="text-[10px] font-bold uppercase opacity-50">Logged in as</span>
-						<span class="text-sm font-bold">{$auth.user?.username}</span>
+						<span class="text-xs font-medium text-base-content">{$auth.user?.username}</span>
+						{#if $auth.user?.active_character}
+							<span class="text-[11px] text-base-content/55">
+								{$auth.user.active_character.name} · Lvl {$auth.user.active_character.level}
+							</span>
+						{/if}
 					</div>
 
 					<div class="dropdown dropdown-end">
 						<button
 							tabindex="0"
-							class="btn avatar btn-circle overflow-hidden border border-primary/20 btn-ghost"
+							class="btn btn-ghost btn-circle btn-sm avatar overflow-hidden border border-base-content/15"
 							aria-label="User Menu"
 						>
-							<div class="w-10 rounded-full">
+							<div class="w-8 rounded-full">
 								{#if $auth.user?.avatar_url}
 									<img alt="Avatar" src={$auth.user.avatar_url} />
 								{:else}
 									<div
-										class="flex h-full items-center justify-center bg-primary text-xl font-bold text-primary-content"
+										class="flex h-full items-center justify-center bg-base-300 text-sm font-semibold text-primary"
 									>
 										{$auth.user?.username?.charAt(0).toUpperCase()}
 									</div>
@@ -123,26 +187,23 @@
 							</div>
 						</button>
 						<ul
-							class="dropdown-content menu z-[1] mt-3 w-52 menu-sm rounded-box border border-base-content/10 bg-base-200 p-2 shadow"
+							class="dropdown-content menu z-40 mt-2 w-52 rounded-lg border border-base-content/10 bg-base-200 p-2 shadow-lg"
 						>
 							<li class="menu-title text-xs md:hidden">{$auth.user?.username}</li>
-							<li><a href="/dashboard" class="justify-between font-semibold">Dashboard</a></li>
+							<li><a href="/characters">My Characters</a></li>
 							<li><a href="/campaigns">Switch Campaign</a></li>
 							<li><hr class="my-1 border-base-content/10" /></li>
-							<li><button on:click={handleLogout} class="font-bold text-error">Logout</button></li>
+							<li><button on:click={handleLogout} class="font-medium text-error">Logout</button></li>
 						</ul>
 					</div>
-				</div>
-			{:else}
-				<a href="/login" class="btn px-6 btn-sm btn-primary">Login</a>
-			{/if}
-			<div class="ml-2">
-				<ThemeSwitcher />
+				{:else}
+					<a href="/login" class="btn btn-primary btn-sm">Login</a>
+				{/if}
 			</div>
 		</div>
 	</nav>
 
-	<main class="flex-grow bg-base-100">
+	<main class="flex-grow">
 		<slot />
 	</main>
 </div>

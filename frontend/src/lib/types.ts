@@ -39,6 +39,7 @@ export interface CharacterRosterEntry {
     name: string;
     class_name?: string;
     level: number;
+    xp: number;
     status: 'Active' | 'Dead' | 'Benched';
     date_of_death?: string;
     missions_completed: number;
@@ -75,6 +76,8 @@ export interface CharacterStats {
     id: number;
     character_id: number;
     gold: number;
+    xp: number;
+    next_level_xp?: number | null;
 }
 
 export interface Item {
@@ -117,6 +120,7 @@ export interface MissionReward {
     id: number;
     item_id?: number;
     gold?: number;
+    xp?: number;
     item?: Item;
     is_hidden: boolean;
     hint?: string;
