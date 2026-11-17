@@ -1,5 +1,4 @@
 @import 'tailwindcss';
-@plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 @plugin 'daisyui';
 
@@ -113,6 +112,11 @@ textarea:focus-visible {
   .stat-num {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     font-variant-numeric: tabular-nums;
+  }
+
+  .badge {
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 }
 
