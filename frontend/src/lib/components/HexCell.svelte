@@ -22,17 +22,21 @@
 	$: pixel = hexToPixel(q, r, size);
 	$: points = hexCornerPoints(size - 1); // -1 for padding/stroke
 
+	const FACTION_OVERLAY_PALETTE = [
+		'rgba(59,130,246,0.32)',
+		'rgba(245,158,11,0.32)',
+		'rgba(16,185,129,0.28)',
+		'rgba(239,68,68,0.28)',
+		'rgba(168,85,247,0.28)'
+	];
+
 	function getFactionOverlay(faction: string | null): string | null {
-		switch (faction) {
-			case 'Kathedral':
-				return 'rgba(59,130,246,0.35)';
-			case 'Vastarei':
-				return 'rgba(245,158,11,0.35)';
-			case 'Inheritors':
-				return 'rgba(34,197,94,0.25)';
-			default:
-				return null;
+		if (!faction) return null;
+		let hash = 0;
+		for (let i = 0; i < faction.length; i++) {
+			hash = (hash * 31 + faction.charCodeAt(i)) >>> 0;
 		}
+		return FACTION_OVERLAY_PALETTE[hash % FACTION_OVERLAY_PALETTE.length];
 	}
 
 	function getStateIcon(state: string): string {

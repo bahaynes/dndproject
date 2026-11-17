@@ -3,7 +3,6 @@ from typing import Optional, List, Any, Literal
 from ..missions.schemas import Mission
 
 HexState = Literal["wilderness", "claimed_developed", "friendly", "contested", "awakened"]
-ControllingFaction = Literal["Collegium", "Limes"]
 
 class HexBase(BaseModel):
     q: int
@@ -11,7 +10,7 @@ class HexBase(BaseModel):
     terrain: str = "plains"
     is_discovered: bool = False
     hex_state: HexState = "wilderness"
-    controlling_faction: Optional[ControllingFaction] = None
+    controlling_faction: Optional[str] = None
     linked_location_name: Optional[str] = None
     linked_mission_id: Optional[int] = None
 
@@ -25,7 +24,7 @@ class HexUpdate(BaseModel):
     linked_mission_id: Optional[int] = None
     notes: Optional[str] = None  # DM only
     hex_state: Optional[HexState] = None  # Admin only
-    controlling_faction: Optional[ControllingFaction] = None  # Admin only
+    controlling_faction: Optional[str] = None  # Admin only
 
 class PlayerNoteCreate(BaseModel):
     text: str

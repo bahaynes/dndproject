@@ -13,6 +13,22 @@
 	let saveError = '';
 	let seedMsg = '';
 
+	// World Import / Export
+	let exporting = false;
+	let importing = false;
+	let importMode: 'merge' | 'replace' = 'merge';
+	let importPreview: {
+		world_name: string;
+		factions: number;
+		items: number;
+		missions: number;
+		maps: number;
+		hexes: number;
+		raw: unknown;
+	} | null = null;
+	let worldMsg = '';
+	let worldError = '';
+
 	// Form
 	let editName = '';
 	let editMotd = '';
@@ -53,11 +69,89 @@
 		saveError = '';
 		try {
 			const res = await api('POST', '/admin/seed');
-			seedMsg = `Seeded ${res.factions_created} factions and ${res.missions_created} starter quests.`;
+			seedMsg = `Loaded "${res.world_name}": ${res.factions_created} factions, ${res.items_created} items, ${res.missions_created} quests, ${res.hexes_upserted} hexes.`;
+			await loadSettings();
 		} catch (e) {
-			saveError = e instanceof Error ? e.message : 'Failed to seed starter data.';
+			saveError = e instanceof Error ? e.message : 'Failed to load baseline world.';
 		}
 		seeding = false;
+	}
+
+	async function exportWorld() {
+		exporting = true;
+		worldMsg = '';
+		worldError = '';
+		try {
+			const bundle = await api('GET', '/admin/world/export');
+			const slug = (bundle.world_name || 'world')
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, '-')
+				.replace(/^-|-$/g, '');
+			const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: 'application/json' });
+			const url = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `${slug || 'world'}.world.json`;
+			document.body.appendChild(a);
+			a.click();
+			a.remove();
+			URL.revokeObjectURL(url);
+			worldMsg = `Exported "${bundle.world_name}".`;
+		} catch (e) {
+			worldError = e instanceof Error ? e.message : 'Failed to export world.';
+		}
+		exporting = false;
+	}
+
+	async function handleFileSelect(event: Event) {
+		worldMsg = '';
+		worldError = '';
+		importPreview = null;
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		try {
+			const text = await file.text();
+			const parsed = JSON.parse(text);
+			if (!parsed || typeof parsed.world_name !== 'string') {
+				throw new Error('Invalid world bundle: missing "world_name".');
+			}
+			const maps = Array.isArray(parsed.maps) ? parsed.maps : [];
+			const hexCount = maps.reduce(
+				(sum: number, m: { hexes?: unknown[] }) => sum + (Array.isArray(m.hexes) ? m.hexes.length : 0),
+				0
+			);
+			importPreview = {
+				world_name: parsed.world_name,
+				factions: Array.isArray(parsed.factions) ? parsed.factions.length : 0,
+				items: Array.isArray(parsed.items) ? parsed.items.length : 0,
+				missions: Array.isArray(parsed.missions) ? parsed.missions.length : 0,
+				maps: maps.length,
+				hexes: hexCount,
+				raw: parsed
+			};
+		} catch (e) {
+			worldError = e instanceof Error ? e.message : 'Could not parse JSON file.';
+		}
+	}
+
+	async function importWorld() {
+		if (!importPreview) return;
+		importing = true;
+		worldMsg = '';
+		worldError = '';
+		try {
+			const res = await api('POST', '/admin/world/import', {
+				bundle: importPreview.raw,
+				mode: importMode
+			});
+			worldMsg = `Imported "${res.world_name}" (${res.mode}): ${res.factions_created + res.factions_updated} factions, ${res.items_created + res.items_updated} items, ${res.missions_created + res.missions_updated} quests, ${res.hexes_upserted} hexes.`;
+			importPreview = null;
+			await loadSettings();
+		} catch (e) {
+			worldError = e instanceof Error ? e.message : 'Failed to import world.';
+		}
+		importing = false;
 	}
 </script>
 
@@ -113,19 +207,90 @@
 		</section>
 
 		<section class="panel p-5 space-y-4">
-			<h2 class="text-base font-semibold text-base-content">Quick Start Seed</h2>
+			<h2 class="text-base font-semibold text-base-content">Baseline World: The Ashenvale Frontier</h2>
 			<p class="text-xs leading-relaxed text-base-content/70">
-				Populate a new campaign with starter D&amp;D 5e Tier 1 quests and baseline factions. Safe to
-				run multiple times—existing records are skipped.
+				Populate this campaign with a pitch-ready D&amp;D 5e frontier world: <strong>Crossroads Keep</strong>
+				hub &amp; MOTD, 3 factions, 8 quartermaster store items, 5 Tier 1 quests, and a 61-hex frontier
+				map. Uses non-destructive merge—safe to run multiple times.
 			</p>
 			{#if seedMsg}
 				<div class="alert alert-success text-xs">{seedMsg}</div>
 			{/if}
 			<div>
 				<button class="btn btn-outline btn-primary btn-sm" on:click={seedStarterData} disabled={seeding}>
-					{seeding ? 'Seeding...' : 'Seed Starter Campaign Data'}
+					{seeding ? 'Loading Baseline World...' : 'Load Baseline World'}
 				</button>
 			</div>
 		</section>
 	</div>
+
+	<section class="panel mt-6 p-5 space-y-4">
+		<div class="flex flex-wrap items-center justify-between gap-3">
+			<div>
+				<h2 class="text-base font-semibold text-base-content">World Import / Export</h2>
+				<p class="text-xs text-base-content/70">
+					Back up or move your hub, factions, store catalog, quests, and hex maps between campaigns as a
+					portable <code>.world.json</code> bundle. Characters and session logs are never overwritten.
+				</p>
+			</div>
+			<button class="btn btn-outline btn-sm" on:click={exportWorld} disabled={exporting}>
+				{exporting ? 'Exporting...' : 'Export World (.json)'}
+			</button>
+		</div>
+
+		<div class="divider my-1"></div>
+
+		<div class="grid grid-cols-1 gap-4 md:grid-cols-2 md:items-end">
+			<div>
+				<label for="world-import-file" class="mb-1 block text-xs font-medium text-base-content/75">
+					Import World File (.json)
+				</label>
+				<input
+					id="world-import-file"
+					type="file"
+					accept=".json,application/json"
+					class="file-input file-input-bordered file-input-sm w-full"
+					on:change={handleFileSelect}
+				/>
+			</div>
+
+			<div>
+				<label for="world-import-mode" class="mb-1 block text-xs font-medium text-base-content/75">
+					Import Mode
+				</label>
+				<select
+					id="world-import-mode"
+					class="select select-bordered select-sm w-full"
+					bind:value={importMode}
+				>
+					<option value="merge">Merge (Upsert by name, keep existing records)</option>
+					<option value="replace">Replace World (Clear old world, keep characters &amp; sessions)</option>
+				</select>
+			</div>
+		</div>
+
+		{#if importPreview}
+			<div class="rounded-lg border border-primary/30 bg-base-200/60 p-3 text-xs space-y-2">
+				<div class="flex flex-wrap items-center justify-between gap-2">
+					<span class="font-semibold text-base-content">Ready to import: {importPreview.world_name}</span>
+					<button class="btn btn-primary btn-xs" on:click={importWorld} disabled={importing}>
+						{importing ? 'Importing...' : `Confirm ${importMode === 'replace' ? 'Replace' : 'Merge'} Import`}
+					</button>
+				</div>
+				<div class="flex flex-wrap gap-2 text-base-content/75">
+					<span class="badge badge-ghost badge-sm">{importPreview.factions} factions</span>
+					<span class="badge badge-ghost badge-sm">{importPreview.items} items</span>
+					<span class="badge badge-ghost badge-sm">{importPreview.missions} quests</span>
+					<span class="badge badge-ghost badge-sm">{importPreview.maps} maps ({importPreview.hexes} hexes)</span>
+				</div>
+			</div>
+		{/if}
+
+		{#if worldMsg}
+			<div class="alert alert-success text-xs">{worldMsg}</div>
+		{/if}
+		{#if worldError}
+			<div class="alert alert-error text-xs">{worldError}</div>
+		{/if}
+	</section>
 {/if}
