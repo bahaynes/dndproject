@@ -272,6 +272,15 @@ class DevTokenRequest(BaseModel):
     campaign_name: str = "E2E Test Campaign"
 
 
+@router.get("/dev-status", include_in_schema=False)
+async def dev_status():
+    """
+    Returns whether dev login is enabled (true in development and PR preview, false in production).
+    """
+    settings = get_settings()
+    return {"dev_login_enabled": settings.APP_ENV != "production"}
+
+
 @router.post("/dev-token", include_in_schema=False)
 async def dev_token(
     request: DevTokenRequest,

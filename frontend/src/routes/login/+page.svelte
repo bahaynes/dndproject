@@ -5,14 +5,25 @@
   import { get } from 'svelte/store';
   import { API_BASE_URL } from '$lib/config';
 
-  const isDev = import.meta.env.DEV;
+  let isDev = false;
   let devLoading = false;
   let devError = '';
 
-  onMount(() => {
+  onMount(async () => {
     const { isAuthenticated } = get(auth);
     if (isAuthenticated) {
       goto('/dashboard');
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/dev-status`);
+      if (res.ok) {
+        const data = await res.json();
+        isDev = Boolean(data.dev_login_enabled);
+      }
+    } catch {
+      isDev = false;
     }
   });
 

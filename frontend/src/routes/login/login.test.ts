@@ -23,15 +23,37 @@ describe('Login Page', () => {
 		vi.restoreAllMocks();
 	});
 
-	it('should render the login button', () => {
+	it('should render the login button and hide dev login in production', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockResolvedValue({
+				ok: true,
+				json: async () => ({ dev_login_enabled: false })
+			})
+		);
+
 		render(LoginPage);
 		expect(screen.getByText('Login with Discord')).toBeInTheDocument();
 		expect(screen.getByText('Login to DnD Westmarches')).toBeInTheDocument();
+		await waitFor(() => {
+			expect(screen.queryByRole('button', { name: 'Dev Player' })).not.toBeInTheDocument();
+		});
 	});
 
-	it('should log in via dev-token in dev mode without Discord OAuth', async () => {
-		const mockUser = { id: 1, username: 'Dev Player', role: 'player', campaign: { id: 1, name: 'E2E Test Campaign' } };
+	it('should log in via dev-token when dev-status is enabled without Discord OAuth', async () => {
+		const mockUser = {
+			id: 1,
+			username: 'Dev Player',
+			role: 'player',
+			campaign: { id: 1, name: 'E2E Test Campaign' }
+		};
 		const fetchMock = vi.fn().mockImplementation((url: string) => {
+			if (url.endsWith('/auth/dev-status')) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({ dev_login_enabled: true })
+				});
+			}
 			if (url.endsWith('/auth/dev-token')) {
 				return Promise.resolve({
 					ok: true,
@@ -49,7 +71,7 @@ describe('Login Page', () => {
 		vi.stubGlobal('fetch', fetchMock);
 
 		render(LoginPage);
-		const devPlayerBtn = screen.getByRole('button', { name: 'Dev Player' });
+		const devPlayerBtn = await waitFor(() => screen.getByRole('button', { name: 'Dev Player' }));
 		await fireEvent.click(devPlayerBtn);
 
 		await waitFor(() => {
