@@ -12,6 +12,8 @@
 	let globalToken = '';
 	let discordToken = '';
 	let error = '';
+	let selectedCampaignId: number | null = null;
+	let selectedGuildId: string | null = null;
 
 	onMount(async () => {
 		// Check for pending tokens (set by /login/callback after Discord OAuth)
@@ -97,6 +99,8 @@
 	}
 
 	async function selectCampaign(campaignId: number) {
+		selectedCampaignId = campaignId;
+		error = '';
 		try {
 			const res = await fetch(`${API_BASE_URL}/campaigns/login`, {
 				method: 'POST',
@@ -138,6 +142,8 @@
 	}
 
 	async function joinCampaign(guildId: string) {
+		selectedGuildId = guildId;
+		error = '';
 		try {
 			const res = await fetch(`${API_BASE_URL}/campaigns/join`, {
 				method: 'POST',
@@ -171,6 +177,8 @@
 	}
 
 	async function setupCampaign(guildId: string, name: string) {
+		selectedGuildId = guildId;
+		error = '';
 		try {
 			const res = await fetch(`${API_BASE_URL}/campaigns/setup`, {
 				method: 'POST',
@@ -226,7 +234,10 @@
 					{#each myCampaigns as camp}
 						<button
 							on:click={() => selectCampaign(camp.id)}
-							class="block w-full rounded bg-base-100 p-6 text-left shadow transition hover:shadow-md"
+							aria-pressed={selectedCampaignId === camp.id}
+							class="block w-full cursor-pointer rounded border bg-base-200 p-6 text-left shadow transition hover:border-primary/50 hover:shadow-md active:border-primary active:ring-2 active:ring-primary/40 {selectedCampaignId === camp.id
+								? 'border-primary ring-2 ring-primary/40'
+								: 'border-base-content/15'}"
 						>
 							<h3 class="text-lg font-bold">{camp.name}</h3>
 							<p class="text-sm text-gray-500">Click to Play</p>
@@ -259,7 +270,10 @@
 					{#each availableCampaigns as camp}
 						<button
 							on:click={() => joinCampaign(camp.discord_guild_id)}
-							class="block w-full rounded border border-primary/40 bg-base-100 p-6 text-left shadow transition hover:shadow-md"
+							aria-pressed={selectedGuildId === camp.discord_guild_id}
+							class="block w-full cursor-pointer rounded border bg-base-200 p-6 text-left shadow transition hover:border-primary/70 hover:shadow-md active:border-primary active:ring-2 active:ring-primary/40 {selectedGuildId === camp.discord_guild_id
+								? 'border-primary ring-2 ring-primary/40'
+								: 'border-primary/40'}"
 						>
 							<h3 class="text-lg font-bold text-primary">{camp.name}</h3>
 							<p class="text-sm text-primary/70">Click to Join</p>
@@ -280,7 +294,10 @@
 						{#if !myCampaigns.find((c) => c.discord_guild_id === guild.id) && !availableCampaigns.find((c) => c.discord_guild_id === guild.id)}
 							<button
 								on:click={() => setupCampaign(guild.id, guild.name)}
-								class="dashed block w-full rounded border border-base-300 bg-base-200 p-6 text-left shadow transition hover:shadow-md"
+								aria-pressed={selectedGuildId === guild.id}
+								class="block w-full cursor-pointer rounded border bg-base-200 p-6 text-left shadow transition hover:border-primary/50 hover:shadow-md active:border-primary active:ring-2 active:ring-primary/40 {selectedGuildId === guild.id
+									? 'border-solid border-primary ring-2 ring-primary/40'
+									: 'border-dashed border-base-content/20'}"
 							>
 								<h3 class="text-lg font-bold text-base-content">{guild.name}</h3>
 								<p class="text-sm text-base-content/60">Initialize Campaign</p>
