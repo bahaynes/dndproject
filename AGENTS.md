@@ -69,6 +69,14 @@ make revision m="Description of changes"
 
 ---
 
+## Git & PR Workflow
+
+- **Never commit directly to `main`.** Always fetch `origin` and create a descriptive feature or fix branch from `origin/main` (e.g. `feat/...`, `fix/...`, `chore/...`).
+- **Verify before committing.** Run relevant tests and checks (e.g. `pnpm test -- --run`, `pnpm check`, or `./run_tests.sh`) before pushing.
+- **Open a Pull Request.** Commit with clear, concise messages, push the branch to `origin`, and open a PR against `main` using `gh pr create` with a summary of changes and test results.
+
+---
+
 ## Troubleshooting
 
 ### Common Issues
