@@ -7,6 +7,10 @@ on:
     branches: [ "main" ]
     types: [opened, synchronize, reopened]
 
+concurrency:
+  group: deploy-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'dndproject-495514' }}
   REGION: us-central1
