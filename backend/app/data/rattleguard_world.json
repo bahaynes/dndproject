@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "world_name": "Rattleguard & The High Fjords",
+  "hub": {
+    "name": "Rattleguard",
+    "motd": "You arrived in a majestic ridge city by spelljammer or portal, and promptly found out how expensive rent is when the Mist comes every night and everyone wants permanent safety. Down in the valleys, though, lie the magical crystals that power the rest of the verse—and someone has to collect them. Welcome to Rattleguard, a frontier town perched just below the mistline. Its warding braziers work, mostly. Spirits still take a few people each night, but the pay is good and the miners are friendly. You're with the Troublesome Company now—recruited when you ran out of coin and jobs up top. Pick a partner, pick a contract, and remember the only rule: be back behind the braziers before dark."
+  },
+  "factions": [
+    {
+      "faction_name": "The Troublesome Company",
+      "level": 0,
+      "color": "#f59e0b",
+      "description": "Your scrappy, underinsured contractor outfit in Rattleguard. They give you choices, decent pay, and interesting partners to take into the valley each morning—as long as you're back before dark."
+    },
+    {
+      "faction_name": "The Crystal Cartel",
+      "level": 0,
+      "color": "#3b82f6",
+      "description": "A global merchant syndicate that buys valley crystals, controls the cliff-lifts and river barges, and sells brim-coal brazier fuel at eye-watering markups."
+    },
+    {
+      "faction_name": "The Lamplighters",
+      "level": 0,
+      "color": "#eab308",
+      "description": "The civic and religious order that tends the warding braziers and rings the Sunset Bells. They treat keeping the Mist at bay as sacred duty against the spirits below."
+    },
+    {
+      "faction_name": "Highspire",
+      "level": 0,
+      "color": "#8b5cf6",
+      "description": "The gleaming ridge city-state directly above Rattleguard. Home to the sky-docks, portals, and absurdly expensive apartments you could no longer afford."
+    },
+    {
+      "faction_name": "Ironstep",
+      "level": 0,
+      "color": "#ef4444",
+      "description": "An industrial quarry city-state on the eastern ridge, a full day's march across the valley floor (or four days by the high ridge-road). Always feuding with Highspire over crystal tariffs."
+    },
+    {
+      "faction_name": "Crow's Ledge",
+      "level": 0,
+      "color": "#10b981",
+      "description": "A cliff-cave smugglers' city-state perched above the western fjord. No tariffs, no questions asked, and a thriving black market for anything salvaged below the mistline."
+    },
+    {
+      "faction_name": "Bellwatch",
+      "level": 0,
+      "color": "#64748b",
+      "description": "A walled abbey city-state on the northern plateau housing the oldest pre-Mist archives and the Lamplighters' main seminary."
+    }
+  ],
+  "items": [
+    {
+      "name": "Potion of Healing",
+      "description": "Restores 2d4 + 2 hit points when consumed as an action.",
+      "store_price": 50,
+      "store_quantity": -1
+    },
+    {
+      "name": "Spirit-Ward Canary",
+      "description": "A small yellow canary in a brass cage. Miners swear it stops singing whenever valley spirits draw near—giving you one last warning to run for higher ground.",
+      "store_price": 15,
+      "store_quantity": -1
+    },
+    {
+      "name": "Warding Chalk (10 Sticks)",
+      "description": "Alchemically treated white chalk used to seal doorframes, window-sills, and cellar thresholds against the creeping Mist.",
+      "store_price": 5,
+      "store_quantity": -1
+    },
+    {
+      "name": "Brim-Coal Brazier Oil (Flask)",
+      "description": "Heavy mineral oil that burns hot and bright, pushing back the evening Mist around camp lanterns and river barges for up to 4 hours.",
+      "store_price": 10,
+      "store_quantity": -1
+    },
+    {
+      "name": "Antitoxin (Vial)",
+      "description": "Advantage on saving throws against poison for 1 hour.",
+      "store_price": 50,
+      "store_quantity": -1
+    },
+    {
+      "name": "Climber's Kit",
+      "description": "Pitons, boot tips, gloves, and harness for scaling steep fjord walls toward the high ridges.",
+      "store_price": 25,
+      "store_quantity": -1
+    },
+    {
+      "name": "Healer's Kit",
+      "description": "10 uses; stabilize a dying creature without making a Medicine check.",
+      "store_price": 5,
+      "store_quantity": -1
+    },
+    {
+      "name": "Torches (Bundle of 10)",
+      "description": "Provides bright light in a 20-foot radius and dim light for an additional 20 feet for 1 hour each.",
+      "store_price": 1,
+      "store_quantity": -1
+    },
+    {
+      "name": "Rope, Hempen (50 ft.)",
+      "description": "50 feet of sturdy hempen rope with 2 hit points and DC 17 Strength check to burst.",
+      "store_price": 1,
+      "store_quantity": -1
+    },
+    {
+      "name": "Rations (5 Days)",
+      "description": "Dry jerky, hardtack, and dried fruit for five days on the fjord roads.",
+      "store_price": 3,
+      "store_quantity": -1
+    }
+  ],
+  "missions": [
+    {
+      "name": "Relight Waystation #4",
+      "description": "Waystation #4—halfway across the main fjord toward Ironstep's cliff-lift—missed its evening signal flare last night. The Lamplighters will pay to get its brazier relit before the next convoy tries the day-crossing.",
+      "status": "Available",
+      "tier": "Tier 1",
+      "region": "First Finger Valley",
+      "cooldown_days": 14,
+      "is_discoverable": true,
+      "is_retired": false,
+      "prerequisite_name": null,
+      "rewards": [
+        {
+          "gold": 60,
+          "xp": 300,
+          "item_name": null,
+          "is_hidden": false,
+          "hint": "Lamplighter & Troublesome Company joint bounty"
+        }
+      ]
+    },
+    {
+      "name": "The Sunken Chalk-Kiln",
+      "description": "Miners working a limestone quarry down-fjord broke into an old sealed kiln—and left in a hurry when their canaries went quiet at noon. Recover their abandoned crystal crates and survey ledger before a rival crew claims them.",
+      "status": "Available",
+      "tier": "Tier 1",
+      "region": "First Finger Quarry",
+      "cooldown_days": 14,
+      "is_discoverable": true,
+      "is_retired": false,
+      "prerequisite_name": null,
+      "rewards": [
+        {
+          "gold": 75,
+          "xp": 350,
+          "item_name": null,
+          "is_hidden": false,
+          "hint": "Troublesome Company salvage cut"
+        }
+      ]
+    },
+    {
+      "name": "The Highspire Lift-Gate",
+      "description": "The Crystal Cartel hiked the tariff on the cliff-lift up to Highspire overnight, stranding three Rattleguard wagons at the bottom. Broker a deal with the lift-warden, forge a Cartel transit seal, or find out what they're actually trying to keep off the ridge.",
+      "status": "Available",
+      "tier": "Tier 1",
+      "region": "Highspire Switchbacks",
+      "cooldown_days": 14,
+      "is_discoverable": true,
+      "is_retired": false,
+      "prerequisite_name": null,
+      "rewards": [
+        {
+          "gold": 50,
+          "xp": 300,
+          "item_name": null,
+          "is_hidden": false,
+          "hint": "Rattleguard merchants' pool"
+        }
+      ]
+    },
+    {
+      "name": "First Salvage on the Gilded Moth",
+      "description": "A small sky-skiff out of Crow's Ledge clipped the mist-trees in the western gorge at dawn and went down intact in the valley floor. It's a full day's push there and back—get the cargo manifest and any intact crystals before sunset or before Crow's Ledge sends its own cleaners.",
+      "status": "Available",
+      "tier": "Tier 1",
+      "region": "Western Gorge",
+      "cooldown_days": 14,
+      "is_discoverable": true,
+      "is_retired": false,
+      "prerequisite_name": null,
+      "rewards": [
+        {
+          "gold": 90,
+          "xp": 450,
+          "item_name": null,
+          "is_hidden": false,
+          "hint": "High-risk salvage bounty"
+        }
+      ]
+    }
+  ],
+  "maps": []
+}

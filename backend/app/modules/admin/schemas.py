@@ -102,3 +102,18 @@ class WorldImportResult(BaseModel):
     maps_created: int = 0
     maps_updated: int = 0
     hexes_upserted: int = 0
+
+
+class WorldPresetSummary(BaseModel):
+    """Metadata summary for a built-in starter world preset."""
+
+    slug: str
+    world_name: str
+    hub_name: Optional[str] = None
+    summary: Optional[str] = None
+    factions: int = 0
+    items: int = 0
+    missions: int = 0
+    maps: int = 0
+    hexes: int = 0
+

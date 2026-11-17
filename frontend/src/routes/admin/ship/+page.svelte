@@ -29,18 +29,43 @@
 	let worldMsg = '';
 	let worldError = '';
 
+	interface WorldPreset {
+		slug: string;
+		world_name: string;
+		hub_name?: string | null;
+		summary?: string | null;
+		factions: number;
+		items: number;
+		missions: number;
+		maps: number;
+		hexes: number;
+	}
+
+	let presets: WorldPreset[] = [];
+	let selectedPreset = 'baseline_world';
+
 	// Form
 	let editName = '';
 	let editMotd = '';
+
+	$: activePreset = presets.find((p) => p.slug === selectedPreset) ?? presets[0] ?? null;
 
 	onMount(loadSettings);
 
 	async function loadSettings() {
 		loading = true;
 		try {
-			settings = await api('GET', '/ship/');
+			const [shipRes, presetsRes] = await Promise.all([
+				api('GET', '/ship/'),
+				api('GET', '/admin/presets').catch(() => [])
+			]);
+			settings = shipRes;
 			editName = settings!.name;
 			editMotd = settings!.motd ?? '';
+			presets = Array.isArray(presetsRes) ? presetsRes : [];
+			if (presets.length > 0 && !presets.some((p) => p.slug === selectedPreset)) {
+				selectedPreset = presets[0].slug;
+			}
 		} catch (e) {}
 		loading = false;
 	}
@@ -68,11 +93,11 @@
 		seedMsg = '';
 		saveError = '';
 		try {
-			const res = await api('POST', '/admin/seed');
+			const res = await api('POST', `/admin/seed?preset=${encodeURIComponent(selectedPreset)}`);
 			seedMsg = `Loaded "${res.world_name}": ${res.factions_created} factions, ${res.items_created} items, ${res.missions_created} quests, ${res.hexes_upserted} hexes.`;
 			await loadSettings();
 		} catch (e) {
-			saveError = e instanceof Error ? e.message : 'Failed to load baseline world.';
+			saveError = e instanceof Error ? e.message : 'Failed to load starter world.';
 		}
 		seeding = false;
 	}
@@ -207,18 +232,48 @@
 		</section>
 
 		<section class="panel p-5 space-y-4">
-			<h2 class="text-base font-semibold text-base-content">Baseline World: The Ashenvale Frontier</h2>
+			<h2 class="text-base font-semibold text-base-content">Starter World Presets</h2>
 			<p class="text-xs leading-relaxed text-base-content/70">
-				Populate this campaign with a pitch-ready D&amp;D 5e frontier world: <strong>Crossroads Keep</strong>
-				hub &amp; MOTD, 3 factions, 8 quartermaster store items, 5 Tier 1 quests, and a 61-hex frontier
-				map. Uses non-destructive merge—safe to run multiple times.
+				Choose a starting premise for this campaign. Uses non-destructive merge—safe to run multiple times.
 			</p>
+			{#if presets.length > 0}
+				<div>
+					<label for="starter-preset" class="mb-1 block text-xs font-medium text-base-content/75">
+						World Premise
+					</label>
+					<select
+						id="starter-preset"
+						class="select select-bordered select-sm w-full"
+						bind:value={selectedPreset}
+					>
+						{#each presets as preset}
+							<option value={preset.slug}>{preset.world_name}</option>
+						{/each}
+					</select>
+				</div>
+				{#if activePreset}
+					<div class="rounded-lg border border-base-content/10 bg-base-200/40 p-3 text-xs space-y-2">
+						{#if activePreset.summary}
+							<p class="leading-relaxed text-base-content/80">{activePreset.summary}</p>
+						{/if}
+						<div class="flex flex-wrap gap-1.5 text-base-content/70">
+							{#if activePreset.hub_name}
+								<span class="badge badge-ghost badge-sm">Hub: {activePreset.hub_name}</span>
+							{/if}
+							<span class="badge badge-ghost badge-sm">{activePreset.factions} factions</span>
+							<span class="badge badge-ghost badge-sm">{activePreset.items} items</span>
+							<span class="badge badge-ghost badge-sm">{activePreset.missions} quests</span>
+							<span class="badge badge-ghost badge-sm">{activePreset.hexes} hexes</span>
+						</div>
+					</div>
+				{/if}
+			{/if}
 			{#if seedMsg}
 				<div class="alert alert-success text-xs">{seedMsg}</div>
 			{/if}
 			<div>
 				<button class="btn btn-outline btn-primary btn-sm" on:click={seedStarterData} disabled={seeding}>
-					{seeding ? 'Loading Baseline World...' : 'Load Baseline World'}
+					{seeding ? 'Loading Starter World...' : 'Load Starter World'}
 				</button>
 			</div>
 		</section>
