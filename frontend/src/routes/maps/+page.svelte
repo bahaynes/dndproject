@@ -37,13 +37,26 @@
 	let selectedHex: HexData | null = null;
 	let noteDraft = '';
 	let submittingNote = false;
+	let seatedSessions: { id: number; name: string; session_date: string }[] = [];
+	let proposeSessionId: number | null = null;
+	let proposing = false;
+	let proposeMsg = '';
 
 	onMount(async () => {
 		isAdmin = $auth.user?.role === 'admin';
-		try {
-			maps = await api('GET', '/maps/');
-		} catch (e) {}
+		const [mapRes, sessRes] = await Promise.all([
+			api('GET', '/maps/').catch(() => []),
+			api('GET', '/sessions/').catch(() => [])
+		]);
+		maps = mapRes ?? [];
 		if (maps.length > 0) activeMap = maps[0];
+		seatedSessions = (sessRes ?? []).filter(
+			(s: any) =>
+				s.status !== 'Completed' &&
+				s.status !== 'Cancelled' &&
+				s.players?.some((p: any) => p.owner_id === $auth.user?.id)
+		);
+		proposeSessionId = seatedSessions[0]?.id ?? null;
 		loading = false;
 	});
 
@@ -54,9 +67,27 @@
 			if (hex && hex.is_discovered) {
 				selectedHex = hex;
 				noteDraft = '';
+				proposeMsg = '';
 			} else {
 				selectedHex = null;
 			}
+		}
+	}
+
+	async function proposeSelectedHex() {
+		if (!selectedHex || !proposeSessionId) return;
+		proposing = true;
+		proposeMsg = '';
+		try {
+			const payload = selectedHex.linked_mission_id
+				? { session_id: proposeSessionId, mission_id: selectedHex.linked_mission_id }
+				: { session_id: proposeSessionId, hex_id: (selectedHex as any).id };
+			await api('POST', '/sessions/proposals', payload);
+			proposeMsg = 'Proposed for session!';
+		} catch (e) {
+			proposeMsg = e instanceof Error ? e.message : 'Failed to propose.';
+		} finally {
+			proposing = false;
 		}
 	}
 
@@ -162,18 +193,49 @@
 						</div>
 
 						{#if selectedHex.linked_mission_id}
-							<div class="mt-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
-								<span class="mb-1 block text-[10px] font-bold text-primary uppercase"
-									>Linked Mission</span
-								>
-								<div class="flex items-center justify-between gap-2">
-									<p class="truncate text-sm font-semibold">
-										{selectedHex.linked_mission?.name || 'Unknown Mission'}
+							<div class="mt-2 rounded-lg border border-primary/25 bg-primary/5 p-3">
+								<span class="mb-1 block text-[10px] font-bold text-primary uppercase">
+									★ Quest Hook at This Hex
+								</span>
+								<p class="text-sm font-semibold text-base-content">
+									{selectedHex.linked_mission?.name || 'Posted Quest'}
+								</p>
+								{#if selectedHex.linked_mission?.tier}
+									<span class="badge badge-outline badge-xs mt-1">{selectedHex.linked_mission.tier}</span>
+								{/if}
+								{#if selectedHex.linked_mission?.description}
+									<p class="mt-1.5 line-clamp-3 text-xs text-base-content/75">
+										{selectedHex.linked_mission.description}
 									</p>
-									<a href="/missions" class="btn btn-xs btn-primary">Details</a>
-								</div>
+								{/if}
 							</div>
 						{/if}
+
+						<div class="mt-2 border-t border-base-content/10 pt-2">
+							{#if seatedSessions.length > 0}
+								<div class="flex gap-1.5">
+									<select class="select select-bordered select-xs flex-1" bind:value={proposeSessionId}>
+										{#each seatedSessions as s}
+											<option value={s.id}>{s.name}</option>
+										{/each}
+									</select>
+									<button
+										class="btn btn-primary btn-xs"
+										disabled={proposing || !proposeSessionId}
+										on:click={proposeSelectedHex}
+									>
+										{proposing ? '...' : 'Propose'}
+									</button>
+								</div>
+								{#if proposeMsg}
+									<p class="mt-1 text-xs text-primary">{proposeMsg}</p>
+								{/if}
+							{:else}
+								<a href="/dashboard" class="btn btn-outline btn-xs w-full">
+									Join a Session to Propose →
+								</a>
+							{/if}
+						</div>
 
 						{#if selectedHex.player_notes && selectedHex.player_notes.length > 0}
 							<div class="mt-2 border-t border-base-content/10 pt-2">

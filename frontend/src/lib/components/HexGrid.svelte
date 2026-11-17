@@ -9,6 +9,7 @@
 		terrain: string;
 		is_discovered: boolean;
 		linked_location_name?: string;
+		linked_mission_id?: number;
 		hex_state?: string;
 		controlling_faction?: string | null;
 		player_notes?: any[];
@@ -108,6 +109,7 @@
 					hexState={hex.hex_state || 'wilderness'}
 					controllingFaction={hex.controlling_faction || null}
 					playerNotesCount={hex.player_notes?.length || 0}
+					hasMission={Boolean(hex.linked_mission_id)}
 					{showCoords}
 					{adminMode}
 					on:click
