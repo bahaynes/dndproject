@@ -75,9 +75,10 @@
 					>
 						{#if $auth.isAuthenticated}
 							<li><a href="/dashboard" class:active={isActive(['/dashboard'])}>Dashboard</a></li>
+							<li><a href="/maps" class:active={isActive(['/maps'])}>World Map</a></li>
 							<li><a href="/missions" class:active={isActive(['/missions', '/sessions'])}>Missions &amp; Schedule</a></li>
 							<li><a href="/characters" class:active={isActive(['/characters', '/roster', '/store'])}>Adventurers &amp; Store</a></li>
-							<li><a href="/maps" class:active={isActive(['/maps', '/factions', '/ledger'])}>World &amp; Chronicle</a></li>
+							<li><a href="/factions" class:active={isActive(['/factions', '/ledger'])}>Chronicle</a></li>
 							<li><a href="/docs" class:active={isActive(['/docs'])}>Guide</a></li>
 							{#if $auth.user?.role === 'admin'}
 								<li><a href="/admin/sessions" class:active={isActive(['/admin'])}>DM Console</a></li>
@@ -111,6 +112,14 @@
 						Dashboard
 					</a>
 					<a
+						href="/maps"
+						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/maps'])
+							? 'bg-primary/15 text-primary'
+							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
+					>
+						World Map
+					</a>
+					<a
 						href="/missions"
 						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/missions', '/sessions'])
 							? 'bg-primary/15 text-primary'
@@ -127,12 +136,12 @@
 						Adventurers &amp; Store
 					</a>
 					<a
-						href="/maps"
-						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/maps', '/factions', '/ledger'])
+						href="/factions"
+						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/factions', '/ledger'])
 							? 'bg-primary/15 text-primary'
 							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
 					>
-						World &amp; Chronicle
+						Chronicle
 					</a>
 					<a
 						href="/docs"
