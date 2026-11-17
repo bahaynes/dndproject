@@ -82,21 +82,17 @@ describe('Dashboard', () => {
         expect(screen.getByText(/Level 3/)).toBeInTheDocument();
     });
 
-    test('shows Upcoming Sessions section heading', async () => {
+    test('shows Play This Week section heading and docs link', async () => {
         render(Dashboard);
-        await waitFor(() => expect(screen.getByText('Upcoming Sessions')).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByText('Play This Week')).toBeInTheDocument());
+        expect(screen.getByText(/How West Marches Works/)).toBeInTheDocument();
     });
 
-    test('shows upcoming session with its proposal', async () => {
+    test('shows upcoming session with its proposal and seat signup button', async () => {
         render(Dashboard);
         await waitFor(() => expect(screen.getByText('Into the Dark Reach')).toBeInTheDocument());
         expect(screen.getAllByText('The Bone Market').length).toBeGreaterThanOrEqual(1);
-    });
-
-    test('shows available quests section', async () => {
-        render(Dashboard);
-        await waitFor(() => expect(screen.getByText('Available Quests')).toBeInTheDocument());
-        expect(screen.getByText('The Pale Gate')).toBeInTheDocument();
+        expect(screen.getByText("I'm Playing (0/6)")).toBeInTheDocument();
     });
 
     test('shows campaign bulletin MOTD', async () => {

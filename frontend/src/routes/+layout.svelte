@@ -78,12 +78,15 @@
 							<li><a href="/missions" class:active={isActive(['/missions', '/sessions'])}>Missions &amp; Schedule</a></li>
 							<li><a href="/characters" class:active={isActive(['/characters', '/roster', '/store'])}>Adventurers &amp; Store</a></li>
 							<li><a href="/maps" class:active={isActive(['/maps', '/factions', '/ledger'])}>World &amp; Chronicle</a></li>
+							<li><a href="/docs" class:active={isActive(['/docs'])}>Guide</a></li>
 							{#if $auth.user?.role === 'admin'}
 								<li><a href="/admin/sessions" class:active={isActive(['/admin'])}>DM Console</a></li>
 							{/if}
 							<li><hr class="my-1 border-base-content/10" /></li>
 							<li><a href="/campaigns">Switch Campaign</a></li>
 							<li><button on:click={handleLogout} class="text-error">Logout</button></li>
+						{:else}
+							<li><a href="/docs" class:active={isActive(['/docs'])}>Guide</a></li>
 						{/if}
 					</ul>
 				</div>
@@ -130,6 +133,14 @@
 							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
 					>
 						World &amp; Chronicle
+					</a>
+					<a
+						href="/docs"
+						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/docs'])
+							? 'bg-primary/15 text-primary'
+							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
+					>
+						Guide
 					</a>
 					{#if $auth.user?.role === 'admin'}
 						<a

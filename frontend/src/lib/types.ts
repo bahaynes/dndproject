@@ -139,22 +139,33 @@ export interface GameSession {
     confirmed_mission_id?: number;
 }
 
+export interface HexInSession {
+    id: number;
+    q: number;
+    r: number;
+    terrain: string;
+    linked_location_name?: string;
+}
+
 export interface CharacterInGameSession {
     id: number;
     name: string;
+    class_name?: string;
+    level?: number;
     description?: string;
     image_url?: string;
     owner_id: number;
 }
 
-
 export interface SessionProposal {
     id: number;
     session_id: number;
-    mission_id: number;
+    mission_id?: number;
+    hex_id?: number;
     proposed_by_id: number;
     status: 'proposed' | 'confirmed' | 'dismissed' | 'vetoed';
-    mission: Mission;
+    mission?: Mission;
+    hex?: HexInSession;
     backers: CharacterInGameSession[];
 }
 
@@ -172,5 +183,8 @@ export interface GameSessionWithPlayers {
     max_players: number;
     players: CharacterInGameSession[];
     proposals: SessionProposal[];
+    confirmed_mission_id?: number;
     confirmed_mission?: Mission;
+    confirmed_hex_id?: number;
+    confirmed_hex?: HexInSession;
 }

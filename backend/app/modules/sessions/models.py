@@ -32,6 +32,8 @@ class GameSession(Base):
 
     confirmed_mission_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
     confirmed_mission = relationship("Mission")
+    confirmed_hex_id = Column(Integer, ForeignKey("hexes.id"), nullable=True)
+    confirmed_hex = relationship("Hex")
 
     # Scoping
     campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
@@ -45,7 +47,8 @@ class SessionProposal(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     session_id = Column(Integer, ForeignKey("game_sessions.id"), nullable=False)
-    mission_id = Column(Integer, ForeignKey("missions.id"), nullable=False)
+    mission_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
+    hex_id = Column(Integer, ForeignKey("hexes.id"), nullable=True)
     proposed_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     
     status = Column(String, default="proposed") # e.g., proposed, confirmed, dismissed
@@ -53,5 +56,6 @@ class SessionProposal(Base):
     # Relationships
     session = relationship("GameSession", back_populates="proposals")
     mission = relationship("Mission")
+    hex = relationship("Hex")
     proposer = relationship("User")
     backers = relationship("Character", secondary=proposal_backers)

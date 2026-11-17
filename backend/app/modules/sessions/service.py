@@ -61,11 +61,18 @@ def update_game_session(db: Session, session: models.GameSession, session_update
     db.refresh(session)
     return session
 
-def create_session_proposal(db: Session, session_id: int, mission_id: int, user_id: int):
+def create_session_proposal(
+    db: Session,
+    session_id: int,
+    user_id: int,
+    mission_id: int | None = None,
+    hex_id: int | None = None,
+):
     db_proposal = models.SessionProposal(
         session_id=session_id,
         mission_id=mission_id,
-        proposed_by_id=user_id
+        hex_id=hex_id,
+        proposed_by_id=user_id,
     )
     db.add(db_proposal)
     db.commit()
@@ -79,50 +86,74 @@ def toggle_back_proposal(db: Session, proposal_id: int, character: char_models.C
     db_proposal = get_session_proposal(db, proposal_id)
     if not db_proposal:
         return None, "Proposal not found"
-    
+
     session = db_proposal.session
-    if session.status == "Confirmed":
-        return None, "Session is already confirmed"
+    if session.status in ("Completed", "Cancelled"):
+        return None, f"Cannot vote on a {session.status.lower()} session"
+    if character not in session.players:
+        return None, "Join the session before voting on a quest or hex"
 
     if character in db_proposal.backers:
         db_proposal.backers.remove(character)
         db.commit()
         db.refresh(db_proposal)
         return db_proposal, None
-    
-    # Exclusion check: Can't back multiple proposals in same session
-    existing_backing = db.query(models.SessionProposal).filter(
-        models.SessionProposal.session_id == session.id,
-        models.SessionProposal.backers.contains(character)
-    ).first()
-    
-    if existing_backing:
-        return None, "Already backed a proposal for this session"
+
+    # Move vote from any previously backed proposal in this session (1-click switch)
+    for other in session.proposals:
+        if other.id != db_proposal.id and character in other.backers:
+            other.backers.remove(character)
 
     db_proposal.backers.append(character)
     db.commit()
     db.refresh(db_proposal)
-    
-    # Critical Mass Check
-    if len(db_proposal.backers) >= session.min_players:
-        confirm_session_proposal(db, db_proposal)
-        
     return db_proposal, None
+
+def swap_character_in_session(
+    db: Session,
+    session: models.GameSession,
+    owner_id: int,
+    new_character: char_models.Character,
+):
+    if session.status in ("Completed", "Cancelled"):
+        return None, f"Cannot swap character on a {session.status.lower()} session"
+    if new_character.owner_id != owner_id:
+        return None, "Character not owned by you"
+    if new_character.status != "Active":
+        return None, "Only Active characters can join a session"
+
+    old_chars = [c for c in session.players if c.owner_id == owner_id]
+    if not old_chars:
+        return None, "You are not signed up for this session"
+
+    for old in old_chars:
+        if old.id == new_character.id:
+            return session, None
+        session.players.remove(old)
+        for proposal in session.proposals:
+            if old in proposal.backers:
+                proposal.backers.remove(old)
+                if new_character not in proposal.backers:
+                    proposal.backers.append(new_character)
+
+    if new_character not in session.players:
+        session.players.append(new_character)
+
+    db.commit()
+    db.refresh(session)
+    return session, None
 
 def confirm_session_proposal(db: Session, proposal: models.SessionProposal):
     session = proposal.session
     session.status = "Confirmed"
     session.confirmed_mission_id = proposal.mission_id
+    session.confirmed_hex_id = proposal.hex_id
     proposal.status = "confirmed"
-    
-    # Dismiss others
+
     for other in session.proposals:
         if other.id != proposal.id:
             other.status = "dismissed"
-            
-    # Add all backers to session players
-    session.players = list(proposal.backers)
-    
+
     db.commit()
     db.refresh(session)
     return session
@@ -163,6 +194,11 @@ def complete_session(
         return None, "Session is already completed"
     if data.result not in ("success", "failure"):
         return None, "result must be 'success' or 'failure'"
+
+    if data.mission_id is not None:
+        session.confirmed_mission_id = data.mission_id
+    if data.hex_id is not None:
+        session.confirmed_hex_id = data.hex_id
 
     session.status = "Completed"
     session.result = data.result

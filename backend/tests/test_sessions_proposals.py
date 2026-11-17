@@ -1,6 +1,5 @@
 import pytest
 from datetime import datetime
-from conftest import _create_user_with_token
 
 SESSION_DATE = datetime(2026, 6, 1, 18, 0).isoformat()
 
@@ -10,7 +9,7 @@ def session_and_mission(client, campaign, admin_auth_headers):
     """Creates a session (min_players=1) and a mission. Returns (session_id, mission_id)."""
     miss = client.post(
         "/api/missions/",
-        json={"name": "Test Mission", "description": "A mission", "status": "Active", "rewards": []},
+        json={"name": "Test Mission", "description": "A mission", "status": "Available", "rewards": []},
         headers=admin_auth_headers,
     ).json()
     sess = client.post(
@@ -21,10 +20,21 @@ def session_and_mission(client, campaign, admin_auth_headers):
     return sess["id"], miss["id"]
 
 
-# --- Proposals ---
+# --- Session-First Proposals ---
 
-def test_propose_mission(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
+def test_propose_requires_signup(client, campaign, player_auth_headers, session_and_mission):
     session_id, mission_id = session_and_mission
+    res = client.post(
+        "/api/sessions/proposals",
+        json={"session_id": session_id, "mission_id": mission_id},
+        headers=player_auth_headers,
+    )
+    assert res.status_code == 403
+
+
+def test_propose_mission_after_signup(client, campaign, player_auth_headers, session_and_mission):
+    session_id, mission_id = session_and_mission
+    client.post(f"/api/sessions/{session_id}/signup", headers=player_auth_headers)
     res = client.post(
         "/api/sessions/proposals",
         json={"session_id": session_id, "mission_id": mission_id},
@@ -36,114 +46,104 @@ def test_propose_mission(client, campaign, admin_auth_headers, player_auth_heade
     assert res.json()["status"] == "proposed"
 
 
-def test_propose_for_confirmed_session_rejected(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
-    session_id, mission_id = session_and_mission
-    proposal = client.post(
-        "/api/sessions/proposals",
-        json={"session_id": session_id, "mission_id": mission_id},
-        headers=player_auth_headers,
+def test_propose_hex_after_signup(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
+    session_id, _ = session_and_mission
+    # Create a map & discovered hex
+    hmap = client.post(
+        "/api/maps/",
+        json={"name": "Frontier", "width": 5, "height": 5},
+        headers=admin_auth_headers,
     ).json()
-    client.post(f"/api/sessions/proposals/{proposal['id']}/force_confirm", headers=admin_auth_headers)
+    first_hex = hmap["hexes"][0]
+    hex_id = first_hex["id"]
+    client.put(
+        f"/api/maps/{hmap['id']}/hexes/{first_hex['q']}/{first_hex['r']}",
+        json={"is_discovered": True, "linked_location_name": "Sunken Spire"},
+        headers=admin_auth_headers,
+    )
 
+    client.post(f"/api/sessions/{session_id}/signup", headers=player_auth_headers)
     res = client.post(
         "/api/sessions/proposals",
-        json={"session_id": session_id, "mission_id": mission_id},
+        json={"session_id": session_id, "hex_id": hex_id},
         headers=player_auth_headers,
     )
-    assert res.status_code == 400
-    assert "confirmed" in res.json()["detail"].lower()
+    assert res.status_code == 200
+    assert res.json()["hex_id"] == hex_id
+    assert res.json()["hex"]["linked_location_name"] == "Sunken Spire"
 
 
-# --- Toggle backing ---
+# --- Advisory Consensus Voting ---
 
-def test_toggle_back_adds_backer(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
+def test_toggle_back_adds_and_removes_without_auto_confirm(client, campaign, player_auth_headers, session_and_mission):
     session_id, mission_id = session_and_mission
+    client.post(f"/api/sessions/{session_id}/signup", headers=player_auth_headers)
     proposal = client.post(
         "/api/sessions/proposals",
         json={"session_id": session_id, "mission_id": mission_id},
-        headers=player_auth_headers,
-    ).json()
-    res = client.post(f"/api/sessions/proposals/{proposal['id']}/toggle_back", headers=player_auth_headers)
-    assert res.status_code == 200
-    assert len(res.json()["backers"]) == 1
-
-
-def test_toggle_back_removes_on_second_call(client, campaign, admin_auth_headers, player_auth_headers):
-    # Use min_players=4 so a single back doesn't auto-confirm the session
-    miss = client.post(
-        "/api/missions/",
-        json={"name": "Toggle Mission", "description": "d", "status": "Active", "rewards": []},
-        headers=admin_auth_headers,
-    ).json()
-    sess = client.post(
-        "/api/sessions/",
-        json={"name": "Toggle Session", "session_date": SESSION_DATE, "min_players": 4},
-        headers=admin_auth_headers,
-    ).json()
-    proposal = client.post(
-        "/api/sessions/proposals",
-        json={"session_id": sess["id"], "mission_id": miss["id"]},
         headers=player_auth_headers,
     ).json()
     pid = proposal["id"]
-    client.post(f"/api/sessions/proposals/{pid}/toggle_back", headers=player_auth_headers)
+
     res = client.post(f"/api/sessions/proposals/{pid}/toggle_back", headers=player_auth_headers)
     assert res.status_code == 200
-    assert len(res.json()["backers"]) == 0
+    assert len(res.json()["backers"]) == 1
 
-
-def test_toggle_back_auto_confirms_at_min_players(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
-    """Session with min_players=1 confirms as soon as one backer is added."""
-    session_id, mission_id = session_and_mission
-    proposal = client.post(
-        "/api/sessions/proposals",
-        json={"session_id": session_id, "mission_id": mission_id},
-        headers=player_auth_headers,
-    ).json()
-    client.post(f"/api/sessions/proposals/{proposal['id']}/toggle_back", headers=player_auth_headers)
+    # Advisory only: even with min_players=1, session stays Scheduled
     session = client.get(f"/api/sessions/{session_id}", headers=player_auth_headers).json()
-    assert session["status"] == "Confirmed"
+    assert session["status"] == "Scheduled"
+
+    res2 = client.post(f"/api/sessions/proposals/{pid}/toggle_back", headers=player_auth_headers)
+    assert res2.status_code == 200
+    assert len(res2.json()["backers"]) == 0
 
 
-def test_cannot_back_two_proposals_in_same_session(client, campaign, admin_auth_headers, player_auth_headers):
-    # min_players=4 so a single back doesn't auto-confirm
-    miss1 = client.post(
-        "/api/missions/",
-        json={"name": "Mission A", "description": "d", "status": "Active", "rewards": []},
-        headers=admin_auth_headers,
-    ).json()
-    miss2 = client.post(
-        "/api/missions/",
-        json={"name": "Mission B", "description": "d", "status": "Active", "rewards": []},
-        headers=admin_auth_headers,
-    ).json()
-    sess = client.post(
-        "/api/sessions/",
-        json={"name": "Contested", "session_date": SESSION_DATE, "min_players": 4},
-        headers=admin_auth_headers,
-    ).json()
+def test_voting_switches_cleanly_between_proposals(client, campaign, admin_auth_headers, player_auth_headers):
+    miss1 = client.post("/api/missions/", json={"name": "Mission A", "description": "d", "status": "Available", "rewards": []}, headers=admin_auth_headers).json()
+    miss2 = client.post("/api/missions/", json={"name": "Mission B", "description": "d", "status": "Available", "rewards": []}, headers=admin_auth_headers).json()
+    sess = client.post("/api/sessions/", json={"name": "Poll", "session_date": SESSION_DATE, "min_players": 4}, headers=admin_auth_headers).json()
 
-    prop1 = client.post(
-        "/api/sessions/proposals",
-        json={"session_id": sess["id"], "mission_id": miss1["id"]},
-        headers=player_auth_headers,
-    ).json()
-    prop2 = client.post(
-        "/api/sessions/proposals",
-        json={"session_id": sess["id"], "mission_id": miss2["id"]},
-        headers=player_auth_headers,
-    ).json()
+    client.post(f"/api/sessions/{sess['id']}/signup", headers=player_auth_headers)
+    prop1 = client.post("/api/sessions/proposals", json={"session_id": sess["id"], "mission_id": miss1["id"]}, headers=player_auth_headers).json()
+    prop2 = client.post("/api/sessions/proposals", json={"session_id": sess["id"], "mission_id": miss2["id"]}, headers=player_auth_headers).json()
 
     client.post(f"/api/sessions/proposals/{prop1['id']}/toggle_back", headers=player_auth_headers)
     res = client.post(f"/api/sessions/proposals/{prop2['id']}/toggle_back", headers=player_auth_headers)
-    assert res.status_code == 400
-    assert "already backed" in res.json()["detail"].lower()
+    assert res.status_code == 200
+    assert len(res.json()["backers"]) == 1
+
+    # Vote moved off prop1
+    updated_sess = client.get(f"/api/sessions/{sess['id']}", headers=player_auth_headers).json()
+    p1 = next(p for p in updated_sess["proposals"] if p["id"] == prop1["id"])
+    assert len(p1["backers"]) == 0
 
 
-# --- Force confirm ---
+# --- Swap Character ---
 
-def test_force_confirm_proposal_admin(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
+def test_swap_character_in_session(client, campaign, player_auth_headers, session_and_mission):
     session_id, mission_id = session_and_mission
+    alt = client.post("/api/characters/", json={"name": "Alt Wizard", "class_name": "Wizard"}, headers=player_auth_headers).json()
+
+    client.post(f"/api/sessions/{session_id}/signup", headers=player_auth_headers)
+    proposal = client.post("/api/sessions/proposals", json={"session_id": session_id, "mission_id": mission_id}, headers=player_auth_headers).json()
+    client.post(f"/api/sessions/proposals/{proposal['id']}/toggle_back", headers=player_auth_headers)
+
+    res = client.post(
+        f"/api/sessions/{session_id}/swap-character",
+        json={"character_id": alt["id"]},
+        headers=player_auth_headers,
+    )
+    assert res.status_code == 200
+    player_ids = [p["id"] for p in res.json()["players"]]
+    assert player_ids == [alt["id"]]
+    assert [b["id"] for b in res.json()["proposals"][0]["backers"]] == [alt["id"]]
+
+
+# --- Admin Lock & Night-Of Completion ---
+
+def test_force_confirm_keeps_existing_players(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
+    session_id, mission_id = session_and_mission
+    client.post(f"/api/sessions/{session_id}/signup", headers=player_auth_headers)
     proposal = client.post(
         "/api/sessions/proposals",
         json={"session_id": session_id, "mission_id": mission_id},
@@ -152,10 +152,25 @@ def test_force_confirm_proposal_admin(client, campaign, admin_auth_headers, play
     res = client.post(f"/api/sessions/proposals/{proposal['id']}/force_confirm", headers=admin_auth_headers)
     assert res.status_code == 200
     assert res.json()["status"] == "Confirmed"
+    assert len(res.json()["players"]) == 1
 
 
-def test_force_confirm_player_forbidden(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
+def test_complete_session_night_of_mission(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
     session_id, mission_id = session_and_mission
+    client.post(f"/api/sessions/{session_id}/signup", headers=player_auth_headers)
+    res = client.post(
+        f"/api/sessions/{session_id}/complete",
+        json={"result": "success", "mission_id": mission_id, "gold_earned": 50, "xp_earned": 300},
+        headers=admin_auth_headers,
+    )
+    assert res.status_code == 200
+    assert res.json()["status"] == "Completed"
+    assert res.json()["confirmed_mission_id"] == mission_id
+
+
+def test_force_confirm_player_forbidden(client, campaign, player_auth_headers, session_and_mission):
+    session_id, mission_id = session_and_mission
+    client.post(f"/api/sessions/{session_id}/signup", headers=player_auth_headers)
     proposal = client.post(
         "/api/sessions/proposals",
         json={"session_id": session_id, "mission_id": mission_id},
@@ -165,32 +180,21 @@ def test_force_confirm_player_forbidden(client, campaign, admin_auth_headers, pl
     assert res.status_code == 403
 
 
-# --- Veto ---
-
-def test_veto_proposal_admin(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
+def test_veto_proposal_admin_and_forbidden(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
     session_id, mission_id = session_and_mission
+    client.post(f"/api/sessions/{session_id}/signup", headers=player_auth_headers)
     proposal = client.post(
         "/api/sessions/proposals",
         json={"session_id": session_id, "mission_id": mission_id},
         headers=player_auth_headers,
     ).json()
+    assert client.post(f"/api/sessions/proposals/{proposal['id']}/veto", headers=player_auth_headers).status_code == 403
     res = client.post(f"/api/sessions/proposals/{proposal['id']}/veto", headers=admin_auth_headers)
     assert res.status_code == 200
     assert res.json()["status"] == "vetoed"
 
 
-def test_veto_proposal_player_forbidden(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
-    session_id, mission_id = session_and_mission
-    proposal = client.post(
-        "/api/sessions/proposals",
-        json={"session_id": session_id, "mission_id": mission_id},
-        headers=player_auth_headers,
-    ).json()
-    res = client.post(f"/api/sessions/proposals/{proposal['id']}/veto", headers=player_auth_headers)
-    assert res.status_code == 403
-
-
-# --- Field reports ---
+# --- Field reports & Kick ---
 
 def test_field_report_participant_can_submit(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
     session_id, _ = session_and_mission
@@ -209,9 +213,8 @@ def test_field_report_participant_can_submit(client, campaign, admin_auth_header
     assert res.json()["field_report"] == "We won!"
 
 
-def test_field_report_non_participant_forbidden(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
+def test_field_report_non_participant_forbidden(client, campaign, player_auth_headers, session_and_mission):
     session_id, _ = session_and_mission
-    # Player never signed up
     res = client.patch(
         f"/api/sessions/{session_id}/field-report",
         json={"field_report": "I wasn't there"},
@@ -220,24 +223,13 @@ def test_field_report_non_participant_forbidden(client, campaign, admin_auth_hea
     assert res.status_code == 403
 
 
-# --- Kick ---
-
-def test_kick_player_admin(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
+def test_kick_player_admin_and_forbidden(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
     session_id, _ = session_and_mission
     client.post(f"/api/sessions/{session_id}/signup", headers=player_auth_headers)
     me = client.get("/api/auth/me", headers=player_auth_headers).json()
     char_id = me["characters"][0]["id"]
 
+    assert client.delete(f"/api/sessions/{session_id}/kick/{char_id}", headers=player_auth_headers).status_code == 403
     res = client.delete(f"/api/sessions/{session_id}/kick/{char_id}", headers=admin_auth_headers)
     assert res.status_code == 200
     assert char_id not in [p["id"] for p in res.json()["players"]]
-
-
-def test_kick_player_player_forbidden(client, campaign, admin_auth_headers, player_auth_headers, session_and_mission):
-    session_id, _ = session_and_mission
-    client.post(f"/api/sessions/{session_id}/signup", headers=player_auth_headers)
-    me = client.get("/api/auth/me", headers=player_auth_headers).json()
-    char_id = me["characters"][0]["id"]
-
-    res = client.delete(f"/api/sessions/{session_id}/kick/{char_id}", headers=player_auth_headers)
-    assert res.status_code == 403
