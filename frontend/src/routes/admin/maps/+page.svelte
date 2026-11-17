@@ -1,11 +1,17 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { api } from '$lib/api';
 	import { goto } from '$app/navigation';
 	import HexGrid from '$lib/components/HexGrid.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import type { Mission } from '$lib/types';
 	import { getTerrainColor } from '$lib/utils/terrainColors';
+	import {
+		EARTH_REGION_PRESETS,
+		fetchAuthedLayerUrl,
+		type LayerBounds,
+		type MapLayerMode
+	} from '$lib/utils/mapLayers';
 
 	interface HexData {
 		q: number;
@@ -23,6 +29,10 @@
 		id: number;
 		name: string;
 		hex_size: number;
+		topo_image_url?: string | null;
+		satellite_image_url?: string | null;
+		layer_bounds?: LayerBounds | null;
+		source_region?: { min_lat: number; min_lon: number; max_lat: number; max_lon: number } | null;
 		hexes: HexData[];
 	}
 
@@ -30,6 +40,19 @@
 	let missions: Mission[] = [];
 	let activeMap: MapData | null = null;
 	let loading = true;
+	let layerMode: MapLayerMode = 'tactical';
+	let showDangerTiers = false;
+	let layerUrls: Record<string, string> = {};
+
+	// Real-Earth Baker State
+	let bakeOpen = false;
+	let baking = false;
+	let bakeError = '';
+	let autoSeedTerrain = true;
+	let minLat = EARTH_REGION_PRESETS[0].min_lat;
+	let minLon = EARTH_REGION_PRESETS[0].min_lon;
+	let maxLat = EARTH_REGION_PRESETS[0].max_lat;
+	let maxLon = EARTH_REGION_PRESETS[0].max_lon;
 
 	// Editor State
 	let selectedHex: HexData | null = null;
@@ -48,9 +71,82 @@
 	];
 	let factionNames: string[] = ['None'];
 
+	async function ensureLayerLoaded(map: MapData | null, mode: MapLayerMode, forceReload = false) {
+		if (!map || mode === 'tactical') return;
+		const apiPath = mode === 'topo' ? map.topo_image_url : map.satellite_image_url;
+		if (!apiPath) return;
+		const cacheKey = `${map.id}:${mode}`;
+		if (layerUrls[cacheKey] && !forceReload) return;
+		if (layerUrls[cacheKey]) URL.revokeObjectURL(layerUrls[cacheKey]);
+		try {
+			const objUrl = await fetchAuthedLayerUrl(apiPath);
+			layerUrls = { ...layerUrls, [cacheKey]: objUrl };
+		} catch (e) {
+			console.error('Failed to load map layer', e);
+		}
+	}
+
+	function setLayerMode(mode: MapLayerMode) {
+		layerMode = mode;
+		ensureLayerLoaded(activeMap, mode);
+	}
+
+	function applyPreset(e: Event) {
+		const idx = Number((e.target as HTMLSelectElement).value);
+		const preset = EARTH_REGION_PRESETS[idx];
+		if (!preset) return;
+		minLat = preset.min_lat;
+		minLon = preset.min_lon;
+		maxLat = preset.max_lat;
+		maxLon = preset.max_lon;
+	}
+
+	async function bakeEarthLayers() {
+		if (!activeMap) return;
+		baking = true;
+		bakeError = '';
+		try {
+			const updated: MapData = await api('POST', `/maps/${activeMap.id}/bake-earth`, {
+				min_lat: Number(minLat),
+				min_lon: Number(minLon),
+				max_lat: Number(maxLat),
+				max_lon: Number(maxLon),
+				auto_seed_terrain: autoSeedTerrain
+			});
+			activeMap = updated;
+			maps = maps.map((m) => (m.id === updated.id ? updated : m));
+			layerMode = 'topo';
+			await ensureLayerLoaded(updated, 'topo', true);
+			await ensureLayerLoaded(updated, 'satellite', true);
+		} catch (e: any) {
+			bakeError = e?.message || 'Failed to bake Earth region';
+		} finally {
+			baking = false;
+		}
+	}
+
+	$: activeBaseLayerUrl =
+		activeMap && layerMode !== 'tactical' ? layerUrls[`${activeMap.id}:${layerMode}`] || null : null;
+
+	onDestroy(() => {
+		Object.values(layerUrls).forEach((u) => URL.revokeObjectURL(u));
+	});
+
 	onMount(async () => {
 		await Promise.all([fetchMaps(), fetchMissions(), fetchFactions()]);
-		if (maps.length > 0) activeMap = maps[0];
+		if (maps.length > 0) {
+			activeMap = maps[0];
+			if (activeMap.source_region) {
+				minLat = activeMap.source_region.min_lat;
+				minLon = activeMap.source_region.min_lon;
+				maxLat = activeMap.source_region.max_lat;
+				maxLon = activeMap.source_region.max_lon;
+			}
+			if (activeMap.topo_image_url) {
+				layerMode = 'topo';
+				ensureLayerLoaded(activeMap, 'topo');
+			}
+		}
 		loading = false;
 	});
 
@@ -318,7 +414,41 @@
 			</div>
 		{/if}
 
-		<div class="mt-auto">
+		<div class="mt-4 border-t border-base-content/10 pt-3">
+			<button
+				class="btn w-full btn-outline btn-xs"
+				on:click={() => (bakeOpen = !bakeOpen)}
+			>
+				{bakeOpen ? 'Hide Earth Baker' : 'Bake Real-Earth Region'}
+			</button>
+			{#if bakeOpen}
+				<div class="mt-2 flex flex-col gap-2 rounded bg-base-300/60 p-2 text-xs">
+					<select class="select-bordered select select-xs" on:change={applyPreset}>
+						{#each EARTH_REGION_PRESETS as preset, idx}
+							<option value={idx}>{preset.label}</option>
+						{/each}
+					</select>
+					<div class="grid grid-cols-2 gap-1">
+						<input type="number" step="0.01" bind:value={minLat} class="input-bordered input input-xs" placeholder="Min Lat" />
+						<input type="number" step="0.01" bind:value={maxLat} class="input-bordered input input-xs" placeholder="Max Lat" />
+						<input type="number" step="0.01" bind:value={minLon} class="input-bordered input input-xs" placeholder="Min Lon" />
+						<input type="number" step="0.01" bind:value={maxLon} class="input-bordered input input-xs" placeholder="Max Lon" />
+					</div>
+					<label class="flex cursor-pointer items-center gap-2">
+						<input type="checkbox" bind:checked={autoSeedTerrain} class="checkbox checkbox-xs" />
+						<span>Auto-seed hex terrain</span>
+					</label>
+					{#if bakeError}
+						<p class="text-error text-[11px]">{bakeError}</p>
+					{/if}
+					<button class="btn btn-primary btn-xs" disabled={baking} on:click={bakeEarthLayers}>
+						{baking ? 'Baking DEM + OSM...' : 'Bake Topo & Satellite'}
+					</button>
+				</div>
+			{/if}
+		</div>
+
+		<div class="mt-auto pt-3">
 			{#if isDirty}
 				<button class="btn w-full btn-success" on:click={saveChanges}>Save Changes</button>
 			{:else}
@@ -338,11 +468,46 @@
 				{selectedHex}
 				showCoords={true}
 				adminMode={true}
+				baseLayerUrl={activeBaseLayerUrl}
+				layerBounds={activeMap.layer_bounds || null}
+				{showDangerTiers}
 				on:click={handleHexClick}
 			/>
 
-			<div class="absolute top-4 right-4 rounded bg-base-100/90 p-2 text-xs shadow">
-				Active Map: <strong>{activeMap.name}</strong> ({activeMap.hexes.length} Hexes)
+			<div class="absolute top-4 right-4 flex flex-col items-end gap-2">
+				<div class="rounded bg-base-100/90 p-2 text-xs shadow">
+					Active Map: <strong>{activeMap.name}</strong> ({activeMap.hexes.length} Hexes)
+				</div>
+				<div class="flex gap-1 rounded bg-base-100/90 p-1 shadow">
+					{#if activeMap.topo_image_url}
+						<button
+							class="btn btn-xs {layerMode === 'topo' ? 'btn-primary' : 'btn-ghost'}"
+							on:click={() => setLayerMode('topo')}
+						>
+							Topo
+						</button>
+					{/if}
+					{#if activeMap.satellite_image_url}
+						<button
+							class="btn btn-xs {layerMode === 'satellite' ? 'btn-primary' : 'btn-ghost'}"
+							on:click={() => setLayerMode('satellite')}
+						>
+							Satellite
+						</button>
+					{/if}
+					<button
+						class="btn btn-xs {layerMode === 'tactical' ? 'btn-primary' : 'btn-ghost'}"
+						on:click={() => setLayerMode('tactical')}
+					>
+						Tactical
+					</button>
+					<button
+						class="btn btn-xs {showDangerTiers ? 'btn-warning' : 'btn-ghost'}"
+						on:click={() => (showDangerTiers = !showDangerTiers)}
+					>
+						T1–T3
+					</button>
+				</div>
 			</div>
 		{/if}
 	</div>

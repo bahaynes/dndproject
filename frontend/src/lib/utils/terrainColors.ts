@@ -1,19 +1,19 @@
 export function getTerrainColor(terrain: string): string {
 	switch (terrain.toLowerCase()) {
 		case 'plains':
-			return '#90EE90';
+			return '#6e8b5b';
 		case 'forest':
-			return '#228B22';
+			return '#2d5a36';
 		case 'mountain':
-			return '#808080';
+			return '#6d655e';
 		case 'water':
-			return '#4682B4';
+			return '#2b5470';
 		case 'desert':
-			return '#F4A460';
+			return '#b9894f';
 		case 'swamp':
-			return '#556B2F';
+			return '#465436';
 		default:
-			return '#D3D3D3';
+			return '#78716c';
 	}
 }
 

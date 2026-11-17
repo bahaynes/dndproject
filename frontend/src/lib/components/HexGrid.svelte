@@ -21,6 +21,16 @@
 	export let showCoords: boolean = false;
 	export let showLegend: boolean = true;
 	export let adminMode: boolean = false;
+	export let baseLayerUrl: string | null = null;
+	export let layerBounds: { min_x: number; min_y: number; max_x: number; max_y: number } | null = null;
+	export let showDangerTiers: boolean = false;
+
+	$: overlayMode = Boolean(baseLayerUrl && layerBounds);
+	$: dangerRings = [
+		{ tier: 'T1', radius: hexSize * Math.sqrt(3) * 2.2, color: 'rgba(16, 185, 129, 0.5)' },
+		{ tier: 'T2', radius: hexSize * Math.sqrt(3) * 4.2, color: 'rgba(245, 158, 11, 0.5)' },
+		{ tier: 'T3', radius: hexSize * Math.sqrt(3) * 6.2, color: 'rgba(239, 68, 68, 0.5)' }
+	];
 
 	let viewBox = { x: -500, y: -500, w: 2000, h: 1200 };
 	let isDragging = false;
@@ -148,6 +158,19 @@
 		<!-- Background grid for flavor -->
 		<rect x="-10000" y="-10000" width="20000" height="20000" fill="url(#grid)" />
 
+		<!-- Real-Earth / AI Base Map Layer -->
+		{#if baseLayerUrl && layerBounds}
+			<image
+				href={baseLayerUrl}
+				x={layerBounds.min_x}
+				y={layerBounds.min_y}
+				width={layerBounds.max_x - layerBounds.min_x}
+				height={layerBounds.max_y - layerBounds.min_y}
+				preserveAspectRatio="none"
+				pointer-events="none"
+			/>
+		{/if}
+
 		<!-- Hex Layers -->
 		<g>
 			{#each hexes as hex (hex.q + ',' + hex.r)}
@@ -165,10 +188,37 @@
 					hasMission={Boolean(hex.linked_mission_id)}
 					{showCoords}
 					{adminMode}
+					{overlayMode}
 					on:click
 				/>
 			{/each}
 		</g>
+
+		{#if showDangerTiers}
+			<g pointer-events="none">
+				{#each dangerRings as ring}
+					<circle
+						cx="0"
+						cy="0"
+						r={ring.radius}
+						fill="none"
+						stroke={ring.color}
+						stroke-width="2"
+						stroke-dasharray="8 6"
+					/>
+					<text
+						x="0"
+						y={-ring.radius - 6}
+						text-anchor="middle"
+						font-size="11"
+						font-weight="bold"
+						fill={ring.color}
+					>
+						{ring.tier}
+					</text>
+				{/each}
+			</g>
+		{/if}
 	</svg>
 
 	<div

@@ -1,10 +1,11 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { auth } from '$lib/auth';
 	import { api } from '$lib/api';
 	import HexGrid from '$lib/components/HexGrid.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import { getFactionBadgeStyle } from '$lib/utils/terrainColors';
+	import { fetchAuthedLayerUrl, type LayerBounds, type MapLayerMode } from '$lib/utils/mapLayers';
 
 	// Minimal types for map view
 	interface HexData {
@@ -24,6 +25,9 @@
 		id: number;
 		name: string;
 		hex_size: number;
+		topo_image_url?: string | null;
+		satellite_image_url?: string | null;
+		layer_bounds?: LayerBounds | null;
 		hexes: HexData[];
 	}
 
@@ -39,6 +43,49 @@
 	let proposeSessionId: number | null = null;
 	let proposing = false;
 	let proposeMsg = '';
+	let layerMode: MapLayerMode = 'tactical';
+	let showDangerTiers = false;
+	let layerUrls: Record<string, string> = {};
+
+	async function ensureLayerLoaded(map: MapData | null, mode: MapLayerMode) {
+		if (!map || mode === 'tactical') return;
+		const apiPath = mode === 'topo' ? map.topo_image_url : map.satellite_image_url;
+		if (!apiPath) return;
+		const cacheKey = `${map.id}:${mode}`;
+		if (layerUrls[cacheKey]) return;
+		try {
+			const objUrl = await fetchAuthedLayerUrl(apiPath);
+			layerUrls = { ...layerUrls, [cacheKey]: objUrl };
+		} catch (e) {
+			console.error('Failed to load map layer', e);
+		}
+	}
+
+	function selectMap(map: MapData) {
+		activeMap = map;
+		selectedHex = null;
+		if (map.topo_image_url) {
+			layerMode = 'topo';
+			ensureLayerLoaded(map, 'topo');
+		} else if (map.satellite_image_url) {
+			layerMode = 'satellite';
+			ensureLayerLoaded(map, 'satellite');
+		} else {
+			layerMode = 'tactical';
+		}
+	}
+
+	function setLayerMode(mode: MapLayerMode) {
+		layerMode = mode;
+		ensureLayerLoaded(activeMap, mode);
+	}
+
+	$: activeBaseLayerUrl =
+		activeMap && layerMode !== 'tactical' ? layerUrls[`${activeMap.id}:${layerMode}`] || null : null;
+
+	onDestroy(() => {
+		Object.values(layerUrls).forEach((u) => URL.revokeObjectURL(u));
+	});
 
 	onMount(async () => {
 		isAdmin = $auth.user?.role === 'admin';
@@ -47,7 +94,7 @@
 			api('GET', '/sessions/').catch(() => [])
 		]);
 		maps = mapRes ?? [];
-		if (maps.length > 0) activeMap = maps[0];
+		if (maps.length > 0) selectMap(maps[0]);
 		seatedSessions = (sessRes ?? []).filter(
 			(s: any) =>
 				s.status !== 'Completed' &&
@@ -121,7 +168,7 @@
 			{#each maps as map}
 				<button
 					class="btn btn-sm {activeMap?.id === map.id ? 'btn-primary' : 'btn-ghost'}"
-					on:click={() => (activeMap = map)}
+					on:click={() => selectMap(map)}
 				>
 					{map.name}
 				</button>
@@ -143,7 +190,38 @@
 					Explore the world. Discovered areas are shown in color.
 				</p>
 
-				<div class="mt-4 rounded bg-base-200 p-2 font-mono text-xs">
+				<div class="mt-3 flex flex-wrap gap-1">
+					{#if activeMap.topo_image_url}
+						<button
+							class="btn btn-xs {layerMode === 'topo' ? 'btn-primary' : 'btn-outline'}"
+							on:click={() => setLayerMode('topo')}
+						>
+							Topo
+						</button>
+					{/if}
+					{#if activeMap.satellite_image_url}
+						<button
+							class="btn btn-xs {layerMode === 'satellite' ? 'btn-primary' : 'btn-outline'}"
+							on:click={() => setLayerMode('satellite')}
+						>
+							Satellite
+						</button>
+					{/if}
+					<button
+						class="btn btn-xs {layerMode === 'tactical' ? 'btn-primary' : 'btn-outline'}"
+						on:click={() => setLayerMode('tactical')}
+					>
+						Tactical
+					</button>
+					<button
+						class="btn btn-xs {showDangerTiers ? 'btn-warning' : 'btn-ghost'}"
+						on:click={() => (showDangerTiers = !showDangerTiers)}
+					>
+						T1–T3 Rings
+					</button>
+				</div>
+
+				<div class="mt-3 rounded bg-base-200 p-2 font-mono text-xs">
 					Left Click: Select<br />
 					Drag: Pan Map<br />
 					Scroll: Zoom
@@ -273,6 +351,9 @@
 				hexes={activeMap.hexes}
 				hexSize={activeMap.hex_size}
 				{selectedHex}
+				baseLayerUrl={activeBaseLayerUrl}
+				layerBounds={activeMap.layer_bounds || null}
+				{showDangerTiers}
 				on:click={handleHexClick}
 			/>
 		{:else}
