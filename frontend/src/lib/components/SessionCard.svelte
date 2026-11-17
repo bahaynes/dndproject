@@ -96,14 +96,14 @@
 
 <div class="panel flex flex-col p-5">
 	<div class="mb-3 flex items-start justify-between gap-3">
-		<div>
+		<div class="min-w-0">
 			<h3 class="text-base font-semibold text-base-content">{session.name}</h3>
 			<p class="mt-0.5 text-xs text-base-content/65 stat-num">
 				{formatDate(session.session_date)} · {session.players.length}/{session.max_players} seats
 			</p>
 		</div>
 		<span
-			class="badge badge-sm {session.status === 'Confirmed'
+			class="badge badge-sm shrink-0 whitespace-nowrap {session.status === 'Confirmed'
 				? 'badge-success'
 				: 'badge-outline border-primary/40 text-primary'}"
 		>
@@ -200,7 +200,7 @@
 			<div class="flex items-center gap-2">
 				{#if activeChoices.length > 1}
 					<select
-						class="select select-bordered select-xs"
+						class="select select-bordered select-sm"
 						aria-label="Swap character for this session"
 						value={mySeatedChar.id}
 						disabled={busy}

@@ -548,7 +548,7 @@
 				<div class="mt-2 grid grid-cols-1 gap-3 rounded-md border border-base-content/10 p-3 sm:grid-cols-2">
 					<div>
 						<label for="m-status" class="mb-1 block text-xs text-base-content/70">Status</label>
-						<select id="m-status" bind:value={mStatus} class="select select-bordered select-xs w-full">
+						<select id="m-status" bind:value={mStatus} class="select select-bordered select-sm w-full">
 							<option value="Available">Available</option>
 							<option value="In Progress">In Progress</option>
 							<option value="Completed">Completed</option>
@@ -569,7 +569,7 @@
 						<label for="m-prereq" class="mb-1 block text-xs text-base-content/70">
 							Prerequisite Quest
 						</label>
-						<select id="m-prereq" bind:value={mPrerequisiteId} class="select select-bordered select-xs w-full">
+						<select id="m-prereq" bind:value={mPrerequisiteId} class="select select-bordered select-sm w-full">
 							<option value={undefined}>None</option>
 							{#each missions.filter((m) => m.id !== editingMissionId) as prereq}
 								<option value={prereq.id}>{prereq.name}</option>

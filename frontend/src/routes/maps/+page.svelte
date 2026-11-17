@@ -158,7 +158,7 @@
 
 			{#if selectedHex}
 				<div
-					class="absolute bottom-4 left-4 z-10 w-80 rounded-xl border border-base-content/10 bg-base-100/90 p-4 shadow-lg backdrop-blur"
+					class="absolute bottom-4 left-4 z-10 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-base-content/10 bg-base-100/90 p-4 shadow-lg backdrop-blur"
 				>
 					<div class="flex items-center justify-between">
 						<h3 class="text-xl font-[var(--font-cinzel)] font-bold">
@@ -208,14 +208,14 @@
 
 						<div class="mt-2 border-t border-base-content/10 pt-2">
 							{#if seatedSessions.length > 0}
-								<div class="flex gap-1.5">
-									<select class="select select-bordered select-xs flex-1" bind:value={proposeSessionId}>
+								<div class="flex items-center gap-2">
+									<select class="select select-bordered select-sm min-w-0 flex-1" bind:value={proposeSessionId}>
 										{#each seatedSessions as s}
 											<option value={s.id}>{s.name}</option>
 										{/each}
 									</select>
 									<button
-										class="btn btn-primary btn-xs"
+										class="btn btn-primary btn-sm shrink-0"
 										disabled={proposing || !proposeSessionId}
 										on:click={proposeSelectedHex}
 									>

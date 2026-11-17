@@ -50,9 +50,9 @@
 
 <div class="flex min-h-screen flex-col bg-base-100 text-base-content">
 	<nav class="sticky top-0 z-30 border-b border-base-content/10 bg-base-200/95 backdrop-blur">
-		<div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+		<div class="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
 			<!-- Left: Mobile menu + Brand -->
-			<div class="flex items-center gap-2">
+			<div class="flex shrink-0 items-center gap-2">
 				<div class="dropdown lg:hidden">
 					<button tabindex="0" class="btn btn-ghost btn-sm btn-square" aria-label="Mobile Menu">
 						<svg
@@ -76,8 +76,8 @@
 						{#if $auth.isAuthenticated}
 							<li><a href="/dashboard" class:active={isActive(['/dashboard'])}>Dashboard</a></li>
 							<li><a href="/maps" class:active={isActive(['/maps'])}>World Map</a></li>
-							<li><a href="/missions" class:active={isActive(['/missions', '/sessions'])}>Missions &amp; Schedule</a></li>
-							<li><a href="/characters" class:active={isActive(['/characters', '/roster', '/store'])}>Adventurers &amp; Store</a></li>
+							<li><a href="/missions" class:active={isActive(['/missions', '/sessions'])}>Quests &amp; Schedule</a></li>
+							<li><a href="/characters" class:active={isActive(['/characters', '/roster', '/store'])}>Party &amp; Store</a></li>
 							<li><a href="/factions" class:active={isActive(['/factions', '/ledger'])}>Chronicle</a></li>
 							<li><a href="/docs" class:active={isActive(['/docs'])}>Guide</a></li>
 							{#if $auth.user?.role === 'admin'}
@@ -94,7 +94,7 @@
 
 				<a
 					href={$auth.isAuthenticated ? '/dashboard' : '/'}
-					class="flex items-center gap-2 font-[var(--font-cinzel)] text-base font-semibold tracking-wider text-primary sm:text-lg"
+					class="flex items-center gap-2 whitespace-nowrap font-[var(--font-cinzel)] text-base font-semibold tracking-wider text-primary sm:text-lg"
 				>
 					West Marches
 				</a>
@@ -102,10 +102,10 @@
 
 			<!-- Center: Primary Workspace Nav (Desktop) -->
 			{#if $auth.isAuthenticated}
-				<div class="hidden items-center gap-1 lg:flex">
+				<div class="hidden items-center gap-0.5 lg:flex">
 					<a
 						href="/dashboard"
-						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/dashboard'])
+						class="whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors {isActive(['/dashboard'])
 							? 'bg-primary/15 text-primary'
 							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
 					>
@@ -113,7 +113,7 @@
 					</a>
 					<a
 						href="/maps"
-						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/maps'])
+						class="whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors {isActive(['/maps'])
 							? 'bg-primary/15 text-primary'
 							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
 					>
@@ -121,23 +121,23 @@
 					</a>
 					<a
 						href="/missions"
-						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/missions', '/sessions'])
+						class="whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors {isActive(['/missions', '/sessions'])
 							? 'bg-primary/15 text-primary'
 							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
 					>
-						Missions &amp; Schedule
+						Quests
 					</a>
 					<a
 						href="/characters"
-						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/characters', '/roster', '/store'])
+						class="whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors {isActive(['/characters', '/roster', '/store'])
 							? 'bg-primary/15 text-primary'
 							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
 					>
-						Adventurers &amp; Store
+						Party &amp; Store
 					</a>
 					<a
 						href="/factions"
-						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/factions', '/ledger'])
+						class="whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors {isActive(['/factions', '/ledger'])
 							? 'bg-primary/15 text-primary'
 							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
 					>
@@ -145,7 +145,7 @@
 					</a>
 					<a
 						href="/docs"
-						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/docs'])
+						class="whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors {isActive(['/docs'])
 							? 'bg-primary/15 text-primary'
 							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
 					>
@@ -154,7 +154,7 @@
 					{#if $auth.user?.role === 'admin'}
 						<a
 							href="/admin/sessions"
-							class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors {isActive(['/admin'])
+							class="whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors {isActive(['/admin'])
 								? 'bg-primary/15 text-primary'
 								: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
 						>
@@ -165,22 +165,22 @@
 			{/if}
 
 			<!-- Right: Campaign + User Menu -->
-			<div class="flex items-center gap-3">
+			<div class="flex shrink-0 items-center gap-2.5">
 				{#if $auth.isAuthenticated}
 					{#if $auth.campaign}
 						<a
 							href="/campaigns"
-							class="hidden rounded border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/20 md:inline-block"
+							class="hidden max-w-[120px] truncate whitespace-nowrap rounded border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/20 md:inline-block"
 							title="Switch Campaign"
 						>
 							{$auth.campaign.name}
 						</a>
 					{/if}
 
-					<div class="hidden flex-col items-end leading-tight md:flex">
-						<span class="text-xs font-medium text-base-content">{$auth.user?.username}</span>
+					<div class="hidden min-w-0 flex-col items-end leading-tight md:flex">
+						<span class="max-w-[150px] truncate whitespace-nowrap text-xs font-medium text-base-content">{$auth.user?.username}</span>
 						{#if $auth.user?.active_character}
-							<span class="text-[11px] text-base-content/55">
+							<span class="max-w-[150px] truncate whitespace-nowrap text-[11px] text-base-content/55">
 								{$auth.user.active_character.name} · Lvl {$auth.user.active_character.level}
 							</span>
 						{/if}
