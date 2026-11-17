@@ -133,8 +133,13 @@
 				localStorage.removeItem('pendingDiscordToken');
 
 				goto('/dashboard');
+			} else if (res.status === 401) {
+				localStorage.removeItem('pendingToken');
+				localStorage.removeItem('pendingDiscordToken');
+				goto('/login');
 			} else {
-				error = 'Failed to login to campaign.';
+				const err = await res.json().catch(() => ({}));
+				error = err.detail || `Failed to login to campaign (${res.status}).`;
 			}
 		} catch (e) {
 			error = 'Error selecting campaign.';

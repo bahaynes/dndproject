@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
@@ -321,6 +322,7 @@ async def dev_token(
         db.commit()
 
     token = security.create_access_token(
-        data={"sub": request.discord_id, "campaign_id": campaign.id, "role": request.role}
+        data={"sub": request.discord_id, "campaign_id": campaign.id, "role": request.role},
+        expires_delta=timedelta(days=7),
     )
     return {"access_token": token, "token_type": "bearer", "campaign_id": campaign.id}

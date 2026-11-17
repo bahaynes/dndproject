@@ -1,9 +1,13 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { auth } from '$lib/auth';
+  import { auth, login } from '$lib/auth';
   import { get } from 'svelte/store';
   import { API_BASE_URL } from '$lib/config';
+
+  const isDev = import.meta.env.DEV;
+  let devLoading = false;
+  let devError = '';
 
   onMount(() => {
     const { isAuthenticated } = get(auth);
@@ -15,10 +19,51 @@
   function handleLogin() {
     window.location.href = `${API_BASE_URL}/auth/discord/login`;
   }
+
+  async function handleDevLogin(role: 'player' | 'admin') {
+    devLoading = true;
+    devError = '';
+    try {
+      const payload =
+        role === 'admin'
+          ? { discord_id: 'e2e_admin_001', username: 'Dev DM', role: 'admin' }
+          : { discord_id: 'e2e_player_001', username: 'Dev Player', role: 'player' };
+
+      const tokenRes = await fetch(`${API_BASE_URL}/auth/dev-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!tokenRes.ok) {
+        const err = await tokenRes.json().catch(() => ({}));
+        devError = err.detail || `Dev login failed (${tokenRes.status}).`;
+        return;
+      }
+
+      const { access_token } = await tokenRes.json();
+      const userRes = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${access_token}` }
+      });
+
+      if (!userRes.ok) {
+        devError = 'Failed to load dev user profile.';
+        return;
+      }
+
+      const user = await userRes.json();
+      login(user, access_token, user.campaign);
+      goto('/dashboard');
+    } catch {
+      devError = 'Error connecting to dev login endpoint.';
+    } finally {
+      devLoading = false;
+    }
+  }
 </script>
 
 <div class="flex items-center justify-center min-h-screen bg-base-200">
-  <div class="p-8 bg-base-100 shadow-md rounded-lg text-center">
+  <div class="w-full max-w-md p-8 bg-base-100 shadow-md rounded-lg text-center">
     <h1 class="text-2xl font-bold mb-6">Login to DnD Westmarches</h1>
     <p class="mb-4 text-base-content/70">Please sign in using your Discord account.</p>
 
@@ -31,5 +76,36 @@
       </svg>
       Login with Discord
     </button>
+
+    {#if isDev}
+      <div class="mt-6 border-t border-base-content/15 pt-5">
+        <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-base-content/50">
+          Dev Login (No Discord Required)
+        </p>
+        {#if devError}
+          <div role="alert" class="alert alert-error mb-3 py-2 text-left text-sm">
+            {devError}
+          </div>
+        {/if}
+        <div class="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            disabled={devLoading}
+            on:click={() => handleDevLogin('player')}
+            class="btn btn-outline btn-sm"
+          >
+            Dev Player
+          </button>
+          <button
+            type="button"
+            disabled={devLoading}
+            on:click={() => handleDevLogin('admin')}
+            class="btn btn-outline btn-secondary btn-sm"
+          >
+            Dev DM (Admin)
+          </button>
+        </div>
+      </div>
+    {/if}
   </div>
 </div>
