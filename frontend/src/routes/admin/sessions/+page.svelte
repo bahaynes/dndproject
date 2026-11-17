@@ -301,11 +301,9 @@
 
 						{#if session.status !== 'Completed' && session.status !== 'Cancelled'}
 							<div class="flex justify-end gap-2 border-t border-base-content/10 pt-3">
-								{#if session.status === 'Confirmed'}
-									<button class="btn btn-success btn-xs" on:click={() => openCompleteModal(session)}>
-										Complete &amp; Award Rewards
-									</button>
-								{/if}
+								<button class="btn btn-success btn-xs" on:click={() => openCompleteModal(session)}>
+									Complete &amp; Award Rewards
+								</button>
 								<button
 									class="btn btn-ghost btn-xs text-error"
 									on:click={() => cancelSession(session.id)}
