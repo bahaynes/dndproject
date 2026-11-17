@@ -18,7 +18,6 @@
 	export let hasMission: boolean = false;
 	export let adminMode: boolean = false;
 	export let overlayMode: boolean = false;
-	export let hasMission: boolean = false;
 
 	const dispatch = createEventDispatcher();
 
@@ -136,20 +135,6 @@
 			pointer-events="none"
 		>
 			{stateIcon}
-		</text>
-	{/if}
-
-	{#if isDiscovered && hasMission}
-		<text
-			x={-(size * 0.45)}
-			y={-(size * 0.45)}
-			text-anchor="middle"
-			alignment-baseline="middle"
-			font-size="12"
-			fill="#D4A853"
-			pointer-events="none"
-		>
-			★
 		</text>
 	{/if}
 
