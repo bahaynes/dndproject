@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
@@ -271,6 +272,15 @@ class DevTokenRequest(BaseModel):
     campaign_name: str = "E2E Test Campaign"
 
 
+@router.get("/dev-status", include_in_schema=False)
+async def dev_status():
+    """
+    Returns whether dev login is enabled (true in development and PR preview, false in production).
+    """
+    settings = get_settings()
+    return {"dev_login_enabled": settings.APP_ENV != "production"}
+
+
 @router.post("/dev-token", include_in_schema=False)
 async def dev_token(
     request: DevTokenRequest,
@@ -321,6 +331,7 @@ async def dev_token(
         db.commit()
 
     token = security.create_access_token(
-        data={"sub": request.discord_id, "campaign_id": campaign.id, "role": request.role}
+        data={"sub": request.discord_id, "campaign_id": campaign.id, "role": request.role},
+        expires_delta=timedelta(days=7),
     )
     return {"access_token": token, "token_type": "bearer", "campaign_id": campaign.id}
