@@ -34,7 +34,7 @@ describe('Login Page', () => {
 
 		render(LoginPage);
 		expect(screen.getByText('Login with Discord')).toBeInTheDocument();
-		expect(screen.getByText('Login to DnD Westmarches')).toBeInTheDocument();
+		expect(screen.getByRole('heading', { name: /The Board/i })).toBeInTheDocument();
 		await waitFor(() => {
 			expect(screen.queryByRole('button', { name: 'Dev Player' })).not.toBeInTheDocument();
 		});

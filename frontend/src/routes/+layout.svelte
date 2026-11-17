@@ -84,8 +84,6 @@
 							<li><hr class="my-1 border-base-content/10" /></li>
 							<li><a href="/campaigns">Switch Campaign</a></li>
 							<li><button on:click={handleLogout} class="text-error">Logout</button></li>
-						{:else}
-							<li><a href="/login">Login</a></li>
 						{/if}
 					</ul>
 				</div>
@@ -196,8 +194,6 @@
 							<li><button on:click={handleLogout} class="font-medium text-error">Logout</button></li>
 						</ul>
 					</div>
-				{:else}
-					<a href="/login" class="btn btn-primary btn-sm">Login</a>
 				{/if}
 			</div>
 		</div>
