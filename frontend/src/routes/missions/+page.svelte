@@ -38,7 +38,9 @@
 			missions = m ?? [];
 			openSessions = (s ?? []).filter(
 				(sess: GameSessionWithPlayers) =>
-					sess.status !== 'Confirmed' && sess.status !== 'Completed' && sess.status !== 'Cancelled'
+					sess.status !== 'Completed' &&
+					sess.status !== 'Cancelled' &&
+					sess.players.some((p) => p.owner_id === $auth.user?.id)
 			);
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Failed to load quests.';
@@ -193,21 +195,25 @@
 						</div>
 
 						{#if mission.status === 'Available'}
-							<button
-								class="btn btn-primary btn-sm w-full"
-								disabled={!myCharacterId || cooling || openSessions.length === 0}
-								on:click={() => openPropose(mission)}
-							>
-								{#if !myCharacterId}
-									Activate Character to Propose
-								{:else if cooling}
-									On Cooldown
-								{:else if openSessions.length === 0}
-									No Open Session Slots
-								{:else}
-									Propose for Session
-								{/if}
-							</button>
+							{#if myCharacterId && !cooling && openSessions.length === 0}
+								<a href="/dashboard" class="btn btn-outline btn-sm w-full">
+									Join a Session to Propose →
+								</a>
+							{:else}
+								<button
+									class="btn btn-primary btn-sm w-full"
+									disabled={!myCharacterId || cooling}
+									on:click={() => openPropose(mission)}
+								>
+									{#if !myCharacterId}
+										Activate Character to Propose
+									{:else if cooling}
+										On Cooldown
+									{:else}
+										Propose for Session
+									{/if}
+								</button>
+							{/if}
 						{/if}
 					</div>
 				</article>

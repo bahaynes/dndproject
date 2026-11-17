@@ -11,6 +11,7 @@
 
 	let missions: Mission[] = [];
 	let availableItems: Item[] = [];
+	let hexOptions: { key: string; mapId: number; q: number; r: number; label: string; linkedMissionId?: number | null }[] = [];
 	let loading = true;
 	let error = '';
 	let success = '';
@@ -24,6 +25,8 @@
 	let mStatus = 'Available';
 	let mTier = 'Tier 1';
 	let mRegion = '';
+	let mHexKey = '';
+	let mInitialHexKey = '';
 	let mCooldown = 7;
 	let mIsRetired = false;
 	let mIsDiscoverable = true;
@@ -120,6 +123,8 @@
 		mStatus = 'Available';
 		mTier = 'Tier 1';
 		mRegion = '';
+		mHexKey = '';
+		mInitialHexKey = '';
 		mCooldown = 7;
 		mIsRetired = false;
 		mIsDiscoverable = true;
@@ -140,6 +145,9 @@
 		mStatus = mission.status;
 		mTier = mission.tier || 'Tier 1';
 		mRegion = mission.region || '';
+		const linked = hexOptions.find((h) => h.linkedMissionId === mission.id);
+		mHexKey = linked?.key ?? '';
+		mInitialHexKey = mHexKey;
 		mCooldown = mission.cooldown_days;
 		mIsRetired = mission.is_retired;
 		mIsDiscoverable = mission.is_discoverable;
@@ -167,7 +175,7 @@
 	async function reloadData() {
 		loading = true;
 		try {
-			await Promise.all([fetchMissions(), fetchItems()]);
+			await Promise.all([fetchMissions(), fetchItems(), fetchMaps()]);
 		} catch (e) {
 			error = 'Failed to load missions.';
 		} finally {
@@ -181,6 +189,20 @@
 
 	async function fetchItems() {
 		availableItems = await api('GET', '/items/');
+	}
+
+	async function fetchMaps() {
+		const maps = await api('GET', '/maps/').catch(() => []);
+		hexOptions = (maps ?? []).flatMap((m: any) =>
+			(m.hexes ?? []).map((h: any) => ({
+				key: `${m.id}:${h.q}:${h.r}`,
+				mapId: m.id,
+				q: h.q,
+				r: h.r,
+				label: `(${h.q}, ${h.r}) ${h.linked_location_name || h.terrain}${h.is_discovered ? '' : ' [hidden]'}`,
+				linkedMissionId: h.linked_mission_id
+			}))
+		);
 	}
 
 	async function saveMission() {
@@ -206,11 +228,22 @@
 				prerequisite_id: mPrerequisiteId || null,
 				rewards
 			};
-			if (editingMissionId) {
-				await api('PUT', `/missions/${editingMissionId}`, body);
-			} else {
-				await api('POST', '/missions/', body);
+			const saved = editingMissionId
+				? await api('PUT', `/missions/${editingMissionId}`, body)
+				: await api('POST', '/missions/', body);
+
+			if (mHexKey !== mInitialHexKey) {
+				if (mInitialHexKey) {
+					const [oldMap, oldQ, oldR] = mInitialHexKey.split(':');
+					await api('PUT', `/maps/${oldMap}/hexes/${oldQ}/${oldR}`, { linked_mission_id: null });
+				}
+				if (mHexKey && saved?.id) {
+					const [newMap, newQ, newR] = mHexKey.split(':');
+					await api('PUT', `/maps/${newMap}/hexes/${newQ}/${newR}`, { linked_mission_id: saved.id });
+				}
+				await fetchMaps();
 			}
+
 			success = editingMissionId ? 'Quest updated.' : 'Quest posted to the board.';
 			showCreateMission = false;
 			await fetchMissions();
@@ -455,6 +488,20 @@
 			</div>
 		</div>
 
+		{#if hexOptions.length > 0}
+			<div>
+				<label for="m-hex" class="mb-1 block text-xs font-medium text-base-content/75">
+					Map Hex (optional — shows ★ marker on World Map)
+				</label>
+				<select id="m-hex" bind:value={mHexKey} class="select select-bordered select-sm w-full">
+					<option value="">— Not linked to a hex —</option>
+					{#each hexOptions as h}
+						<option value={h.key}>{h.label}</option>
+					{/each}
+				</select>
+			</div>
+		{/if}
+
 		<div>
 			<div class="mb-1 flex items-center justify-between">
 				<label for="m-desc" class="text-xs font-medium text-base-content/75">Briefing (Markdown)</label>
@@ -501,7 +548,7 @@
 				<div class="mt-2 grid grid-cols-1 gap-3 rounded-md border border-base-content/10 p-3 sm:grid-cols-2">
 					<div>
 						<label for="m-status" class="mb-1 block text-xs text-base-content/70">Status</label>
-						<select id="m-status" bind:value={mStatus} class="select select-bordered select-xs w-full">
+						<select id="m-status" bind:value={mStatus} class="select select-bordered select-sm w-full">
 							<option value="Available">Available</option>
 							<option value="In Progress">In Progress</option>
 							<option value="Completed">Completed</option>
@@ -522,7 +569,7 @@
 						<label for="m-prereq" class="mb-1 block text-xs text-base-content/70">
 							Prerequisite Quest
 						</label>
-						<select id="m-prereq" bind:value={mPrerequisiteId} class="select select-bordered select-xs w-full">
+						<select id="m-prereq" bind:value={mPrerequisiteId} class="select select-bordered select-sm w-full">
 							<option value={undefined}>None</option>
 							{#each missions.filter((m) => m.id !== editingMissionId) as prereq}
 								<option value={prereq.id}>{prereq.name}</option>

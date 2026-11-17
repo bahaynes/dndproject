@@ -9,6 +9,7 @@
 		terrain: string;
 		is_discovered: boolean;
 		linked_location_name?: string;
+		linked_mission_id?: number;
 		hex_state?: string;
 		controlling_faction?: string | null;
 		player_notes?: any[];
@@ -24,6 +25,7 @@
 	let viewBox = { x: -500, y: -500, w: 2000, h: 1200 };
 	let isDragging = false;
 	let startPan = { x: 0, y: 0 };
+	let lastPinchDist: number | null = null;
 	let svgElement: SVGSVGElement;
 
 	function handleMouseDown(e: MouseEvent) {
@@ -45,6 +47,54 @@
 
 	function handleMouseUp() {
 		isDragging = false;
+	}
+
+	function getTouchDist(t1: Touch, t2: Touch): number {
+		return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+	}
+
+	function handleTouchStart(e: TouchEvent) {
+		if (e.touches.length === 1) {
+			isDragging = true;
+			lastPinchDist = null;
+			startPan = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+		} else if (e.touches.length === 2) {
+			isDragging = false;
+			lastPinchDist = getTouchDist(e.touches[0], e.touches[1]);
+		}
+	}
+
+	function handleTouchMove(e: TouchEvent) {
+		if (!svgElement) return;
+		if (e.touches.length === 1 && isDragging) {
+			e.preventDefault();
+			const dx = (e.touches[0].clientX - startPan.x) * (viewBox.w / svgElement.clientWidth);
+			const dy = (e.touches[0].clientY - startPan.y) * (viewBox.h / svgElement.clientHeight);
+			viewBox.x -= dx;
+			viewBox.y -= dy;
+			startPan = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+		} else if (e.touches.length === 2 && lastPinchDist !== null) {
+			e.preventDefault();
+			const dist = getTouchDist(e.touches[0], e.touches[1]);
+			if (dist > 0) {
+				const scaleFactor = lastPinchDist / dist;
+				const rect = svgElement.getBoundingClientRect();
+				const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+				const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+				const vx = viewBox.x + (cx / svgElement.clientWidth) * viewBox.w;
+				const vy = viewBox.y + (cy / svgElement.clientHeight) * viewBox.h;
+				viewBox.w *= scaleFactor;
+				viewBox.h *= scaleFactor;
+				viewBox.x = vx - (cx / svgElement.clientWidth) * viewBox.w;
+				viewBox.y = vy - (cy / svgElement.clientHeight) * viewBox.h;
+				lastPinchDist = dist;
+			}
+		}
+	}
+
+	function handleTouchEnd() {
+		isDragging = false;
+		lastPinchDist = null;
 	}
 
 	function handleWheel(e: WheelEvent) {
@@ -72,13 +122,17 @@
 >
 	<svg
 		bind:this={svgElement}
-		class="h-full w-full cursor-move bg-base-300"
+		class="h-full w-full cursor-move touch-none bg-base-300"
 		viewBox="{viewBox.x} {viewBox.y} {viewBox.w} {viewBox.h}"
 		role="application"
 		on:mousedown={handleMouseDown}
 		on:mousemove={handleMouseMove}
 		on:mouseup={handleMouseUp}
 		on:mouseleave={handleMouseUp}
+		on:touchstart={handleTouchStart}
+		on:touchmove={handleTouchMove}
+		on:touchend={handleTouchEnd}
+		on:touchcancel={handleTouchEnd}
 		on:wheel={handleWheel}
 	>
 		<defs>
@@ -108,6 +162,7 @@
 					hexState={hex.hex_state || 'wilderness'}
 					controllingFaction={hex.controlling_faction || null}
 					playerNotesCount={hex.player_notes?.length || 0}
+					hasMission={Boolean(hex.linked_mission_id)}
 					{showCoords}
 					{adminMode}
 					on:click

@@ -10,7 +10,6 @@ export const ADVENTURERS_NAV = [
 ];
 
 export const WORLD_NAV = [
-	{ label: 'World Map', href: '/maps' },
 	{ label: 'Factions', href: '/factions' },
 	{ label: 'Campaign Ledger', href: '/ledger' }
 ];

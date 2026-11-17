@@ -47,15 +47,20 @@ def propose_mission(
     db_session = crud.get_game_session(db, session_id=proposal.session_id)
     if not db_session or db_session.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Game session not found")
-    
-    if db_session.status == "Confirmed":
-        raise HTTPException(status_code=400, detail="Cannot propose for a confirmed session")
+
+    if db_session.status in ("Completed", "Cancelled"):
+        raise HTTPException(status_code=400, detail=f"Cannot propose for a {db_session.status.lower()} session")
+
+    is_signed_up = any(c.owner_id == current_user.id for c in db_session.players)
+    if not is_signed_up and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Join the session before proposing a quest or hex")
 
     return crud.create_session_proposal(
-        db, 
-        session_id=proposal.session_id, 
-        mission_id=proposal.mission_id, 
-        user_id=current_user.id
+        db,
+        session_id=proposal.session_id,
+        user_id=current_user.id,
+        mission_id=proposal.mission_id,
+        hex_id=proposal.hex_id,
     )
 
 @router.post("/proposals/{proposal_id}/toggle_back", response_model=schemas.SessionProposal, tags=["Game Sessions"])
@@ -64,14 +69,20 @@ def toggle_backing(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    character = current_user.active_character
+    db_proposal = crud.get_session_proposal(db, proposal_id)
+    if not db_proposal:
+        raise HTTPException(status_code=404, detail="Proposal not found")
+
+    # Use the character the player actually signed up with in this session (if any)
+    signed_up_char = next((c for c in db_proposal.session.players if c.owner_id == current_user.id), None)
+    character = signed_up_char or current_user.active_character
     if not character:
         raise HTTPException(status_code=400, detail="User has no active character selected")
 
     db_proposal, error = crud.toggle_back_proposal(db, proposal_id=proposal_id, character=character)
     if error:
         raise HTTPException(status_code=400, detail=error)
-    
+
     return db_proposal
 
 
@@ -94,6 +105,27 @@ def signup_for_session(
         raise HTTPException(status_code=400, detail=error)
     return updated_session
 
+@router.post("/{session_id}/swap-character", response_model=schemas.GameSessionWithPlayers, tags=["Game Sessions"])
+def swap_character(
+    session_id: int,
+    data: schemas.SwapCharacterRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    from ..characters import service as char_service
+    session = crud.get_game_session(db, session_id=session_id)
+    if not session or session.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Game session not found")
+
+    new_char = char_service.get_character(db, character_id=data.character_id)
+    if not new_char:
+        raise HTTPException(status_code=404, detail="Character not found")
+
+    updated, error = crud.swap_character_in_session(db, session=session, owner_id=current_user.id, new_character=new_char)
+    if error:
+        raise HTTPException(status_code=400, detail=error)
+    return updated
+
 @router.delete("/{session_id}/signup", response_model=schemas.GameSessionWithPlayers, tags=["Game Sessions"])
 def cancel_signup(
     session_id: int,
@@ -104,7 +136,8 @@ def cancel_signup(
     if not session or session.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Game session not found")
 
-    character = current_user.active_character
+    signed_up_char = next((c for c in session.players if c.owner_id == current_user.id), None)
+    character = signed_up_char or current_user.active_character
     if not character:
         raise HTTPException(status_code=400, detail="User has no active character selected")
 

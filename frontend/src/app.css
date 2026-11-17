@@ -1,5 +1,4 @@
 @import 'tailwindcss';
-@plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
 @plugin 'daisyui';
 
@@ -60,7 +59,7 @@ body {
   scroll-behavior: smooth;
 }
 
-h1, h2, h3 {
+h1 {
   font-family: var(--font-cinzel);
   letter-spacing: 0.02em;
 }
@@ -76,42 +75,49 @@ textarea:focus-visible {
 }
 
 /* Standardized layout & surface primitives */
-.page-container {
-  width: 100%;
-  max-width: 72rem; /* max-w-6xl */
-  margin-left: auto;
-  margin-right: auto;
-  padding: 2rem 1rem;
-}
-
-@media (min-width: 640px) {
+@layer components {
   .page-container {
-    padding: 2.25rem 1.5rem;
+    width: 100%;
+    max-width: 72rem; /* max-w-6xl */
+    margin-left: auto;
+    margin-right: auto;
+    padding: 2rem 1rem;
   }
-}
 
-.panel {
-  background-color: var(--color-base-200);
-  border: 1px solid var(--border-subtle);
-  border-radius: 0.5rem;
-  transition: border-color 0.15s ease;
-}
+  @media (min-width: 640px) {
+    .page-container {
+      padding: 2.25rem 1.5rem;
+    }
+  }
 
-.panel-interactive:hover {
-  border-color: var(--border-brass);
-}
+  .panel {
+    background-color: var(--color-base-200);
+    border: 1px solid var(--border-subtle);
+    border-radius: 0.5rem;
+    transition: border-color 0.15s ease;
+  }
 
-.section-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: color-mix(in oklab, var(--color-base-content) 45%, transparent);
-}
+  .panel-interactive:hover {
+    border-color: var(--border-brass);
+  }
 
-.stat-num {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-variant-numeric: tabular-nums;
+  .section-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: color-mix(in oklab, var(--color-base-content) 45%, transparent);
+  }
+
+  .stat-num {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .badge {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
 }
 
 /* Clean custom scrollbar */

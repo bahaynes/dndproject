@@ -2,13 +2,15 @@
 	import { onMount } from 'svelte';
 	import { auth } from '$lib/auth';
 	import { api } from '$lib/api';
-	import type { GameSessionWithPlayers } from '$lib/types';
+	import type { GameSessionWithPlayers, Mission } from '$lib/types';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import Modal from '$lib/components/Modal.svelte';
 	import { goto } from '$app/navigation';
 
 	let sessions: GameSessionWithPlayers[] = [];
+	let missions: Mission[] = [];
+	let discoveredHexes: { id: number; q: number; r: number; terrain: string; linked_location_name?: string }[] = [];
 	let loading = true;
 	let error = '';
 	let success = '';
@@ -25,6 +27,8 @@
 	let showCompleteModal = false;
 	let completingSession: GameSessionWithPlayers | null = null;
 	let cResult: 'success' | 'failure' = 'success';
+	let cMissionId: number | null = null;
+	let cHexId: number | null = null;
 	let cGoldEarned = 0;
 	let cXpEarned = 0;
 	let cAar = '';
@@ -45,7 +49,14 @@
 	async function fetchSessions() {
 		loading = true;
 		try {
-			sessions = await api('GET', '/sessions/');
+			const [sRes, mRes, mapRes] = await Promise.all([
+				api('GET', '/sessions/'),
+				api('GET', '/missions/').catch(() => []),
+				api('GET', '/maps/').catch(() => [])
+			]);
+			sessions = sRes ?? [];
+			missions = (mRes ?? []).filter((m: Mission) => !m.is_retired);
+			discoveredHexes = (mapRes ?? []).flatMap((m: any) => (m.hexes ?? []).filter((h: any) => h.is_discovered));
 		} catch (e) {
 			error = 'Failed to load sessions.';
 		} finally {
@@ -115,12 +126,22 @@
 		}
 	}
 
+	function applyMissionRewards(missionId: number | null) {
+		const m = missions.find((x) => x.id === missionId);
+		const rewards = m?.rewards ?? [];
+		cGoldEarned = rewards.reduce((sum, r) => sum + (r.gold ?? 0), 0);
+		cXpEarned = rewards.reduce((sum, r) => sum + (r.xp ?? 0), 0);
+	}
+
 	function openCompleteModal(session: GameSessionWithPlayers) {
 		completingSession = session;
 		cResult = 'success';
-		const missionRewards = session.confirmed_mission?.rewards ?? [];
-		cGoldEarned = missionRewards.reduce((sum, r) => sum + (r.gold ?? 0), 0);
-		cXpEarned = missionRewards.reduce((sum, r) => sum + (r.xp ?? 0), 0);
+		const topProposal = [...session.proposals]
+			.filter((p) => p.status !== 'vetoed')
+			.sort((a, b) => b.backers.length - a.backers.length)[0];
+		cMissionId = session.confirmed_mission_id ?? topProposal?.mission_id ?? null;
+		cHexId = session.confirmed_hex_id ?? topProposal?.hex_id ?? null;
+		applyMissionRewards(cMissionId);
 		cAar = '';
 		cCasualties = [];
 		showCompleteModal = true;
@@ -141,6 +162,8 @@
 		try {
 			await api('POST', `/sessions/${completingSession.id}/complete`, {
 				result: cResult,
+				mission_id: cMissionId,
+				hex_id: cHexId,
 				essence_earned: 0,
 				gold_earned: cGoldEarned,
 				xp_earned: cXpEarned,
@@ -245,9 +268,14 @@
 									<div class="rounded-md border border-base-content/10 bg-base-300/50 p-3">
 										<div class="flex items-start justify-between gap-2">
 											<div>
-												<p class="text-sm font-medium text-base-content">{proposal.mission.name}</p>
+												<p class="text-sm font-medium text-base-content">
+													{proposal.mission?.name ??
+														(proposal.hex
+															? `Explore Hex (${proposal.hex.q}, ${proposal.hex.r})`
+															: 'Destination')}
+												</p>
 												<span class="text-xs text-base-content/60 stat-num">
-													{proposal.backers.length} backers
+													{proposal.backers.length} votes
 												</span>
 											</div>
 											<span class="badge badge-xs badge-outline">{proposal.status}</span>
@@ -273,11 +301,9 @@
 
 						{#if session.status !== 'Completed' && session.status !== 'Cancelled'}
 							<div class="flex justify-end gap-2 border-t border-base-content/10 pt-3">
-								{#if session.status === 'Confirmed'}
-									<button class="btn btn-success btn-xs" on:click={() => openCompleteModal(session)}>
-										Complete &amp; Award Rewards
-									</button>
-								{/if}
+								<button class="btn btn-success btn-xs" on:click={() => openCompleteModal(session)}>
+									Complete &amp; Award Rewards
+								</button>
 								<button
 									class="btn btn-ghost btn-xs text-error"
 									on:click={() => cancelSession(session.id)}
@@ -347,6 +373,36 @@
 >
 	{#if completingSession}
 		<div class="space-y-4">
+			<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+				<div>
+					<label for="c-mission" class="mb-1 block text-xs font-medium text-base-content/75">
+						Quest Run (optional)
+					</label>
+					<select
+						id="c-mission"
+						class="select select-bordered select-sm w-full"
+						bind:value={cMissionId}
+						on:change={() => applyMissionRewards(cMissionId)}
+					>
+						<option value={null}>— None / Freeform —</option>
+						{#each missions as m}
+							<option value={m.id}>{m.name}</option>
+						{/each}
+					</select>
+				</div>
+				<div>
+					<label for="c-hex" class="mb-1 block text-xs font-medium text-base-content/75">
+						Hex Explored (optional)
+					</label>
+					<select id="c-hex" class="select select-bordered select-sm w-full" bind:value={cHexId}>
+						<option value={null}>— None —</option>
+						{#each discoveredHexes as h}
+							<option value={h.id}>Hex ({h.q}, {h.r}) — {h.linked_location_name || h.terrain}</option>
+						{/each}
+					</select>
+				</div>
+			</div>
+
 			<div>
 				<span class="mb-1.5 block text-xs font-medium text-base-content/75">Outcome</span>
 				<div class="flex gap-4">
