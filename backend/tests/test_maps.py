@@ -143,3 +143,108 @@ def test_add_note_wrong_campaign(client, db_session, campaign, player_auth_heade
         headers=player_auth_headers,
     )
     assert res.status_code == 404
+
+
+def test_earth_baker_renders_pngs_and_classifies_terrain():
+    import io
+    import numpy as np
+    from PIL import Image
+    from app.modules.maps.earth_baker import (
+        classify_hex_terrains,
+        compute_hex_layer_bounds,
+        render_topo_and_satellite,
+    )
+
+    coords = [(0, 0), (1, 0), (-1, 0), (0, 1)]
+    bounds = compute_hex_layer_bounds(coords, hex_size=60)
+    elev = np.full((128, 128), 100.0, dtype=np.float32)
+    elev[:, :32] = -10.0  # ocean on left
+    elev[:, 96:] = 1500.0  # mountains on right
+    masks = {
+        "water": np.zeros((128, 128), dtype=bool),
+        "wood": np.zeros((128, 128), dtype=bool),
+        "wetland": np.zeros((128, 128), dtype=bool),
+    }
+    masks["wood"][64:, 32:64] = True
+
+    topo_png, sat_png = render_topo_and_satellite(elev, masks)
+    assert Image.open(io.BytesIO(topo_png)).format == "PNG"
+    assert Image.open(io.BytesIO(sat_png)).format == "PNG"
+
+    terrains = classify_hex_terrains(elev, masks, coords, hex_size=60, bounds=bounds)
+    assert terrains[(-1, 0)] == "water"
+    assert terrains[(1, 0)] == "mountain"
+    assert terrains[(0, 1)] == "forest"
+
+
+def test_bake_earth_and_fetch_layers(client, db_session, campaign, admin_auth_headers, player_auth_headers, tmp_path, monkeypatch):
+    from unittest.mock import AsyncMock
+    from app.modules.maps import router as maps_router
+    from app.modules.maps.earth_baker import BakedMapResult
+    from app.modules.maps.storage import LocalMapLayerStorage
+
+    m = _create_map(client, admin_auth_headers)
+    storage = LocalMapLayerStorage(str(tmp_path))
+    monkeypatch.setattr(maps_router, "get_layer_storage", lambda: storage)
+
+    fake_result = BakedMapResult(
+        topo_png=b"\x89PNG\r\n\x1a\ntopo",
+        satellite_png=b"\x89PNG\r\n\x1a\nsat",
+        layer_bounds={"min_x": -510.0, "min_y": -571.5, "max_x": 510.0, "max_y": 571.5},
+        hex_terrains={(0, 0): "mountain"},
+        zoom=8,
+    )
+    monkeypatch.setattr(maps_router, "bake_earth_region", AsyncMock(return_value=fake_result))
+
+    # Player cannot bake
+    res_forbidden = client.post(
+        f"/api/maps/{m['id']}/bake-earth",
+        json={"min_lat": 64.0, "min_lon": -22.0, "max_lat": 65.0, "max_lon": -20.0},
+        headers=player_auth_headers,
+    )
+    assert res_forbidden.status_code == 403
+
+    # Invalid bbox rejected
+    res_bad = client.post(
+        f"/api/maps/{m['id']}/bake-earth",
+        json={"min_lat": 65.0, "min_lon": -20.0, "max_lat": 64.0, "max_lon": -22.0},
+        headers=admin_auth_headers,
+    )
+    assert res_bad.status_code == 400
+
+    # Admin bake succeeds
+    res = client.post(
+        f"/api/maps/{m['id']}/bake-earth",
+        json={"min_lat": 64.0, "min_lon": -22.0, "max_lat": 65.0, "max_lon": -20.0, "auto_seed_terrain": True},
+        headers=admin_auth_headers,
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["topo_image_url"] == f"/api/maps/{m['id']}/layers/topo"
+    assert body["satellite_image_url"] == f"/api/maps/{m['id']}/layers/satellite"
+    assert body["layer_bounds"]["min_x"] == -510.0
+    assert body["source_region"]["zoom"] == 8
+    center_hex = next(h for h in body["hexes"] if h["q"] == 0 and h["r"] == 0)
+    assert center_hex["terrain"] == "mountain"
+
+    # Player in same campaign can fetch both layers
+    topo_resp = client.get(body["topo_image_url"], headers=player_auth_headers)
+    assert topo_resp.status_code == 200
+    assert topo_resp.content == b"\x89PNG\r\n\x1a\ntopo"
+    assert topo_resp.headers["content-type"] == "image/png"
+
+    sat_resp = client.get(body["satellite_image_url"], headers=player_auth_headers)
+    assert sat_resp.status_code == 200
+    assert sat_resp.content == b"\x89PNG\r\n\x1a\nsat"
+
+    # Cross-campaign user gets 404
+    other_camp = campaign_models.Campaign(name="Other Camp 3", discord_guild_id="999")
+    db_session.add(other_camp)
+    db_session.commit()
+    db_session.refresh(other_camp)
+    _, other_token = _create_user_with_token(db_session, "layer_other", "LayerOther", "player", other_camp.id)
+    res_other = client.get(
+        body["topo_image_url"],
+        headers={"Authorization": f"Bearer {other_token}"},
+    )
+    assert res_other.status_code == 404

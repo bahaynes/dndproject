@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     # Environment name — set to "production" to disable dev-only endpoints like /api/auth/dev-token.
     APP_ENV: str = "development"
 
+    # Map Layer / Tile Storage ("local" for dev, "gcs" for Cloud Run)
+    TILE_STORAGE_BACKEND: str = "local"
+    LOCAL_TILE_DIR: str = "./data/map_layers"
+    GCS_TILE_BUCKET: str = ""
+
     model_config = SettingsConfigDict(case_sensitive=True, env_file='.env', extra='ignore')
 
     @model_validator(mode="after")

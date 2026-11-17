@@ -1,5 +1,5 @@
-from pydantic import BaseModel, field_validator
-from typing import Optional, List, Any, Literal
+from pydantic import BaseModel, Field, computed_field, field_validator
+from typing import Optional, List, Any, Literal, Dict
 from ..missions.schemas import Mission
 
 HexState = Literal["wilderness", "claimed_developed", "friendly", "contested", "awakened"]
@@ -56,10 +56,45 @@ class HexMapBase(BaseModel):
 class HexMapCreate(HexMapBase):
     pass
 
+class LayerBounds(BaseModel):
+    min_x: float
+    min_y: float
+    max_x: float
+    max_y: float
+
+
+class BakeEarthRequest(BaseModel):
+    """Bounding box and options for baking a real-Earth region onto a HexMap."""
+
+    min_lat: float = Field(..., ge=-85.0, le=85.0)
+    min_lon: float = Field(..., ge=-180.0, le=180.0)
+    max_lat: float = Field(..., ge=-85.0, le=85.0)
+    max_lon: float = Field(..., ge=-180.0, le=180.0)
+    auto_seed_terrain: bool = True
+
+
 class HexMap(HexMapBase):
     id: int
     campaign_id: int
+    topo_image_key: Optional[str] = Field(default=None, exclude=True)
+    satellite_image_key: Optional[str] = Field(default=None, exclude=True)
+    layer_bounds: Optional[LayerBounds] = None
+    source_region: Optional[Dict[str, Any]] = None
     hexes: List[Hex] = []
+
+    @computed_field
+    @property
+    def topo_image_url(self) -> Optional[str]:
+        if not self.topo_image_key:
+            return None
+        return f"/api/maps/{self.id}/layers/topo"
+
+    @computed_field
+    @property
+    def satellite_image_url(self) -> Optional[str]:
+        if not self.satellite_image_key:
+            return None
+        return f"/api/maps/{self.id}/layers/satellite"
 
     class Config:
         from_attributes = True
