@@ -3,7 +3,7 @@
   "world_name": "Rattleguard & The High Fjords",
   "hub": {
     "name": "Rattleguard",
-    "motd": "You arrived in a majestic ridge city by spelljammer or portal, and promptly found out how expensive rent is when the Mist comes every night and everyone wants permanent safety. Down in the valleys, though, lie the magical crystals that power the rest of the verse—and someone has to collect them. Welcome to Rattleguard, a frontier town perched just below the mistline. Its warding braziers work, mostly. Spirits still take a few people each night, but the pay is good and the miners are friendly. You're with the Troublesome Company now—recruited when you ran out of coin and jobs up top. Pick a partner, pick a contract, and remember the only rule: be back behind the braziers before dark."
+    "motd": "You arrived in a majestic ridge city by spelljammer or portal, and promptly found out how expensive rent is when the Mist comes every night and everyone wants permanent safety. Down in the valleys, though, lie the magical crystals that power the rest of the verse—and someone has to collect them. Welcome to Rattleguard, a frontier town perched just below the mistline. Its warding braziers work, mostly. Spirits still take a few people each night, but the pay is good and the miners are friendly. You're with the Troublesome Company now—recruited when you ran out of coin and jobs up top. Pick a partner, pick a hex, and remember the only rule: be back behind the braziers before dark.\n\nFirst Night Checklist:\n1. Build a Level 3 character on D&D Beyond (your combat sheet & dice live there; your gold, loot, and gear live here) and register them under Characters.\n2. Visit the Store to grab supplies, traps, scrolls, or a lift pass.\n3. Open Maps to scout the fjord valleys and propose or join an expedition on Sessions."
   },
   "factions": [
     {
@@ -51,33 +51,45 @@
   ],
   "items": [
     {
-      "name": "Potion of Healing",
-      "description": "Restores 2d4 + 2 hit points when consumed as an action.",
-      "store_price": 50,
-      "store_quantity": -1
+      "name": "Warding Chalk (10 Sticks)",
+      "description": "Alchemically treated white chalk used to seal doorframes, window-sills, and cellar thresholds against the creeping Mist.",
+      "store_price": 1,
+      "store_quantity": 6
     },
     {
       "name": "Spirit-Ward Canary",
       "description": "A small yellow canary in a brass cage. Miners swear it stops singing whenever valley spirits draw near—giving you one last warning to run for higher ground.",
-      "store_price": 15,
-      "store_quantity": -1
-    },
-    {
-      "name": "Warding Chalk (10 Sticks)",
-      "description": "Alchemically treated white chalk used to seal doorframes, window-sills, and cellar thresholds against the creeping Mist.",
-      "store_price": 5,
-      "store_quantity": -1
+      "store_price": 2,
+      "store_quantity": 3
     },
     {
       "name": "Brim-Coal Brazier Oil (Flask)",
       "description": "Heavy mineral oil that burns hot and bright, pushing back the evening Mist around camp lanterns and river barges for up to 4 hours.",
-      "store_price": 10,
+      "store_price": 2,
+      "store_quantity": 5
+    },
+    {
+      "name": "Rope, Hempen (50 ft.)",
+      "description": "50 feet of sturdy hempen rope with 2 hit points and DC 17 Strength check to burst.",
+      "store_price": 1,
       "store_quantity": -1
     },
     {
-      "name": "Antitoxin (Vial)",
-      "description": "Advantage on saving throws against poison for 1 hour.",
-      "store_price": 50,
+      "name": "Hunting Trap",
+      "description": "Saw-toothed steel jaws that snap shut on a creature stepping on the pressure plate (DC 13 Dex save or 1d4 piercing + restrained).",
+      "store_price": 5,
+      "store_quantity": 6
+    },
+    {
+      "name": "Highspire Cliff-Lift Pass",
+      "description": "Single round-trip Cartel lift ticket up the sheer cliff face from Rattleguard to Highspire—skipping a half-day switchback climb.",
+      "store_price": 5,
+      "store_quantity": -1
+    },
+    {
+      "name": "Highspire Inn Voucher (1 Week)",
+      "description": "A quiet, Mist-free room above the ridge line with hot water and clean sheets—for adventurers tired of Rattleguard's bunkhouse.",
+      "store_price": 15,
       "store_quantity": -1
     },
     {
@@ -87,35 +99,119 @@
       "store_quantity": -1
     },
     {
-      "name": "Healer's Kit",
-      "description": "10 uses; stabilize a dying creature without making a Medicine check.",
-      "store_price": 5,
-      "store_quantity": -1
+      "name": "Cartel River-Barge Charter",
+      "description": "One-day steam-barge passage down the main fjord channel with an armored prow brazier, cutting valley travel time in half.",
+      "store_price": 30,
+      "store_quantity": 2
     },
     {
-      "name": "Torches (Bundle of 10)",
-      "description": "Provides bright light in a 20-foot radius and dim light for an additional 20 feet for 1 hour each.",
-      "store_price": 1,
-      "store_quantity": -1
+      "name": "Alchemist's Fire (Flask)",
+      "description": "Sticky, adhesive fluid that ignites when exposed to air (1d4 fire damage per turn until extinguished).",
+      "store_price": 50,
+      "store_quantity": 4
     },
     {
-      "name": "Rope, Hempen (50 ft.)",
-      "description": "50 feet of sturdy hempen rope with 2 hit points and DC 17 Strength check to burst.",
-      "store_price": 1,
-      "store_quantity": -1
+      "name": "Potion of Healing",
+      "description": "Restores 2d4 + 2 hit points when consumed as an action.",
+      "store_price": 50,
+      "store_quantity": 4
     },
     {
-      "name": "Rations (5 Days)",
-      "description": "Dry jerky, hardtack, and dried fruit for five days on the fjord roads.",
-      "store_price": 3,
-      "store_quantity": -1
+      "name": "Antitoxin (Vial)",
+      "description": "Advantage on saving throws against poison for 1 hour.",
+      "store_price": 50,
+      "store_quantity": 4
+    },
+    {
+      "name": "Smithy & Alchemy Workshop Pass",
+      "description": "One week of private forge, crucible, and arcane bench access in Rattleguard for crafting, silvering, or scribing spells.",
+      "store_price": 50,
+      "store_quantity": 2
+    },
+    {
+      "name": "Spell Scroll (1st Level)",
+      "description": "A single-use 1st-level arcane or divine scroll—useful when you need one more Gust of Wind or Feather Fall.",
+      "store_price": 60,
+      "store_quantity": 3
+    },
+    {
+      "name": "Silvered Weapon Upgrade",
+      "description": "Have a Rattleguard smith coat a single weapon or 10 pieces of ammunition in silver to bypass supernatural resistances.",
+      "store_price": 100,
+      "store_quantity": 2
+    },
+    {
+      "name": "Spell Scroll (2nd Level)",
+      "description": "A single-use 2nd-level spell scroll (e.g., Warding Wind, Pass without Trace, or Lesser Restoration).",
+      "store_price": 150,
+      "store_quantity": 2
+    },
+    {
+      "name": "Potion of Greater Healing",
+      "description": "Restores 4d4 + 4 hit points when consumed as an action.",
+      "store_price": 150,
+      "store_quantity": 2
+    },
+    {
+      "name": "Rattleguard Market Stall Lease",
+      "description": "A permanent covered stall near the main brazier square—trade salvaged goods, craft for the roster, or fence Crow's Ledge contraband.",
+      "store_price": 250,
+      "store_quantity": 2
+    },
+    {
+      "name": "Bag of Holding",
+      "description": "Holds up to 500 pounds of valley crystals, salvage, and supplies inside an extradimensional space while weighing only 15 pounds.",
+      "store_price": 250,
+      "store_quantity": 1
+    },
+    {
+      "name": "Sending Stones (Pair)",
+      "description": "Two paired stones allowing a 25-word Sending message once per day—essential when a party splits across a fjord.",
+      "store_price": 250,
+      "store_quantity": 1
+    },
+    {
+      "name": "Diamond (300 gp Spell Component)",
+      "description": "A flawless 300 gp diamond suitable for Revivify. Kept under lock and key by the Lamplighters.",
+      "store_price": 300,
+      "store_quantity": 2
+    },
+    {
+      "name": "Cloak of Protection",
+      "description": "Grants +1 bonus to AC and all saving throws while attuned.",
+      "store_price": 350,
+      "store_quantity": 1
+    },
+    {
+      "name": "+1 Weapon or Shield",
+      "description": "Masterwork enchanted arms recovered from a pre-Mist vault and refitted in Rattleguard.",
+      "store_price": 400,
+      "store_quantity": 1
+    },
+    {
+      "name": "Winged Boots",
+      "description": "Grants a flying speed equal to your walking speed for up to 4 hours per day—enough to clear a fjord cliff in an emergency, not enough to camp in the sky.",
+      "store_price": 450,
+      "store_quantity": 1
+    },
+    {
+      "name": "Half Plate Armor",
+      "description": "AC 15 + Dex modifier (max 2). Standard ridge-guard battle armor.",
+      "store_price": 750,
+      "store_quantity": 1
+    },
+    {
+      "name": "Plate Armor",
+      "description": "AC 18 heavy armor forged in Ironstep's deep foundries.",
+      "store_price": 1500,
+      "store_quantity": 1
     }
   ],
   "missions": [
     {
       "name": "Relight Waystation #4",
-      "description": "Waystation #4—halfway across the main fjord toward Ironstep's cliff-lift—missed its evening signal flare last night. The Lamplighters will pay to get its brazier relit before the next convoy tries the day-crossing.",
-      "status": "Available",
+      "description": "Waystation #4—halfway across the main fjord toward Ironstep's cliff-lift—missed its evening signal flare last night. Get its brazier relit before the next convoy tries the day-crossing.",
+      "status": "Hidden",
       "tier": "Tier 1",
       "region": "First Finger Valley",
       "cooldown_days": 14,
@@ -124,8 +220,8 @@
       "prerequisite_name": null,
       "rewards": [
         {
-          "gold": 60,
-          "xp": 300,
+          "gold": 20,
+          "xp": 350,
           "item_name": null,
           "is_hidden": false,
           "hint": "Lamplighter & Troublesome Company joint bounty"
@@ -135,7 +231,7 @@
     {
       "name": "The Sunken Chalk-Kiln",
       "description": "Miners working a limestone quarry down-fjord broke into an old sealed kiln—and left in a hurry when their canaries went quiet at noon. Recover their abandoned crystal crates and survey ledger before a rival crew claims them.",
-      "status": "Available",
+      "status": "Hidden",
       "tier": "Tier 1",
       "region": "First Finger Quarry",
       "cooldown_days": 14,
@@ -144,8 +240,8 @@
       "prerequisite_name": null,
       "rewards": [
         {
-          "gold": 75,
-          "xp": 350,
+          "gold": 25,
+          "xp": 400,
           "item_name": null,
           "is_hidden": false,
           "hint": "Troublesome Company salvage cut"
@@ -155,7 +251,7 @@
     {
       "name": "The Highspire Lift-Gate",
       "description": "The Crystal Cartel hiked the tariff on the cliff-lift up to Highspire overnight, stranding three Rattleguard wagons at the bottom. Broker a deal with the lift-warden, forge a Cartel transit seal, or find out what they're actually trying to keep off the ridge.",
-      "status": "Available",
+      "status": "Hidden",
       "tier": "Tier 1",
       "region": "Highspire Switchbacks",
       "cooldown_days": 14,
@@ -164,7 +260,7 @@
       "prerequisite_name": null,
       "rewards": [
         {
-          "gold": 50,
+          "gold": 15,
           "xp": 300,
           "item_name": null,
           "is_hidden": false,
@@ -175,7 +271,7 @@
     {
       "name": "First Salvage on the Gilded Moth",
       "description": "A small sky-skiff out of Crow's Ledge clipped the mist-trees in the western gorge at dawn and went down intact in the valley floor. It's a full day's push there and back—get the cargo manifest and any intact crystals before sunset or before Crow's Ledge sends its own cleaners.",
-      "status": "Available",
+      "status": "Hidden",
       "tier": "Tier 1",
       "region": "Western Gorge",
       "cooldown_days": 14,
@@ -184,7 +280,7 @@
       "prerequisite_name": null,
       "rewards": [
         {
-          "gold": 90,
+          "gold": 30,
           "xp": 450,
           "item_name": null,
           "is_hidden": false,
