@@ -25,10 +25,10 @@ describe('HexGrid base layers and cartography overlays', () => {
 		expect(img?.getAttribute('width')).toBe('300');
 		expect(img?.getAttribute('height')).toBe('300');
 
-		// Discovered hex is transparent in overlay mode; undiscovered hex is opaque fog
+		// Discovered hex is transparent in overlay mode; undiscovered hex is a Civ VI translucent fog veil
 		const polygons = container.querySelectorAll('g.hex-cell polygon');
 		expect(polygons[0].getAttribute('fill')).toBe('rgba(0, 0, 0, 0.01)');
-		expect(polygons[1].getAttribute('fill')).toBe('#151412');
+		expect(polygons[1].getAttribute('fill')).toBe('rgba(20, 20, 22, 0.62)');
 
 		// Danger tier rings T1, T2, T3 rendered
 		expect(container.textContent).toContain('T1');
