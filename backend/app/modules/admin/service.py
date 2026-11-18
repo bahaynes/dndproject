@@ -16,13 +16,52 @@ from ..ship import models as ship_models
 from . import schemas
 
 
-BASELINE_WORLD_PATH = Path(__file__).resolve().parents[2] / "data" / "baseline_world.json"
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+BASELINE_WORLD_PATH = DATA_DIR / "baseline_world.json"
+
+
+def _preset_paths() -> dict[str, Path]:
+    if not DATA_DIR.exists():
+        return {}
+    return {p.stem: p for p in sorted(DATA_DIR.glob("*.json"))}
+
+
+def list_world_presets() -> list[schemas.WorldPresetSummary]:
+    """Return summaries for all built-in starter world JSON presets."""
+    presets: list[schemas.WorldPresetSummary] = []
+    for slug, path in _preset_paths().items():
+        with open(path, "r", encoding="utf-8") as f:
+            bundle = schemas.WorldBundle.model_validate(json.load(f))
+        hex_count = sum(len(m.hexes) for m in bundle.maps)
+        presets.append(
+            schemas.WorldPresetSummary(
+                slug=slug,
+                world_name=bundle.world_name,
+                hub_name=bundle.hub.name if bundle.hub else None,
+                summary=bundle.hub.motd if bundle.hub else None,
+                factions=len(bundle.factions),
+                items=len(bundle.items),
+                missions=len(bundle.missions),
+                maps=len(bundle.maps),
+                hexes=hex_count,
+            )
+        )
+    return presets
+
+
+def load_world_preset(preset: str = "baseline_world") -> schemas.WorldBundle:
+    """Load a built-in starter world preset by slug."""
+    paths = _preset_paths()
+    path = paths.get(preset)
+    if path is None:
+        raise ValueError(f"Unknown world preset: {preset}")
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return schemas.WorldBundle.model_validate(data)
 
 
 def load_baseline_world() -> schemas.WorldBundle:
-    with open(BASELINE_WORLD_PATH, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    return schemas.WorldBundle.model_validate(data)
+    return load_world_preset("baseline_world")
 
 
 def export_game_data(db: Session) -> schemas.GameDataExport:
@@ -93,7 +132,17 @@ def export_world(db: Session, campaign_id: int) -> schemas.WorldBundle:
     mission_name_by_id = {m.id: m.name for m in missions}
 
     world_name = hub.name if hub and hub.name else (campaign.name if campaign else "World")
-    hub_out = schemas.WorldHub(name=hub.name, motd=hub.motd) if hub else None
+    hub_out = (
+        schemas.WorldHub(
+            name=hub.name,
+            motd=hub.motd,
+            town_locations=[ship_schemas.TownLocation.model_validate(loc) for loc in (hub.town_locations or [])]
+            if hasattr(schemas, "TownLocation")
+            else [schemas.TownLocation.model_validate(loc) for loc in (hub.town_locations or [])],
+        )
+        if hub
+        else None
+    )
 
     factions_out = [
         schemas.WorldFaction(
@@ -242,17 +291,20 @@ def import_world(
 
     # 1. Hub / Bulletin (Ship)
     if bundle.hub:
+        locations_data = [loc.model_dump() for loc in bundle.hub.town_locations]
         hub = db.query(ship_models.Ship).filter_by(campaign_id=campaign_id).first()
         if not hub:
             hub = ship_models.Ship(
                 campaign_id=campaign_id,
                 name=bundle.hub.name,
                 motd=bundle.hub.motd,
+                town_locations=locations_data,
             )
             db.add(hub)
         else:
             hub.name = bundle.hub.name
             hub.motd = bundle.hub.motd
+            hub.town_locations = locations_data
         db.flush()
 
     # 2. Factions

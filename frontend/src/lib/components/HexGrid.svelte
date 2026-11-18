@@ -32,6 +32,26 @@
 		{ tier: 'T3', radius: hexSize * Math.sqrt(3) * 6.2, color: 'rgba(239, 68, 68, 0.5)' }
 	];
 
+	const FACTION_OVERLAY_PALETTE = [
+		'rgba(59,130,246,0.5)',
+		'rgba(245,158,11,0.5)',
+		'rgba(16,185,129,0.45)',
+		'rgba(239,68,68,0.45)',
+		'rgba(168,85,247,0.45)'
+	];
+
+	function getFactionLegendColor(faction: string): string {
+		let hash = 0;
+		for (let i = 0; i < faction.length; i++) {
+			hash = (hash * 31 + faction.charCodeAt(i)) >>> 0;
+		}
+		return FACTION_OVERLAY_PALETTE[hash % FACTION_OVERLAY_PALETTE.length];
+	}
+
+	$: legendFactions = Array.from(
+		new Set(hexes.map((h) => h.controlling_faction).filter((f): f is string => Boolean(f)))
+	).sort();
+
 	let viewBox = { x: -500, y: -500, w: 2000, h: 1200 };
 	let isDragging = false;
 	let startPan = { x: 0, y: 0 };
@@ -233,15 +253,16 @@
 		>
 			<div class="mb-2 font-bold uppercase opacity-50 tracking-widest">Legend</div>
 			<div class="flex flex-col gap-1">
-				<div class="flex items-center gap-2">
-					<span class="inline-block h-3 w-3 rounded-sm" style="background:rgba(59,130,246,0.5)"></span>
-					<span>Collegium</span>
-				</div>
-				<div class="flex items-center gap-2">
-					<span class="inline-block h-3 w-3 rounded-sm" style="background:rgba(245,158,11,0.5)"></span>
-					<span>Limes</span>
-				</div>
-				<div class="mt-1 border-t border-base-content/10 pt-1 flex flex-col gap-1 opacity-70">
+				{#each legendFactions as faction}
+					<div class="flex items-center gap-2">
+						<span
+							class="inline-block h-3 w-3 rounded-sm"
+							style="background:{getFactionLegendColor(faction)}"
+						></span>
+						<span>{faction}</span>
+					</div>
+				{/each}
+				<div class="{legendFactions.length ? 'mt-1 border-t border-base-content/10 pt-1 ' : ''}flex flex-col gap-1 opacity-70">
 					<span>⚑ Claimed &amp; Developed (0.5h)</span>
 					<span>≡ Friendly Controlled (1h)</span>
 					<span>⚔ Contested (3h)</span>

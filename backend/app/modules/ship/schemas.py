@@ -1,6 +1,21 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
+
+
+class TownLocation(BaseModel):
+    """A visitable district or landmark on the campaign's Town Map."""
+
+    id: str
+    name: str
+    npc: Optional[str] = None
+    role: Optional[str] = None
+    description: str
+    services: list[str] = Field(default_factory=list)
+    rumor: Optional[str] = None
+    x: int = 50
+    y: int = 50
+    link_path: Optional[str] = None
 
 
 class ShipBase(BaseModel):
@@ -8,6 +23,12 @@ class ShipBase(BaseModel):
     level: int = 1
     essence: int = 0
     motd: Optional[str] = None
+    town_locations: list[TownLocation] = Field(default_factory=list)
+
+    @field_validator("town_locations", mode="before")
+    @classmethod
+    def _coerce_none_locations(cls, v):
+        return [] if v is None else v
 
 
 class ShipUpdate(BaseModel):
@@ -15,6 +36,7 @@ class ShipUpdate(BaseModel):
     level: Optional[int] = None
     essence: Optional[int] = None
     motd: Optional[str] = None
+    town_locations: Optional[list[TownLocation]] = None
 
 
 class ShipOut(ShipBase):

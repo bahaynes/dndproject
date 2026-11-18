@@ -75,9 +75,10 @@
 					>
 						{#if $auth.isAuthenticated}
 							<li><a href="/dashboard" class:active={isActive(['/dashboard'])}>Dashboard</a></li>
+							<li><a href="/town" class:active={isActive(['/town'])}>Town</a></li>
 							<li><a href="/maps" class:active={isActive(['/maps'])}>World Map</a></li>
 							<li><a href="/missions" class:active={isActive(['/missions', '/sessions'])}>Quests &amp; Schedule</a></li>
-							<li><a href="/characters" class:active={isActive(['/characters', '/roster', '/store'])}>Party &amp; Store</a></li>
+							<li><a href="/characters" class:active={isActive(['/characters', '/roster'])}>Party</a></li>
 							<li><a href="/factions" class:active={isActive(['/factions', '/ledger'])}>Chronicle</a></li>
 							<li><a href="/docs" class:active={isActive(['/docs'])}>Guide</a></li>
 							{#if $auth.user?.role === 'admin'}
@@ -112,6 +113,14 @@
 						Dashboard
 					</a>
 					<a
+						href="/town"
+						class="whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors {isActive(['/town'])
+							? 'bg-primary/15 text-primary'
+							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
+					>
+						Town
+					</a>
+					<a
 						href="/maps"
 						class="whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors {isActive(['/maps'])
 							? 'bg-primary/15 text-primary'
@@ -129,11 +138,11 @@
 					</a>
 					<a
 						href="/characters"
-						class="whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors {isActive(['/characters', '/roster', '/store'])
+						class="whitespace-nowrap rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors {isActive(['/characters', '/roster'])
 							? 'bg-primary/15 text-primary'
 							: 'text-base-content/70 hover:bg-base-300 hover:text-base-content'}"
 					>
-						Party &amp; Store
+						Party
 					</a>
 					<a
 						href="/factions"

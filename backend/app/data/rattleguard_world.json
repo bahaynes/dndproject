@@ -1,0 +1,375 @@
+{
+  "schema_version": 1,
+  "world_name": "Rattleguard & The High Fjords",
+  "hub": {
+    "name": "Rattleguard",
+    "motd": "You arrived in a majestic ridge city by spelljammer or portal, and promptly found out how expensive rent is when the Mist comes every night and everyone wants permanent safety. Down in the valleys, though, lie the magical crystals that power the rest of the verse—and someone has to collect them. Welcome to Rattleguard, a frontier town perched just below the mistline. Its warding braziers work, mostly. Spirits still take a few people each night, but the pay is good and the miners are friendly. You're with the Troublesome Company now—recruited when you ran out of coin and jobs up top. Pick a partner, pick a hex, and remember the only rule: be back behind the braziers before dark.\n\nFirst Night Checklist:\n1. Build a Level 3 character on D&D Beyond (your combat sheet & dice live there; your gold, loot, and gear live here) and register them under Characters.\n2. Open Town to visit the Troublesome Company Hall, Quartermaster, and Taproom before heading out.\n3. Open Maps to scout the fjord valleys and propose or join an expedition on Sessions.",
+    "town_locations": [
+      {
+        "id": "company-hall",
+        "name": "The Troublesome Company Hall",
+        "npc": "Marshal Halver & The Dispatch Board",
+        "role": "Contracts, Partners & Expedition Sign-Out",
+        "description": "A timber-and-slate longhouse warmed by twin brim-coal hearths. Every morning, contractors gather here over burnt coffee to pick a hex, pair up with whoever showed up, and log their departure before the gates open.",
+        "services": [
+          "Pick today's expedition partners & hex destination",
+          "Turn in valley crystal crates for Company pay",
+          "Leave notes for the next crew on the shared map"
+        ],
+        "rumor": "Halver is quietly offering a bonus to anyone who checks why Waystation #4 missed its flare last night.",
+        "x": 50,
+        "y": 46,
+        "link_path": "/sessions"
+      },
+      {
+        "id": "quartermaster-shed",
+        "name": "Bramwell's Quartermaster Shed",
+        "npc": "Old Bramwell (Retired Quarryman)",
+        "role": "Gear, Supplies & Salvage Appraisals",
+        "description": "Crammed floor-to-rafters with climbing rope, steel traps, oil flasks, and crates of brass canary cages. Bramwell doesn't believe in fixed catalogs—if you need something weird, ask nicely or bring him something weirder from the valley.",
+        "services": [
+          "Stock up on rope, traps, chalk, oil, and Spirit-Ward Canaries",
+          "Charter a Cartel river barge or book workshop bench time",
+          "Appraise pre-Mist salvage pulled out of the fjords"
+        ],
+        "rumor": "Word is Bramwell only has three live canaries left until the Ironstep mule train makes it around the ridge.",
+        "x": 28,
+        "y": 62,
+        "link_path": "/store"
+      },
+      {
+        "id": "brazier-gate",
+        "name": "The Brazier Gate & Bell Tower",
+        "npc": "Sister Vaelen (Lamplighter Bell-Keeper)",
+        "role": "Sunset Bells, Mist Watch & Gate Wards",
+        "description": "Rattleguard's fortified river-gate, crowned with iron braziers that roar from dusk until dawn. The Lamplighters chalk the thresholds each afternoon and ring the heavy brass bell thirty minutes before the Mist rises.",
+        "services": [
+          "Check the evening bell schedule & valley Mist sightings",
+          "Pick up Warding Chalk and blessed brazier oil",
+          "Report missing crews or breaches along the outer wall"
+        ],
+        "rumor": "Two miners swore the Mist pooled inside a dry limestone cellar at noon yesterday—Vaelen insists it was just a restless spirit.",
+        "x": 74,
+        "y": 68,
+        "link_path": "/maps"
+      },
+      {
+        "id": "soot-and-canary",
+        "name": "The Soot & Canary Taproom",
+        "npc": "Maren (Proprietor) & Half-Shift Miners",
+        "role": "Rumors, Faction Contacts & Back-Booth Deals",
+        "description": "Loud, smoky, and surprisingly warm. Off-duty crystal miners trade tall tales by the stove while Cartel scouts and Crow's Ledge fences quietly size up anyone who just walked in from the valley.",
+        "services": [
+          "Buy miners a round for uncharted fjord landmarks",
+          "Meet Crow's Ledge fences or Cartel brokers off the record",
+          "Check faction standing across Highspire and the valleys"
+        ],
+        "rumor": "A Crow's Ledge courier claims a sky-skiff clipped the trees in the western gorge at dawn—nobody's reached the wreck yet.",
+        "x": 24,
+        "y": 36,
+        "link_path": "/factions"
+      },
+      {
+        "id": "highspire-lift",
+        "name": "The Highspire Cliff-Lift",
+        "npc": "Warden Krell (Crystal Cartel)",
+        "role": "Ridge Access & Cargo Tariffs",
+        "description": "A rattling iron cage slung on greased cables up the sheer 400-foot fjord wall to Highspire. It's the fastest way back above the mistline—if you have a Cartel pass or enough coin to make Warden Krell look the other way.",
+        "services": [
+          "Ride up to Highspire for guild business or safe lodging",
+          "Negotiate or bribe your way past Cartel cargo tariffs",
+          "Inspect the cliffside view of the First Finger valley"
+        ],
+        "rumor": "The Cartel doubled lift tariffs overnight; three Rattleguard wagons are stranded at the base waiting for someone to sort it out.",
+        "x": 72,
+        "y": 24,
+        "link_path": "/roster"
+      }
+    ]
+  },
+  "factions": [
+    {
+      "faction_name": "The Troublesome Company",
+      "level": 0,
+      "color": "#f59e0b",
+      "description": "Your scrappy, underinsured contractor outfit in Rattleguard. They give you choices, decent pay, and interesting partners to take into the valley each morning—as long as you're back before dark."
+    },
+    {
+      "faction_name": "The Crystal Cartel",
+      "level": 0,
+      "color": "#3b82f6",
+      "description": "A global merchant syndicate that buys valley crystals, controls the cliff-lifts and river barges, and sells brim-coal brazier fuel at eye-watering markups."
+    },
+    {
+      "faction_name": "The Lamplighters",
+      "level": 0,
+      "color": "#eab308",
+      "description": "The civic and religious order that tends the warding braziers and rings the Sunset Bells. They treat keeping the Mist at bay as sacred duty against the spirits below."
+    },
+    {
+      "faction_name": "Highspire",
+      "level": 0,
+      "color": "#8b5cf6",
+      "description": "The gleaming ridge city-state directly above Rattleguard. Home to the sky-docks, portals, and absurdly expensive apartments you could no longer afford."
+    },
+    {
+      "faction_name": "Ironstep",
+      "level": 0,
+      "color": "#ef4444",
+      "description": "An industrial quarry city-state on the eastern ridge, a full day's march across the valley floor (or four days by the high ridge-road). Always feuding with Highspire over crystal tariffs."
+    },
+    {
+      "faction_name": "Crow's Ledge",
+      "level": 0,
+      "color": "#10b981",
+      "description": "A cliff-cave smugglers' city-state perched above the western fjord. No tariffs, no questions asked, and a thriving black market for anything salvaged below the mistline."
+    },
+    {
+      "faction_name": "Bellwatch",
+      "level": 0,
+      "color": "#64748b",
+      "description": "A walled abbey city-state on the northern plateau housing the oldest pre-Mist archives and the Lamplighters' main seminary."
+    }
+  ],
+  "items": [
+    {
+      "name": "Warding Chalk (10 Sticks)",
+      "description": "Alchemically treated white chalk used to seal doorframes, window-sills, and cellar thresholds against the creeping Mist.",
+      "store_price": 1,
+      "store_quantity": 6
+    },
+    {
+      "name": "Spirit-Ward Canary",
+      "description": "A small yellow canary in a brass cage. Miners swear it stops singing whenever valley spirits draw near—giving you one last warning to run for higher ground.",
+      "store_price": 2,
+      "store_quantity": 3
+    },
+    {
+      "name": "Brim-Coal Brazier Oil (Flask)",
+      "description": "Heavy mineral oil that burns hot and bright, pushing back the evening Mist around camp lanterns and river barges for up to 4 hours.",
+      "store_price": 2,
+      "store_quantity": 5
+    },
+    {
+      "name": "Rope, Hempen (50 ft.)",
+      "description": "50 feet of sturdy hempen rope with 2 hit points and DC 17 Strength check to burst.",
+      "store_price": 1,
+      "store_quantity": -1
+    },
+    {
+      "name": "Hunting Trap",
+      "description": "Saw-toothed steel jaws that snap shut on a creature stepping on the pressure plate (DC 13 Dex save or 1d4 piercing + restrained).",
+      "store_price": 5,
+      "store_quantity": 6
+    },
+    {
+      "name": "Highspire Cliff-Lift Pass",
+      "description": "Single round-trip Cartel lift ticket up the sheer cliff face from Rattleguard to Highspire—skipping a half-day switchback climb.",
+      "store_price": 5,
+      "store_quantity": -1
+    },
+    {
+      "name": "Highspire Inn Voucher (1 Week)",
+      "description": "A quiet, Mist-free room above the ridge line with hot water and clean sheets—for adventurers tired of Rattleguard's bunkhouse.",
+      "store_price": 15,
+      "store_quantity": -1
+    },
+    {
+      "name": "Climber's Kit",
+      "description": "Pitons, boot tips, gloves, and harness for scaling steep fjord walls toward the high ridges.",
+      "store_price": 25,
+      "store_quantity": -1
+    },
+    {
+      "name": "Cartel River-Barge Charter",
+      "description": "One-day steam-barge passage down the main fjord channel with an armored prow brazier, cutting valley travel time in half.",
+      "store_price": 30,
+      "store_quantity": 2
+    },
+    {
+      "name": "Alchemist's Fire (Flask)",
+      "description": "Sticky, adhesive fluid that ignites when exposed to air (1d4 fire damage per turn until extinguished).",
+      "store_price": 50,
+      "store_quantity": 4
+    },
+    {
+      "name": "Potion of Healing",
+      "description": "Restores 2d4 + 2 hit points when consumed as an action.",
+      "store_price": 50,
+      "store_quantity": 4
+    },
+    {
+      "name": "Antitoxin (Vial)",
+      "description": "Advantage on saving throws against poison for 1 hour.",
+      "store_price": 50,
+      "store_quantity": 4
+    },
+    {
+      "name": "Smithy & Alchemy Workshop Pass",
+      "description": "One week of private forge, crucible, and arcane bench access in Rattleguard for crafting, silvering, or scribing spells.",
+      "store_price": 50,
+      "store_quantity": 2
+    },
+    {
+      "name": "Spell Scroll (1st Level)",
+      "description": "A single-use 1st-level arcane or divine scroll—useful when you need one more Gust of Wind or Feather Fall.",
+      "store_price": 60,
+      "store_quantity": 3
+    },
+    {
+      "name": "Silvered Weapon Upgrade",
+      "description": "Have a Rattleguard smith coat a single weapon or 10 pieces of ammunition in silver to bypass supernatural resistances.",
+      "store_price": 100,
+      "store_quantity": 2
+    },
+    {
+      "name": "Spell Scroll (2nd Level)",
+      "description": "A single-use 2nd-level spell scroll (e.g., Warding Wind, Pass without Trace, or Lesser Restoration).",
+      "store_price": 150,
+      "store_quantity": 2
+    },
+    {
+      "name": "Potion of Greater Healing",
+      "description": "Restores 4d4 + 4 hit points when consumed as an action.",
+      "store_price": 150,
+      "store_quantity": 2
+    },
+    {
+      "name": "Rattleguard Market Stall Lease",
+      "description": "A permanent covered stall near the main brazier square—trade salvaged goods, craft for the roster, or fence Crow's Ledge contraband.",
+      "store_price": 250,
+      "store_quantity": 2
+    },
+    {
+      "name": "Bag of Holding",
+      "description": "Holds up to 500 pounds of valley crystals, salvage, and supplies inside an extradimensional space while weighing only 15 pounds.",
+      "store_price": 250,
+      "store_quantity": 1
+    },
+    {
+      "name": "Sending Stones (Pair)",
+      "description": "Two paired stones allowing a 25-word Sending message once per day—essential when a party splits across a fjord.",
+      "store_price": 250,
+      "store_quantity": 1
+    },
+    {
+      "name": "Diamond (300 gp Spell Component)",
+      "description": "A flawless 300 gp diamond suitable for Revivify. Kept under lock and key by the Lamplighters.",
+      "store_price": 300,
+      "store_quantity": 2
+    },
+    {
+      "name": "Cloak of Protection",
+      "description": "Grants +1 bonus to AC and all saving throws while attuned.",
+      "store_price": 350,
+      "store_quantity": 1
+    },
+    {
+      "name": "+1 Weapon or Shield",
+      "description": "Masterwork enchanted arms recovered from a pre-Mist vault and refitted in Rattleguard.",
+      "store_price": 400,
+      "store_quantity": 1
+    },
+    {
+      "name": "Winged Boots",
+      "description": "Grants a flying speed equal to your walking speed for up to 4 hours per day—enough to clear a fjord cliff in an emergency, not enough to camp in the sky.",
+      "store_price": 450,
+      "store_quantity": 1
+    },
+    {
+      "name": "Half Plate Armor",
+      "description": "AC 15 + Dex modifier (max 2). Standard ridge-guard battle armor.",
+      "store_price": 750,
+      "store_quantity": 1
+    },
+    {
+      "name": "Plate Armor",
+      "description": "AC 18 heavy armor forged in Ironstep's deep foundries.",
+      "store_price": 1500,
+      "store_quantity": 1
+    }
+  ],
+  "missions": [
+    {
+      "name": "Relight Waystation #4",
+      "description": "Waystation #4—halfway across the main fjord toward Ironstep's cliff-lift—missed its evening signal flare last night. Get its brazier relit before the next convoy tries the day-crossing.",
+      "status": "Hidden",
+      "tier": "Tier 1",
+      "region": "First Finger Valley",
+      "cooldown_days": 14,
+      "is_discoverable": true,
+      "is_retired": false,
+      "prerequisite_name": null,
+      "rewards": [
+        {
+          "gold": 20,
+          "xp": 350,
+          "item_name": null,
+          "is_hidden": false,
+          "hint": "Lamplighter & Troublesome Company joint bounty"
+        }
+      ]
+    },
+    {
+      "name": "The Sunken Chalk-Kiln",
+      "description": "Miners working a limestone quarry down-fjord broke into an old sealed kiln—and left in a hurry when their canaries went quiet at noon. Recover their abandoned crystal crates and survey ledger before a rival crew claims them.",
+      "status": "Hidden",
+      "tier": "Tier 1",
+      "region": "First Finger Quarry",
+      "cooldown_days": 14,
+      "is_discoverable": true,
+      "is_retired": false,
+      "prerequisite_name": null,
+      "rewards": [
+        {
+          "gold": 25,
+          "xp": 400,
+          "item_name": null,
+          "is_hidden": false,
+          "hint": "Troublesome Company salvage cut"
+        }
+      ]
+    },
+    {
+      "name": "The Highspire Lift-Gate",
+      "description": "The Crystal Cartel hiked the tariff on the cliff-lift up to Highspire overnight, stranding three Rattleguard wagons at the bottom. Broker a deal with the lift-warden, forge a Cartel transit seal, or find out what they're actually trying to keep off the ridge.",
+      "status": "Hidden",
+      "tier": "Tier 1",
+      "region": "Highspire Switchbacks",
+      "cooldown_days": 14,
+      "is_discoverable": true,
+      "is_retired": false,
+      "prerequisite_name": null,
+      "rewards": [
+        {
+          "gold": 15,
+          "xp": 300,
+          "item_name": null,
+          "is_hidden": false,
+          "hint": "Rattleguard merchants' pool"
+        }
+      ]
+    },
+    {
+      "name": "First Salvage on the Gilded Moth",
+      "description": "A small sky-skiff out of Crow's Ledge clipped the mist-trees in the western gorge at dawn and went down intact in the valley floor. It's a full day's push there and back—get the cargo manifest and any intact crystals before sunset or before Crow's Ledge sends its own cleaners.",
+      "status": "Hidden",
+      "tier": "Tier 1",
+      "region": "Western Gorge",
+      "cooldown_days": 14,
+      "is_discoverable": true,
+      "is_retired": false,
+      "prerequisite_name": null,
+      "rewards": [
+        {
+          "gold": 30,
+          "xp": 450,
+          "item_name": null,
+          "is_hidden": false,
+          "hint": "High-risk salvage bounty"
+        }
+      ]
+    }
+  ],
+  "maps": []
+}

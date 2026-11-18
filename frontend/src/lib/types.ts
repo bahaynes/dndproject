@@ -47,6 +47,19 @@ export interface CharacterRosterEntry {
     owner_username?: string;
 }
 
+export interface TownLocation {
+    id: string;
+    name: string;
+    npc?: string | null;
+    role?: string | null;
+    description: string;
+    services: string[];
+    rumor?: string | null;
+    x: number;
+    y: number;
+    link_path?: string | null;
+}
+
 export interface Ship {
     id: number;
     campaign_id: number;
@@ -54,6 +67,7 @@ export interface Ship {
     level: number;
     essence: number;
     motd?: string;
+    town_locations?: TownLocation[];
     status: 'nominal' | 'low' | 'critical';
     long_rest_cost: number;
     next_threshold: number | null;

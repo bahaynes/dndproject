@@ -4,6 +4,7 @@ from ..auth.schemas import User
 from ..items.schemas import Item, StoreItem
 from ..missions.schemas import Mission
 from ..sessions.schemas import GameSession
+from ..ship.schemas import TownLocation
 
 class GameDataExport(BaseModel):
     users: List[User]
@@ -16,6 +17,7 @@ class GameDataExport(BaseModel):
 class WorldHub(BaseModel):
     name: str
     motd: Optional[str] = None
+    town_locations: List[TownLocation] = []
 
 
 class WorldFaction(BaseModel):
@@ -102,3 +104,18 @@ class WorldImportResult(BaseModel):
     maps_created: int = 0
     maps_updated: int = 0
     hexes_upserted: int = 0
+
+
+class WorldPresetSummary(BaseModel):
+    """Metadata summary for a built-in starter world preset."""
+
+    slug: str
+    world_name: str
+    hub_name: Optional[str] = None
+    summary: Optional[str] = None
+    factions: int = 0
+    items: int = 0
+    missions: int = 0
+    maps: int = 0
+    hexes: int = 0
+
