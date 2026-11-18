@@ -19,10 +19,13 @@ if DATABASE_URL.startswith("postgres://"):
 elif DATABASE_URL.startswith("postgresql://"):
     DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg://", 1)
 
+_is_sqlite = "sqlite" in DATABASE_URL
 engine = create_engine(
     DATABASE_URL,
+    pool_pre_ping=True,
+    **({} if _is_sqlite else {"pool_recycle": 300}),
     # required for sqlite
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+    connect_args={"check_same_thread": False} if _is_sqlite else {},
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
