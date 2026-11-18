@@ -248,3 +248,44 @@ def test_bake_earth_and_fetch_layers(client, db_session, campaign, admin_auth_he
         headers={"Authorization": f"Bearer {other_token}"},
     )
     assert res_other.status_code == 404
+
+
+def test_bake_earth_from_center_pin_and_travel_scale(client, campaign, admin_auth_headers, tmp_path, monkeypatch):
+    from unittest.mock import AsyncMock
+    from app.modules.maps import router as maps_router
+    from app.modules.maps.earth_baker import BakedMapResult, compute_bbox_from_center
+    from app.modules.maps.storage import LocalMapLayerStorage
+
+    min_lat, min_lon, max_lat, max_lon = compute_bbox_from_center(
+        center_lat=64.1466,
+        center_lon=-21.9426,
+        hex_coords=[(0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)],
+        hex_size=60,
+        travel_scale="frontier",
+    )
+    assert min_lat < 64.1466 < max_lat
+    assert min_lon < -21.9426 < max_lon
+
+    m = _create_map(client, admin_auth_headers)
+    storage = LocalMapLayerStorage(str(tmp_path))
+    monkeypatch.setattr(maps_router, "get_layer_storage", lambda: storage)
+
+    fake_result = BakedMapResult(
+        topo_png=b"\x89PNG\r\n\x1a\ntopo2",
+        satellite_png=b"\x89PNG\r\n\x1a\nsat2",
+        layer_bounds={"min_x": -510.0, "min_y": -571.5, "max_x": 510.0, "max_y": 571.5},
+        hex_terrains={(0, 0): "plains"},
+        zoom=9,
+    )
+    monkeypatch.setattr(maps_router, "bake_earth_region", AsyncMock(return_value=fake_result))
+
+    res = client.post(
+        f"/api/maps/{m['id']}/bake-earth",
+        json={"center_lat": 64.1466, "center_lon": -21.9426, "travel_scale": "frontier"},
+        headers=admin_auth_headers,
+    )
+    assert res.status_code == 200
+    sr = res.json()["source_region"]
+    assert sr["center_lat"] == 64.1466
+    assert sr["center_lon"] == -21.9426
+    assert sr["travel_scale"] == "frontier"

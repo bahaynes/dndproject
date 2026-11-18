@@ -8,9 +8,12 @@
 	import { getTerrainColor } from '$lib/utils/terrainColors';
 	import {
 		EARTH_REGION_PRESETS,
+		TRAVEL_SCALES,
 		fetchAuthedLayerUrl,
+		parseLatLonInput,
 		type LayerBounds,
-		type MapLayerMode
+		type MapLayerMode,
+		type TravelScale
 	} from '$lib/utils/mapLayers';
 
 	interface HexData {
@@ -32,7 +35,15 @@
 		topo_image_url?: string | null;
 		satellite_image_url?: string | null;
 		layer_bounds?: LayerBounds | null;
-		source_region?: { min_lat: number; min_lon: number; max_lat: number; max_lon: number } | null;
+		source_region?: {
+			center_lat?: number;
+			center_lon?: number;
+			travel_scale?: TravelScale;
+			min_lat?: number;
+			min_lon?: number;
+			max_lat?: number;
+			max_lon?: number;
+		} | null;
 		hexes: HexData[];
 	}
 
@@ -49,10 +60,8 @@
 	let baking = false;
 	let bakeError = '';
 	let autoSeedTerrain = true;
-	let minLat = EARTH_REGION_PRESETS[0].min_lat;
-	let minLon = EARTH_REGION_PRESETS[0].min_lon;
-	let maxLat = EARTH_REGION_PRESETS[0].max_lat;
-	let maxLon = EARTH_REGION_PRESETS[0].max_lon;
+	let pinInput = `${EARTH_REGION_PRESETS[0].center_lat}, ${EARTH_REGION_PRESETS[0].center_lon}`;
+	let travelScale: TravelScale = 'frontier';
 
 	// Editor State
 	let selectedHex: HexData | null = null;
@@ -95,22 +104,23 @@
 		const idx = Number((e.target as HTMLSelectElement).value);
 		const preset = EARTH_REGION_PRESETS[idx];
 		if (!preset) return;
-		minLat = preset.min_lat;
-		minLon = preset.min_lon;
-		maxLat = preset.max_lat;
-		maxLon = preset.max_lon;
+		pinInput = `${preset.center_lat}, ${preset.center_lon}`;
 	}
 
 	async function bakeEarthLayers() {
 		if (!activeMap) return;
+		const parsed = parseLatLonInput(pinInput);
+		if (!parsed) {
+			bakeError = 'Paste a valid Google Maps lat, lon (e.g. 64.1466, -21.9426)';
+			return;
+		}
 		baking = true;
 		bakeError = '';
 		try {
 			const updated: MapData = await api('POST', `/maps/${activeMap.id}/bake-earth`, {
-				min_lat: Number(minLat),
-				min_lon: Number(minLon),
-				max_lat: Number(maxLat),
-				max_lon: Number(maxLon),
+				center_lat: parsed.lat,
+				center_lon: parsed.lon,
+				travel_scale: travelScale,
 				auto_seed_terrain: autoSeedTerrain
 			});
 			activeMap = updated;
@@ -136,11 +146,11 @@
 		await Promise.all([fetchMaps(), fetchMissions(), fetchFactions()]);
 		if (maps.length > 0) {
 			activeMap = maps[0];
-			if (activeMap.source_region) {
-				minLat = activeMap.source_region.min_lat;
-				minLon = activeMap.source_region.min_lon;
-				maxLat = activeMap.source_region.max_lat;
-				maxLon = activeMap.source_region.max_lon;
+			if (activeMap.source_region?.center_lat != null && activeMap.source_region?.center_lon != null) {
+				pinInput = `${activeMap.source_region.center_lat}, ${activeMap.source_region.center_lon}`;
+			}
+			if (activeMap.source_region?.travel_scale) {
+				travelScale = activeMap.source_region.travel_scale;
 			}
 			if (activeMap.topo_image_url) {
 				layerMode = 'topo';
@@ -428,12 +438,23 @@
 							<option value={idx}>{preset.label}</option>
 						{/each}
 					</select>
-					<div class="grid grid-cols-2 gap-1">
-						<input type="number" step="0.01" bind:value={minLat} class="input-bordered input input-xs" placeholder="Min Lat" />
-						<input type="number" step="0.01" bind:value={maxLat} class="input-bordered input input-xs" placeholder="Max Lat" />
-						<input type="number" step="0.01" bind:value={minLon} class="input-bordered input input-xs" placeholder="Min Lon" />
-						<input type="number" step="0.01" bind:value={maxLon} class="input-bordered input input-xs" placeholder="Max Lon" />
-					</div>
+					<label class="flex flex-col gap-1">
+						<span class="text-[11px] opacity-75">Camp Pin (Google Maps lat, lon)</span>
+						<input
+							type="text"
+							bind:value={pinInput}
+							class="input-bordered input input-xs font-mono"
+							placeholder="64.1466, -21.9426"
+						/>
+					</label>
+					<label class="flex flex-col gap-1">
+						<span class="text-[11px] opacity-75">D&amp;D Travel Scale</span>
+						<select bind:value={travelScale} class="select-bordered select select-xs">
+							{#each TRAVEL_SCALES as scale}
+								<option value={scale.value}>{scale.label}</option>
+							{/each}
+						</select>
+					</label>
 					<label class="flex cursor-pointer items-center gap-2">
 						<input type="checkbox" bind:checked={autoSeedTerrain} class="checkbox checkbox-xs" />
 						<span>Auto-seed hex terrain</span>

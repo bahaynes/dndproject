@@ -20,6 +20,12 @@ OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 TILE_SIZE = 256
 MAX_OUTPUT_DIM = 1200
 
+TRAVEL_SCALE_KM_PER_HEX: dict[str, float] = {
+    "local": 4.828,       # 3 miles (1h at 5e normal 3 mph pace)
+    "frontier": 9.656,    # 6 miles (2h wilderness hex in HEX_STATE_HOURS)
+    "expedition": 38.624, # 24 miles (1 full 8h travel day)
+}
+
 
 @dataclass
 class BakedMapResult:
@@ -48,6 +54,30 @@ def compute_hex_layer_bounds(hex_coords: Iterable[tuple[int, int]], hex_size: in
         "max_x": max(xs) + hex_size,
         "max_y": max(ys) + half_h,
     }
+
+
+def compute_bbox_from_center(
+    center_lat: float,
+    center_lon: float,
+    hex_coords: Iterable[tuple[int, int]],
+    hex_size: int,
+    travel_scale: str = "frontier",
+) -> tuple[float, float, float, float]:
+    """Derive an aspect-locked (min_lat, min_lon, max_lat, max_lon) around camp (0, 0)."""
+    bounds = compute_hex_layer_bounds(hex_coords, hex_size)
+    km_per_hex = TRAVEL_SCALE_KM_PER_HEX.get(travel_scale, TRAVEL_SCALE_KM_PER_HEX["frontier"])
+    # Center-to-center distance between adjacent flat-top hexes is sqrt(3) * hex_size
+    km_per_world_unit = km_per_hex / (math.sqrt(3.0) * max(1, hex_size))
+
+    km_per_deg_lat = 111.32
+    km_per_deg_lon = 111.32 * max(0.1, math.cos(math.radians(center_lat)))
+
+    min_lon = max(-179.9, center_lon + (bounds["min_x"] * km_per_world_unit) / km_per_deg_lon)
+    max_lon = min(179.9, center_lon + (bounds["max_x"] * km_per_world_unit) / km_per_deg_lon)
+    # SVG +y points south, so min_y is north (max_lat) and max_y is south (min_lat)
+    max_lat = min(84.5, center_lat - (bounds["min_y"] * km_per_world_unit) / km_per_deg_lat)
+    min_lat = max(-84.5, center_lat - (bounds["max_y"] * km_per_world_unit) / km_per_deg_lat)
+    return min_lat, min_lon, max_lat, max_lon
 
 
 def _lat_lon_to_global_px(lat: float, lon: float, zoom: int) -> tuple[float, float]:

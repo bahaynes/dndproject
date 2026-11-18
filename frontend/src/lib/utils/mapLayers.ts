@@ -11,36 +11,35 @@ export interface LayerBounds {
 	max_y: number;
 }
 
-export const EARTH_REGION_PRESETS = [
-	{
-		label: 'Iceland — Volcanic Frontier',
-		min_lat: 63.8,
-		min_lon: -20.5,
-		max_lat: 64.6,
-		max_lon: -18.5
-	},
-	{
-		label: 'Scottish Highlands — Lochs & Glens',
-		min_lat: 56.6,
-		min_lon: -5.6,
-		max_lat: 57.4,
-		max_lon: -4.2
-	},
-	{
-		label: 'Pacific Northwest — Puget Archipelago',
-		min_lat: 47.4,
-		min_lon: -123.2,
-		max_lat: 48.3,
-		max_lon: -122.0
-	},
-	{
-		label: 'Dalmatian Coast — Island Chain',
-		min_lat: 42.9,
-		min_lon: 16.0,
-		max_lat: 43.6,
-		max_lon: 17.2
-	}
+export type TravelScale = 'local' | 'frontier' | 'expedition';
+
+export const TRAVEL_SCALES: { value: TravelScale; label: string }[] = [
+	{ value: 'frontier', label: 'Frontier — 2h / 6 mi hex (Standard)' },
+	{ value: 'local', label: 'Local — 1h / 3 mi hex (Tight)' },
+	{ value: 'expedition', label: 'Expedition — 1d / 24 mi hex (Sea/Ship)' }
 ];
+
+export const EARTH_REGION_PRESETS = [
+	{ label: 'Iceland — Volcanic Frontier', center_lat: 64.2, center_lon: -19.5 },
+	{ label: 'Scottish Highlands — Lochs & Glens', center_lat: 57.0, center_lon: -4.9 },
+	{ label: 'Pacific Northwest — Puget Archipelago', center_lat: 47.85, center_lon: -122.6 },
+	{ label: 'Dalmatian Coast — Island Chain', center_lat: 43.25, center_lon: 16.6 }
+];
+
+/**
+ * Parses a pasted Google Maps pin ("64.1466, -21.9426" or URL with "@64.1466,-21.9426").
+ */
+export function parseLatLonInput(raw: string): { lat: number; lon: number } | null {
+	const atMatch = raw.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);
+	const pairMatch = atMatch || raw.match(/(-?\d+(?:\.\d+)?)[,\s]+(-?\d+(?:\.\d+)?)/);
+	if (!pairMatch) return null;
+	const lat = Number(pairMatch[1]);
+	const lon = Number(pairMatch[2]);
+	if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -84 || lat > 84 || lon < -180 || lon > 180) {
+		return null;
+	}
+	return { lat, lon };
+}
 
 /**
  * Fetches an authenticated map layer PNG and returns an Object URL suitable for SVG <image>.
