@@ -5,7 +5,8 @@
 	import HexGrid from '$lib/components/HexGrid.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 	import { getFactionBadgeStyle } from '$lib/utils/terrainColors';
-	import { fetchAuthedLayerUrl, type LayerBounds, type MapLayerMode } from '$lib/utils/mapLayers';
+	import { fetchAuthedLayerUrl, type LayerBounds, type MapLayerMode, type MapRoute } from '$lib/utils/mapLayers';
+	import { hexDistance } from '$lib/utils/hexMath';
 
 	// Minimal types for map view
 	interface HexData {
@@ -17,6 +18,7 @@
 		linked_mission_id?: number;
 		linked_mission?: any;
 		hex_state?: string;
+		hours_to_cross?: number | null;
 		controlling_faction?: string | null;
 		player_notes?: Array<{ author_character_id: number; text: string; created_at: string }>;
 	}
@@ -28,6 +30,7 @@
 		topo_image_url?: string | null;
 		satellite_image_url?: string | null;
 		layer_bounds?: LayerBounds | null;
+		routes?: MapRoute[];
 		hexes: HexData[];
 	}
 
@@ -263,6 +266,16 @@
 									>{selectedHex.controlling_faction}</span
 								>
 							{/if}
+							{#if selectedHex.hours_to_cross != null}
+								<span class="badge badge-ghost text-xs">{selectedHex.hours_to_cross}h travel</span>
+							{/if}
+							<span class="badge badge-outline text-xs">
+								{hexDistance({ q: 0, r: 0 }, selectedHex) <= 2
+									? 'T1'
+									: hexDistance({ q: 0, r: 0 }, selectedHex) <= 4
+										? 'T2'
+										: 'T3+'}
+							</span>
 						</div>
 
 						{#if selectedHex.linked_mission_id}
@@ -353,6 +366,7 @@
 				{selectedHex}
 				baseLayerUrl={activeBaseLayerUrl}
 				layerBounds={activeMap.layer_bounds || null}
+				routes={activeMap.routes || []}
 				{showDangerTiers}
 				on:click={handleHexClick}
 			/>

@@ -13,6 +13,8 @@
 		parseLatLonInput,
 		type LayerBounds,
 		type MapLayerMode,
+		type MapRoute,
+		type RouteType,
 		type TravelScale
 	} from '$lib/utils/mapLayers';
 
@@ -44,6 +46,7 @@
 			max_lat?: number;
 			max_lon?: number;
 		} | null;
+		routes?: MapRoute[];
 		hexes: HexData[];
 	}
 
@@ -65,10 +68,26 @@
 
 	// Editor State
 	let selectedHex: HexData | null = null;
-	let selectedTool: 'select' | 'paint' | 'fog' = 'select';
+	let selectedTool: 'select' | 'paint' | 'fog' | 'route' = 'select';
 	let activeTerrain = 'plains';
 	let isDirty = false;
 	let dirtyHexes: Set<string> = new Set();
+
+	// Route Drawing State
+	let draftRouteName = '';
+	let draftRouteType: RouteType = 'road';
+	let draftRouteHexes: Array<{ q: number; r: number }> = [];
+	let savingRoutes = false;
+
+	$: activeDraftRoute =
+		selectedTool === 'route' && draftRouteHexes.length >= 2
+			? {
+					id: 'draft',
+					name: draftRouteName || 'Draft',
+					type: draftRouteType,
+					hexes: draftRouteHexes
+				}
+			: null;
 
 	const TERRAIN_TYPES = ['Plains', 'Forest', 'Mountain', 'Water', 'Desert', 'Swamp'];
 	const HEX_STATES = [
@@ -203,7 +222,46 @@
 			dirtyHexes.add(`${q},${r}`);
 		} else if (selectedTool === 'select') {
 			selectedHex = activeMap.hexes[hexIndex];
+		} else if (selectedTool === 'route') {
+			const last = draftRouteHexes[draftRouteHexes.length - 1];
+			if (!last || last.q !== q || last.r !== r) {
+				draftRouteHexes = [...draftRouteHexes, { q, r }];
+			}
 		}
+	}
+
+	async function persistRoutes(nextRoutes: MapRoute[]) {
+		if (!activeMap) return;
+		savingRoutes = true;
+		try {
+			const updated: MapData = await api('PUT', `/maps/${activeMap.id}/routes`, {
+				routes: nextRoutes
+			});
+			activeMap = updated;
+			maps = maps.map((m) => (m.id === updated.id ? updated : m));
+		} catch (e) {
+			console.error('Failed to save routes', e);
+		} finally {
+			savingRoutes = false;
+		}
+	}
+
+	async function commitDraftRoute() {
+		if (!activeMap || draftRouteHexes.length < 2) return;
+		const newRoute: MapRoute = {
+			id: `route-${Date.now()}`,
+			name: draftRouteName.trim() || `${draftRouteType.replace('_', ' ')}`,
+			type: draftRouteType,
+			hexes: draftRouteHexes
+		};
+		await persistRoutes([...(activeMap.routes || []), newRoute]);
+		draftRouteName = '';
+		draftRouteHexes = [];
+	}
+
+	async function deleteRoute(id: string) {
+		if (!activeMap) return;
+		await persistRoutes((activeMap.routes || []).filter((r) => r.id !== id));
 	}
 
 	function updateSelectedHex() {
@@ -277,16 +335,20 @@
 			<span class="text-xs font-bold text-base-content/60 uppercase">Tools</span>
 			<div class="join w-full">
 				<button
-					class="btn join-item flex-1 {selectedTool === 'select' ? 'btn-primary' : 'btn-outline'}"
+					class="btn join-item btn-xs flex-1 {selectedTool === 'select' ? 'btn-primary' : 'btn-outline'}"
 					on:click={() => (selectedTool = 'select')}>Select</button
 				>
 				<button
-					class="btn join-item flex-1 {selectedTool === 'paint' ? 'btn-primary' : 'btn-outline'}"
+					class="btn join-item btn-xs flex-1 {selectedTool === 'paint' ? 'btn-primary' : 'btn-outline'}"
 					on:click={() => (selectedTool = 'paint')}>Paint</button
 				>
 				<button
-					class="btn join-item flex-1 {selectedTool === 'fog' ? 'btn-primary' : 'btn-outline'}"
+					class="btn join-item btn-xs flex-1 {selectedTool === 'fog' ? 'btn-primary' : 'btn-outline'}"
 					on:click={() => (selectedTool = 'fog')}>Fog</button
+				>
+				<button
+					class="btn join-item btn-xs flex-1 {selectedTool === 'route' ? 'btn-primary' : 'btn-outline'}"
+					on:click={() => (selectedTool = 'route')}>Route</button
 				>
 			</div>
 		</div>
@@ -424,6 +486,68 @@
 			</div>
 		{/if}
 
+		{#if selectedTool === 'route'}
+			<div class="mb-4 flex flex-col gap-2 border-t border-base-content/10 pt-3 text-xs">
+				<span class="font-bold text-base-content/60 uppercase">Draw Route</span>
+				<input
+					type="text"
+					bind:value={draftRouteName}
+					class="input-bordered input input-xs"
+					placeholder="Route name (e.g. King's Road)"
+				/>
+				<select bind:value={draftRouteType} class="select-bordered select select-xs">
+					<option value="road">Road (Cobbled/Paved)</option>
+					<option value="trail">Trail (Frontier Path)</option>
+					<option value="sea_lane">Sea Lane (Nautical)</option>
+					<option value="river">River / Waterway</option>
+				</select>
+				<div class="text-[11px] opacity-70">
+					Click hexes in order ({draftRouteHexes.length} selected).
+				</div>
+				<div class="flex gap-1">
+					<button
+						class="btn btn-outline btn-xs flex-1"
+						disabled={draftRouteHexes.length === 0}
+						on:click={() => (draftRouteHexes = draftRouteHexes.slice(0, -1))}
+					>
+						Undo
+					</button>
+					<button
+						class="btn btn-ghost btn-xs"
+						disabled={draftRouteHexes.length === 0}
+						on:click={() => (draftRouteHexes = [])}
+					>
+						Clear
+					</button>
+				</div>
+				<button
+					class="btn btn-primary btn-xs"
+					disabled={draftRouteHexes.length < 2 || savingRoutes}
+					on:click={commitDraftRoute}
+				>
+					{savingRoutes ? 'Saving...' : 'Save Route'}
+				</button>
+
+				{#if activeMap?.routes && activeMap.routes.length > 0}
+					<div class="mt-2 flex flex-col gap-1 border-t border-base-content/10 pt-2">
+						<span class="text-[10px] font-bold uppercase opacity-60">Existing Routes</span>
+						{#each activeMap.routes as r}
+							<div class="flex items-center justify-between rounded bg-base-300/60 px-2 py-1">
+								<span class="truncate">{r.name || r.type}</span>
+								<button
+									class="btn btn-ghost btn-xs text-error"
+									disabled={savingRoutes}
+									on:click={() => deleteRoute(r.id)}
+								>
+									✕
+								</button>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+		{/if}
+
 		<div class="mt-4 border-t border-base-content/10 pt-3">
 			<button
 				class="btn w-full btn-outline btn-xs"
@@ -491,6 +615,8 @@
 				adminMode={true}
 				baseLayerUrl={activeBaseLayerUrl}
 				layerBounds={activeMap.layer_bounds || null}
+				routes={activeMap.routes || []}
+				{activeDraftRoute}
 				{showDangerTiers}
 				on:click={handleHexClick}
 			/>

@@ -35,4 +35,34 @@ describe('HexGrid base layers and cartography overlays', () => {
 		expect(container.textContent).toContain('T2');
 		expect(container.textContent).toContain('T3');
 	});
+
+	test('renders visible routes and hides undiscovered route segments in player mode', () => {
+		const { container } = render(HexGrid, {
+			props: {
+				hexes: [
+					{ q: 0, r: 0, terrain: 'plains', is_discovered: true },
+					{ q: 1, r: 0, terrain: 'plains', is_discovered: false },
+					{ q: 2, r: 0, terrain: 'mountain', is_discovered: false }
+				],
+				hexSize: 60,
+				adminMode: false,
+				routes: [
+					{
+						id: 'r1',
+						name: "King's Road",
+						type: 'road',
+						hexes: [
+							{ q: 0, r: 0 },
+							{ q: 1, r: 0 },
+							{ q: 2, r: 0 }
+						]
+					}
+				]
+			}
+		});
+
+		// Segment (0,0)->(1,0) is visible (1 endpoint discovered); (1,0)->(2,0) is hidden
+		const routePaths = container.querySelectorAll('g.map-routes path');
+		expect(routePaths.length).toBe(2); // casing + core for 1 visible segment
+	});
 });
