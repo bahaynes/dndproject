@@ -17,6 +17,7 @@
 	export let playerNotesCount: number = 0;
 	export let hasMission: boolean = false;
 	export let adminMode: boolean = false;
+	export let overlayMode: boolean = false;
 
 	const dispatch = createEventDispatcher();
 
@@ -70,6 +71,20 @@
 
 	$: factionOverlay = getFactionOverlay(controllingFaction);
 	$: stateIcon = getStateIcon(hexState);
+	$: cellFill = !isDiscovered && !adminMode
+		? '#151412'
+		: overlayMode
+			? adminMode && !isDiscovered
+				? 'rgba(20, 18, 16, 0.55)'
+				: 'rgba(0, 0, 0, 0.01)'
+			: getTerrainColor(terrain);
+	$: cellStroke = isSelected
+		? '#fff'
+		: overlayMode
+			? isDiscovered || adminMode
+				? 'rgba(255, 255, 255, 0.25)'
+				: '#2c2824'
+			: '#444';
 </script>
 
 <g
@@ -82,9 +97,9 @@
 >
 	<polygon
 		{points}
-		fill={isDiscovered || adminMode ? getTerrainColor(terrain) : '#1a1a1a'}
-		opacity={adminMode && !isDiscovered ? 0.45 : 1}
-		stroke={isSelected ? '#fff' : '#444'}
+		fill={cellFill}
+		opacity={!overlayMode && adminMode && !isDiscovered ? 0.45 : 1}
+		stroke={cellStroke}
 		stroke-width={isSelected ? 3 : 1}
 		class={isSelected ? 'selected-glow' : ''}
 	/>
@@ -123,20 +138,6 @@
 		</text>
 	{/if}
 
-	{#if isDiscovered && hasMission}
-		<text
-			x={-(size * 0.45)}
-			y={-(size * 0.45)}
-			text-anchor="middle"
-			alignment-baseline="middle"
-			font-size="12"
-			fill="#D4A853"
-			pointer-events="none"
-		>
-			★
-		</text>
-	{/if}
-
 	{#if isDiscovered && playerNotesCount > 0}
 		<text
 			x={-(size * 0.45)}
@@ -148,6 +149,20 @@
 			pointer-events="none"
 		>
 			✎
+		</text>
+	{/if}
+
+	{#if isDiscovered && hasMission}
+		<text
+			x={-(size * 0.45)}
+			y={size * 0.4}
+			text-anchor="middle"
+			alignment-baseline="middle"
+			font-size="10"
+			fill="#fbbf24"
+			pointer-events="none"
+		>
+			★
 		</text>
 	{/if}
 

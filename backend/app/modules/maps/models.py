@@ -21,6 +21,10 @@ class HexMap(Base):
     # Appearance
     hex_size = Column(Integer, default=60) # Size in pixels for frontend reference
     default_terrain = Column(String, default="plains")
+    topo_image_key = Column(String, nullable=True)
+    satellite_image_key = Column(String, nullable=True)
+    layer_bounds = Column(JSON, nullable=True)  # {"min_x", "min_y", "max_x", "max_y"}
+    source_region = Column(JSON, nullable=True)  # {"min_lat", "min_lon", "max_lat", "max_lon", "zoom"}
 
     campaign = relationship("Campaign")
     hexes = relationship("Hex", back_populates="map", cascade="all, delete-orphan")
