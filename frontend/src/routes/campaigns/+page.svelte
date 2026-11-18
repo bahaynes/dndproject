@@ -58,7 +58,7 @@
 			} else {
 				// If my campaigns fails with 401, we might need to login again
 				if (myRes.status === 401) {
-					goto('/login');
+					goto('/login', { replaceState: true });
 					return;
 				}
 			}
@@ -132,11 +132,11 @@
 				localStorage.removeItem('pendingToken');
 				localStorage.removeItem('pendingDiscordToken');
 
-				goto('/dashboard');
+				goto('/dashboard', { replaceState: true });
 			} else if (res.status === 401) {
 				localStorage.removeItem('pendingToken');
 				localStorage.removeItem('pendingDiscordToken');
-				goto('/login');
+				goto('/login', { replaceState: true });
 			} else {
 				const err = await res.json().catch(() => ({}));
 				error = err.detail || `Failed to login to campaign (${res.status}).`;
@@ -171,7 +171,7 @@
 
 				localStorage.removeItem('pendingToken');
 				localStorage.removeItem('pendingDiscordToken');
-				goto('/dashboard');
+				goto('/dashboard', { replaceState: true });
 			} else {
 				const err = await res.json();
 				error = err.detail || 'Failed to join campaign.';
@@ -206,7 +206,7 @@
 				localStorage.removeItem('pendingToken');
 				localStorage.removeItem('pendingDiscordToken');
 
-				goto('/dashboard');
+				goto('/dashboard', { replaceState: true });
 			} else {
 				const err = await res.json();
 				error = err.detail || 'Setup failed';
@@ -216,6 +216,10 @@
 		}
 	}
 </script>
+
+<svelte:head>
+	<title>Select Campaign — West Marches</title>
+</svelte:head>
 
 <div class="container mx-auto p-8">
 	<h1 class="mb-8 text-3xl font-bold">Select Campaign</h1>

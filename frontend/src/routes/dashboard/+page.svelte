@@ -38,7 +38,7 @@
 
 	onMount(() => {
 		if (!localStorage.getItem('accessToken')) {
-			goto('/login');
+			goto('/login', { replaceState: true });
 		}
 	});
 
@@ -48,7 +48,7 @@
 	}
 
 	$: if ($auth.isAuthenticated && !$auth.campaign) {
-		goto('/campaigns');
+		goto('/campaigns', { replaceState: true });
 	}
 
 	$: if (!loading && user && !user.active_character && myCharacters.length === 0) {
