@@ -4,6 +4,7 @@ from ..auth.schemas import User
 from ..items.schemas import Item, StoreItem
 from ..missions.schemas import Mission
 from ..sessions.schemas import GameSession
+from ..ship.schemas import TownLocation
 
 class GameDataExport(BaseModel):
     users: List[User]
@@ -16,6 +17,7 @@ class GameDataExport(BaseModel):
 class WorldHub(BaseModel):
     name: str
     motd: Optional[str] = None
+    town_locations: List[TownLocation] = []
 
 
 class WorldFaction(BaseModel):

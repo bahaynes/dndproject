@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 from ...database import Base
@@ -17,6 +17,7 @@ class Ship(Base):
     essence = Column(Integer, default=0, nullable=False)
 
     motd = Column(String, nullable=True)  # Message of the day / GM announcement
+    town_locations = Column(JSON, nullable=True)  # List of TownLocation dicts for /town map
 
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
 

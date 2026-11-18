@@ -132,7 +132,17 @@ def export_world(db: Session, campaign_id: int) -> schemas.WorldBundle:
     mission_name_by_id = {m.id: m.name for m in missions}
 
     world_name = hub.name if hub and hub.name else (campaign.name if campaign else "World")
-    hub_out = schemas.WorldHub(name=hub.name, motd=hub.motd) if hub else None
+    hub_out = (
+        schemas.WorldHub(
+            name=hub.name,
+            motd=hub.motd,
+            town_locations=[ship_schemas.TownLocation.model_validate(loc) for loc in (hub.town_locations or [])]
+            if hasattr(schemas, "TownLocation")
+            else [schemas.TownLocation.model_validate(loc) for loc in (hub.town_locations or [])],
+        )
+        if hub
+        else None
+    )
 
     factions_out = [
         schemas.WorldFaction(
@@ -281,17 +291,20 @@ def import_world(
 
     # 1. Hub / Bulletin (Ship)
     if bundle.hub:
+        locations_data = [loc.model_dump() for loc in bundle.hub.town_locations]
         hub = db.query(ship_models.Ship).filter_by(campaign_id=campaign_id).first()
         if not hub:
             hub = ship_models.Ship(
                 campaign_id=campaign_id,
                 name=bundle.hub.name,
                 motd=bundle.hub.motd,
+                town_locations=locations_data,
             )
             db.add(hub)
         else:
             hub.name = bundle.hub.name
             hub.motd = bundle.hub.motd
+            hub.town_locations = locations_data
         db.flush()
 
     # 2. Factions

@@ -3,7 +3,89 @@
   "world_name": "Rattleguard & The High Fjords",
   "hub": {
     "name": "Rattleguard",
-    "motd": "You arrived in a majestic ridge city by spelljammer or portal, and promptly found out how expensive rent is when the Mist comes every night and everyone wants permanent safety. Down in the valleys, though, lie the magical crystals that power the rest of the verse—and someone has to collect them. Welcome to Rattleguard, a frontier town perched just below the mistline. Its warding braziers work, mostly. Spirits still take a few people each night, but the pay is good and the miners are friendly. You're with the Troublesome Company now—recruited when you ran out of coin and jobs up top. Pick a partner, pick a hex, and remember the only rule: be back behind the braziers before dark.\n\nFirst Night Checklist:\n1. Build a Level 3 character on D&D Beyond (your combat sheet & dice live there; your gold, loot, and gear live here) and register them under Characters.\n2. Visit the Store to grab supplies, traps, scrolls, or a lift pass.\n3. Open Maps to scout the fjord valleys and propose or join an expedition on Sessions."
+    "motd": "You arrived in a majestic ridge city by spelljammer or portal, and promptly found out how expensive rent is when the Mist comes every night and everyone wants permanent safety. Down in the valleys, though, lie the magical crystals that power the rest of the verse—and someone has to collect them. Welcome to Rattleguard, a frontier town perched just below the mistline. Its warding braziers work, mostly. Spirits still take a few people each night, but the pay is good and the miners are friendly. You're with the Troublesome Company now—recruited when you ran out of coin and jobs up top. Pick a partner, pick a hex, and remember the only rule: be back behind the braziers before dark.\n\nFirst Night Checklist:\n1. Build a Level 3 character on D&D Beyond (your combat sheet & dice live there; your gold, loot, and gear live here) and register them under Characters.\n2. Open Town to visit the Troublesome Company Hall, Quartermaster, and Taproom before heading out.\n3. Open Maps to scout the fjord valleys and propose or join an expedition on Sessions.",
+    "town_locations": [
+      {
+        "id": "company-hall",
+        "name": "The Troublesome Company Hall",
+        "npc": "Marshal Halver & The Dispatch Board",
+        "role": "Contracts, Partners & Expedition Sign-Out",
+        "description": "A timber-and-slate longhouse warmed by twin brim-coal hearths. Every morning, contractors gather here over burnt coffee to pick a hex, pair up with whoever showed up, and log their departure before the gates open.",
+        "services": [
+          "Pick today's expedition partners & hex destination",
+          "Turn in valley crystal crates for Company pay",
+          "Leave notes for the next crew on the shared map"
+        ],
+        "rumor": "Halver is quietly offering a bonus to anyone who checks why Waystation #4 missed its flare last night.",
+        "x": 50,
+        "y": 46,
+        "link_path": "/sessions"
+      },
+      {
+        "id": "quartermaster-shed",
+        "name": "Bramwell's Quartermaster Shed",
+        "npc": "Old Bramwell (Retired Quarryman)",
+        "role": "Gear, Supplies & Salvage Appraisals",
+        "description": "Crammed floor-to-rafters with climbing rope, steel traps, oil flasks, and crates of brass canary cages. Bramwell doesn't believe in fixed catalogs—if you need something weird, ask nicely or bring him something weirder from the valley.",
+        "services": [
+          "Stock up on rope, traps, chalk, oil, and Spirit-Ward Canaries",
+          "Charter a Cartel river barge or book workshop bench time",
+          "Appraise pre-Mist salvage pulled out of the fjords"
+        ],
+        "rumor": "Word is Bramwell only has three live canaries left until the Ironstep mule train makes it around the ridge.",
+        "x": 28,
+        "y": 62,
+        "link_path": "/store"
+      },
+      {
+        "id": "brazier-gate",
+        "name": "The Brazier Gate & Bell Tower",
+        "npc": "Sister Vaelen (Lamplighter Bell-Keeper)",
+        "role": "Sunset Bells, Mist Watch & Gate Wards",
+        "description": "Rattleguard's fortified river-gate, crowned with iron braziers that roar from dusk until dawn. The Lamplighters chalk the thresholds each afternoon and ring the heavy brass bell thirty minutes before the Mist rises.",
+        "services": [
+          "Check the evening bell schedule & valley Mist sightings",
+          "Pick up Warding Chalk and blessed brazier oil",
+          "Report missing crews or breaches along the outer wall"
+        ],
+        "rumor": "Two miners swore the Mist pooled inside a dry limestone cellar at noon yesterday—Vaelen insists it was just a restless spirit.",
+        "x": 74,
+        "y": 68,
+        "link_path": "/maps"
+      },
+      {
+        "id": "soot-and-canary",
+        "name": "The Soot & Canary Taproom",
+        "npc": "Maren (Proprietor) & Half-Shift Miners",
+        "role": "Rumors, Faction Contacts & Back-Booth Deals",
+        "description": "Loud, smoky, and surprisingly warm. Off-duty crystal miners trade tall tales by the stove while Cartel scouts and Crow's Ledge fences quietly size up anyone who just walked in from the valley.",
+        "services": [
+          "Buy miners a round for uncharted fjord landmarks",
+          "Meet Crow's Ledge fences or Cartel brokers off the record",
+          "Check faction standing across Highspire and the valleys"
+        ],
+        "rumor": "A Crow's Ledge courier claims a sky-skiff clipped the trees in the western gorge at dawn—nobody's reached the wreck yet.",
+        "x": 24,
+        "y": 36,
+        "link_path": "/factions"
+      },
+      {
+        "id": "highspire-lift",
+        "name": "The Highspire Cliff-Lift",
+        "npc": "Warden Krell (Crystal Cartel)",
+        "role": "Ridge Access & Cargo Tariffs",
+        "description": "A rattling iron cage slung on greased cables up the sheer 400-foot fjord wall to Highspire. It's the fastest way back above the mistline—if you have a Cartel pass or enough coin to make Warden Krell look the other way.",
+        "services": [
+          "Ride up to Highspire for guild business or safe lodging",
+          "Negotiate or bribe your way past Cartel cargo tariffs",
+          "Inspect the cliffside view of the First Finger valley"
+        ],
+        "rumor": "The Cartel doubled lift tariffs overnight; three Rattleguard wagons are stranded at the base waiting for someone to sort it out.",
+        "x": 72,
+        "y": 24,
+        "link_path": "/roster"
+      }
+    ]
   },
   "factions": [
     {
