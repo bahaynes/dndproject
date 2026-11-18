@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from ...dependencies import get_db, get_current_user, get_current_active_admin_user, get_current_active_user
 from ..auth.schemas import User
 from . import schemas, service as crud
-from .earth_baker import bake_earth_region
+from .earth_baker import bake_earth_region, compute_bbox_from_center
 from .storage import get_layer_storage
 
 router = APIRouter()
@@ -105,18 +105,33 @@ async def bake_earth_layers(
     db_map = crud.get_map(db, map_id=map_id)
     if not db_map or db_map.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Map not found")
-    if payload.max_lat <= payload.min_lat or payload.max_lon <= payload.min_lon:
-        raise HTTPException(status_code=400, detail="max_lat/max_lon must be greater than min_lat/min_lon")
 
     hex_coords = [(h.q, h.r) for h in db_map.hexes]
+    hex_size = db_map.hex_size or 60
+    if payload.center_lat is not None and payload.center_lon is not None:
+        min_lat, min_lon, max_lat, max_lon = compute_bbox_from_center(
+            center_lat=payload.center_lat,
+            center_lon=payload.center_lon,
+            hex_coords=hex_coords,
+            hex_size=hex_size,
+            travel_scale=payload.travel_scale,
+        )
+    else:
+        min_lat = payload.min_lat  # type: ignore[assignment]
+        min_lon = payload.min_lon  # type: ignore[assignment]
+        max_lat = payload.max_lat  # type: ignore[assignment]
+        max_lon = payload.max_lon  # type: ignore[assignment]
+        if max_lat <= min_lat or max_lon <= min_lon:
+            raise HTTPException(status_code=400, detail="max_lat/max_lon must be greater than min_lat/min_lon")
+
     try:
         result = await bake_earth_region(
-            min_lat=payload.min_lat,
-            min_lon=payload.min_lon,
-            max_lat=payload.max_lat,
-            max_lon=payload.max_lon,
+            min_lat=min_lat,
+            min_lon=min_lon,
+            max_lat=max_lat,
+            max_lon=max_lon,
             hex_coords=hex_coords,
-            hex_size=db_map.hex_size or 60,
+            hex_size=hex_size,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -139,10 +154,13 @@ async def bake_earth_layers(
     db_map.satellite_image_key = sat_key
     db_map.layer_bounds = result.layer_bounds
     db_map.source_region = {
-        "min_lat": payload.min_lat,
-        "min_lon": payload.min_lon,
-        "max_lat": payload.max_lat,
-        "max_lon": payload.max_lon,
+        "center_lat": payload.center_lat if payload.center_lat is not None else round((min_lat + max_lat) / 2.0, 5),
+        "center_lon": payload.center_lon if payload.center_lon is not None else round((min_lon + max_lon) / 2.0, 5),
+        "travel_scale": payload.travel_scale,
+        "min_lat": min_lat,
+        "min_lon": min_lon,
+        "max_lat": max_lat,
+        "max_lon": max_lon,
         "zoom": result.zoom,
     }
 

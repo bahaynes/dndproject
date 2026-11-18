@@ -71,19 +71,21 @@
 
 	$: factionOverlay = getFactionOverlay(controllingFaction);
 	$: stateIcon = getStateIcon(hexState);
-	$: cellFill = !isDiscovered && !adminMode
-		? '#151412'
-		: overlayMode
-			? adminMode && !isDiscovered
-				? 'rgba(20, 18, 16, 0.55)'
-				: 'rgba(0, 0, 0, 0.01)'
+	$: cellFill = overlayMode
+		? isDiscovered
+			? 'rgba(0, 0, 0, 0.01)'
+			: adminMode
+				? 'rgba(20, 20, 22, 0.42)'
+				: 'rgba(20, 20, 22, 0.62)'
+		: !isDiscovered && !adminMode
+			? '#151412'
 			: getTerrainColor(terrain);
 	$: cellStroke = isSelected
 		? '#fff'
 		: overlayMode
-			? isDiscovered || adminMode
-				? 'rgba(255, 255, 255, 0.25)'
-				: '#2c2824'
+			? isDiscovered
+				? 'rgba(255, 255, 255, 0.28)'
+				: 'rgba(255, 255, 255, 0.12)'
 			: '#444';
 </script>
 
@@ -180,7 +182,7 @@
 		</text>
 	{/if}
 
-	{#if !isDiscovered && !showCoords}
+	{#if !overlayMode && !isDiscovered && !showCoords}
 		<!-- Fog effect detail -->
 		<text
 			x="0"

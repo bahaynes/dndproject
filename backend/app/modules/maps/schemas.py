@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, computed_field, field_validator
+from pydantic import BaseModel, Field, computed_field, field_validator, model_validator
 from typing import Optional, List, Any, Literal, Dict
 from ..missions.schemas import Mission
 
@@ -63,14 +63,28 @@ class LayerBounds(BaseModel):
     max_y: float
 
 
-class BakeEarthRequest(BaseModel):
-    """Bounding box and options for baking a real-Earth region onto a HexMap."""
+TravelScale = Literal["local", "frontier", "expedition"]
 
-    min_lat: float = Field(..., ge=-85.0, le=85.0)
-    min_lon: float = Field(..., ge=-180.0, le=180.0)
-    max_lat: float = Field(..., ge=-85.0, le=85.0)
-    max_lon: float = Field(..., ge=-180.0, le=180.0)
+
+class BakeEarthRequest(BaseModel):
+    """Center pin + D&D travel scale (or explicit bbox) for baking a real-Earth region."""
+
+    center_lat: Optional[float] = Field(default=None, ge=-84.0, le=84.0)
+    center_lon: Optional[float] = Field(default=None, ge=-180.0, le=180.0)
+    travel_scale: TravelScale = "frontier"
+    min_lat: Optional[float] = Field(default=None, ge=-85.0, le=85.0)
+    min_lon: Optional[float] = Field(default=None, ge=-180.0, le=180.0)
+    max_lat: Optional[float] = Field(default=None, ge=-85.0, le=85.0)
+    max_lon: Optional[float] = Field(default=None, ge=-180.0, le=180.0)
     auto_seed_terrain: bool = True
+
+    @model_validator(mode="after")
+    def validate_location_inputs(self) -> "BakeEarthRequest":
+        has_center = self.center_lat is not None and self.center_lon is not None
+        has_bbox = all(v is not None for v in (self.min_lat, self.min_lon, self.max_lat, self.max_lon))
+        if not has_center and not has_bbox:
+            raise ValueError("Provide either center_lat/center_lon or min/max lat/lon bounds")
+        return self
 
 
 class HexMap(HexMapBase):
