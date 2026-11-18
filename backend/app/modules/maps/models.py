@@ -25,6 +25,7 @@ class HexMap(Base):
     satellite_image_key = Column(String, nullable=True)
     layer_bounds = Column(JSON, nullable=True)  # {"min_x", "min_y", "max_x", "max_y"}
     source_region = Column(JSON, nullable=True)  # {"min_lat", "min_lon", "max_lat", "max_lon", "zoom"}
+    routes = Column(JSON, default=list)  # [{"id", "name", "type", "hexes": [{"q", "r"}]}]
 
     campaign = relationship("Campaign")
     hexes = relationship("Hex", back_populates="map", cascade="all, delete-orphan")
