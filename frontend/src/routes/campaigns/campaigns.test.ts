@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { goto } from '$app/navigation';
 import CampaignsPage from './+page.svelte';
 
 vi.mock('$app/navigation', () => ({
@@ -19,7 +20,7 @@ vi.mock('$lib/auth', () => ({
 describe('Campaigns Page', () => {
 	beforeEach(() => {
 		localStorage.clear();
-		vi.restoreAllMocks();
+		vi.clearAllMocks();
 	});
 
 	it('shows a resting border on campaign buttons and highlights the border when clicked', async () => {
@@ -48,5 +49,39 @@ describe('Campaigns Page', () => {
 		expect(button).toHaveClass('border-primary');
 		expect(button).toHaveClass('ring-2');
 		expect(button).toHaveClass('ring-primary/40');
+	});
+
+	it('replaces history state when navigating to dashboard after selecting a campaign', async () => {
+		const fetchMock = vi.fn().mockImplementation((url: string) => {
+			if (url.endsWith('/campaigns/mine')) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => [{ id: 1, name: 'Novacats' }]
+				});
+			}
+			if (url.endsWith('/campaigns/login')) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({ access_token: 'campaign-token' })
+				});
+			}
+			if (url.endsWith('/auth/me')) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({ id: 1, username: 'Player', campaign: { id: 1, name: 'Novacats' } })
+				});
+			}
+			return Promise.resolve({ ok: false });
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		render(CampaignsPage);
+
+		const button = await waitFor(() => screen.getByRole('button', { name: /Novacats/i }));
+		await fireEvent.click(button);
+
+		await waitFor(() => {
+			expect(goto).toHaveBeenCalledWith('/dashboard', { replaceState: true });
+		});
 	});
 });
