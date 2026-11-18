@@ -1,7 +1,7 @@
 """Add map layer columns to hex_maps
 
-Revision ID: 0007_add_map_layers
-Revises: 0006_add_xp_columns
+Revision ID: 0008_add_map_layers
+Revises: 0007_session_first_hex_proposals
 Create Date: 2026-11-17 00:00:00.000000
 
 """
@@ -12,8 +12,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '0007_add_map_layers'
-down_revision: Union[str, None] = '0006_add_xp_columns'
+revision: str = '0008_add_map_layers'
+down_revision: Union[str, None] = '0007_session_first_hex_proposals'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
