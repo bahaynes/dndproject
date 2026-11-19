@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+language: "en-US"
+early_access: false
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  sequence_diagrams: true
+  abort_on_close: true
+
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+    base_branches:
+      - "main"
+
+  path_filters:
+    - "!uv.lock"
+    - "!frontend/pnpm-lock.yaml"
+    - "!e2e/package-lock.json"
+    - "!data/**"
+    - "!frontend/.svelte-kit/**"
+    - "!frontend/build/**"
+    - "!frontend/dist/**"
+    - "!frontend/reports/**"
+    - "!e2e/playwright-report/**"
+    - "!e2e/test-results/**"
+    - "!**/*.min.js"
+    - "!**/*.min.css"
+
+  path_instructions:
+    - path: "backend/app/**"
+      instructions: |
+        - Multi-tenancy: Every user and resource is scoped to a campaign (`campaign_id`). Flag any database query or endpoint that could leak cross-campaign data.
+        - Auth dependencies: Use `get_current_active_user` or `get_current_active_admin_user` from `backend/app/dependencies.py`. Do not introduce new auth dependencies.
+        - SQLAlchemy JSON columns: Mutations must replace the whole JSON object rather than mutating in place.
+        - New modules: If adding a new module under `backend/app/modules/`, verify its models are imported in both `backend/app/all_models.py` and `backend/app/main.py`, and its router is registered with `/api/<name>`.
+        - API docs: Ensure FastAPI endpoints and Pydantic models have clear docstrings.
+
+    - path: "backend/app/modules/auth/**"
+      instructions: |
+        - Auth is a protected area (see CLAUDE.md). Flag any changes to token issuance, `pendingToken`, `pendingDiscordToken`, or auth dependencies unless explicitly required by the PR.
+
+    - path: "migrations/**"
+      instructions: |
+        - Verify Alembic migrations maintain a single head (no unintended branched heads).
+        - Check compatibility with both SQLite (dev) and PostgreSQL (prod).
+        - Ensure `upgrade()` and `downgrade()` are safe and reversible where possible.
+
+    - path: "frontend/src/**"
+      instructions: |
+        - API calls must use `API_BASE_URL` from `$lib/config` and auth tokens from `$lib/auth` (`get(auth).token`).
+        - Auth contract: `frontend/src/lib/auth.ts` should only expose `login()` and `logout()`, and `frontend/src/routes/+layout.svelte` should only read `accessToken` and call `/api/auth/me`. Flag deviations.
+        - Follow Svelte 5 runes/conventions and TypeScript types in `frontend/src/lib/types.ts`.
+
+    - path: "backend/tests/**"
+      instructions: |
+        - Prefer shared fixtures from `backend/tests/conftest.py` (`campaign`, `player_auth_headers`, `admin_auth_headers`).
+        - Verify tests cover both success and error/authorization paths (including cross-campaign isolation).
+
+    - path: "e2e/tests/**"
+      instructions: |
+        - Ensure Playwright selectors are resilient and avoid arbitrary `waitForTimeout` calls where web-first assertions can be used.
+
+    - path: ".github/workflows/**"
+      instructions: |
+        - Check GitHub Actions workflows for least-privilege permissions, pinned action versions, and no secret leakage.
+
+  tools:
+    ruff:
+      enabled: true
+    eslint:
+      enabled: true
+    actionlint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    shellcheck:
+      enabled: true
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "AGENTS.md"
+      - "CLAUDE.md"

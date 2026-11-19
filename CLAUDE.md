@@ -137,6 +137,8 @@ A feature is not complete until all of the following pass:
 
 4. **All existing tests still pass** — run `./run_tests.sh` to confirm no regressions.
 
+5. **CodeRabbit review** — for non-draft PRs targeting `main`, wait for CodeRabbit's automated review (configured in `.coderabbit.yaml`) and address any valid bugs, security, or multi-tenancy findings before merging.
+
 Do not mark a task complete, close a PR, or consider a feature shipped if any of the above are failing or missing.
 
 ## Starting a Session
