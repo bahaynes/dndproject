@@ -545,3 +545,24 @@ class TestDiscordGuilds:
                     headers={"Authorization": f"Bearer {token}"},
                 )
         assert r.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# /api/campaigns/bot-invite-url
+# ---------------------------------------------------------------------------
+
+class TestBotInviteUrl:
+    def test_returns_bot_invite_url_without_auth(self, client):
+        with patch("app.modules.campaigns.router.settings") as mock_settings:
+            mock_settings.DISCORD_CLIENT_ID = "1234567890"
+            r = client.get("/api/campaigns/bot-invite-url")
+        assert r.status_code == 200
+        assert r.json() == {
+            "url": "https://discord.com/oauth2/authorize?client_id=1234567890&scope=bot&permissions=0"
+        }
+
+    def test_returns_503_when_client_id_missing(self, client):
+        with patch("app.modules.campaigns.router.settings") as mock_settings:
+            mock_settings.DISCORD_CLIENT_ID = ""
+            r = client.get("/api/campaigns/bot-invite-url")
+        assert r.status_code == 503

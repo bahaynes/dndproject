@@ -84,4 +84,36 @@ describe('Campaigns Page', () => {
 			expect(goto).toHaveBeenCalledWith('/dashboard', { replaceState: true });
 		});
 	});
+
+	it('renders the Discord bot invite link when available', async () => {
+		const fetchMock = vi.fn().mockImplementation((url: string) => {
+			if (url.endsWith('/campaigns/mine')) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => []
+				});
+			}
+			if (url.endsWith('/campaigns/bot-invite-url')) {
+				return Promise.resolve({
+					ok: true,
+					json: async () => ({
+						url: 'https://discord.com/oauth2/authorize?client_id=999&scope=bot&permissions=0'
+					})
+				});
+			}
+			return Promise.resolve({ ok: false });
+		});
+		vi.stubGlobal('fetch', fetchMock);
+
+		render(CampaignsPage);
+
+		const inviteLink = await waitFor(() =>
+			screen.getByRole('link', { name: /Invite Bot to Discord/i })
+		);
+		expect(inviteLink).toHaveAttribute(
+			'href',
+			'https://discord.com/oauth2/authorize?client_id=999&scope=bot&permissions=0'
+		);
+		expect(screen.getByText(/Not seeing your server here\?/i)).toBeInTheDocument();
+	});
 });

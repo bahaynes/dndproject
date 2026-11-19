@@ -18,6 +18,18 @@ router = APIRouter()
 settings = get_settings()
 logger = logging.getLogger(__name__)
 
+@router.get("/bot-invite-url", tags=["Campaigns"])
+async def get_bot_invite_url():
+    """
+    Returns the Discord bot invite URL constructed from DISCORD_CLIENT_ID.
+    """
+    client_id = getattr(settings, "DISCORD_CLIENT_ID", "")
+    if not isinstance(client_id, str) or not client_id.strip():
+        raise HTTPException(status_code=503, detail="Discord client ID is not configured.")
+    return {
+        "url": f"https://discord.com/oauth2/authorize?client_id={client_id.strip()}&scope=bot&permissions=0"
+    }
+
 @router.get("/mine", response_model=List[schemas.Campaign], tags=["Campaigns"])
 async def get_my_campaigns(
     current_user_payload: dict = Depends(get_current_user_global),
