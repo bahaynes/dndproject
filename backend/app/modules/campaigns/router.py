@@ -1,6 +1,7 @@
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Set
 import httpx
 import logging
 
@@ -98,6 +99,52 @@ async def get_available_campaigns(
 
     return [schemas.Campaign.model_validate(c) for c in available]
 
+def _get_admin_role_names() -> Set[str]:
+    raw = getattr(settings, "ADMIN_DISCORD_ROLE_NAMES", "GM,DM")
+    if not isinstance(raw, str):
+        return set()
+    return {name.strip().lower() for name in raw.split(",") if name.strip()}
+
+
+async def _roles_contain_admin_name(
+    client: httpx.AsyncClient,
+    guild_id: str,
+    member_role_ids: List[str],
+    bot_token: str,
+    admin_role_names: Set[str],
+) -> bool:
+    if not member_role_ids or not bot_token or not admin_role_names:
+        return False
+    roles_res = await client.get(
+        f"https://discord.com/api/guilds/{guild_id}/roles",
+        headers={"Authorization": f"Bot {bot_token}"},
+    )
+    if roles_res.status_code != 200:
+        return False
+    member_role_set = set(member_role_ids)
+    for role in roles_res.json():
+        if role.get("id") in member_role_set and role.get("name", "").strip().lower() in admin_role_names:
+            return True
+    return False
+
+
+async def _user_has_admin_discord_role(
+    client: httpx.AsyncClient,
+    guild_id: str,
+    discord_id: str,
+    bot_token: str,
+    admin_role_names: Set[str],
+) -> bool:
+    member_res = await client.get(
+        f"https://discord.com/api/guilds/{guild_id}/members/{discord_id}",
+        headers={"Authorization": f"Bot {bot_token}"},
+    )
+    if member_res.status_code != 200:
+        return False
+    member_roles = member_res.json().get("roles", [])
+    return await _roles_contain_admin_name(client, guild_id, member_roles, bot_token, admin_role_names)
+
+
 @router.post("/join", tags=["Campaigns"])
 async def join_campaign(
     join_data: schemas.CampaignJoin,
@@ -125,20 +172,32 @@ async def join_campaign(
             headers={"Authorization": f"Bot {settings.DISCORD_BOT_TOKEN}"}
         )
 
-    if member_response.status_code == 404:
-        raise HTTPException(status_code=403, detail="You are not a member of this Discord server.")
-    elif member_response.status_code != 200:
-         raise HTTPException(status_code=400, detail="Failed to verify guild membership.")
+        if member_response.status_code == 404:
+            raise HTTPException(status_code=403, detail="You are not a member of this Discord server.")
+        elif member_response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Failed to verify guild membership.")
 
-    member_data = member_response.json()
-    roles = member_data.get("roles", [])
+        member_data = member_response.json()
+        roles = member_data.get("roles", [])
 
-    # Determine App Role
-    app_role = None
-    if campaign.dm_role_id and campaign.dm_role_id in roles:
-        app_role = "admin"
-    elif campaign.player_role_id and campaign.player_role_id in roles:
-        app_role = "player"
+        # Determine App Role
+        app_role = None
+        if campaign.dm_role_id and campaign.dm_role_id in roles:
+            app_role = "admin"
+        elif not campaign.dm_role_id:
+            bot_token = getattr(settings, "DISCORD_BOT_TOKEN", "")
+            if isinstance(bot_token, str) and bot_token.strip():
+                if await _roles_contain_admin_name(
+                    client,
+                    campaign.discord_guild_id,
+                    roles,
+                    bot_token,
+                    _get_admin_role_names(),
+                ):
+                    app_role = "admin"
+
+        if app_role is None and campaign.player_role_id and campaign.player_role_id in roles:
+            app_role = "player"
 
     # If no specific roles set, maybe allow anyone?
     # The requirement said: "if it matches an established dm server we check their roles if they are a player or a dm."
@@ -219,7 +278,8 @@ async def get_admin_discord_guilds(
     current_user_payload: dict = Depends(get_current_user_global)
 ):
     """
-    Lists guilds where the user has 'Manage Guild' permissions.
+    Lists guilds where the user has 'Manage Guild' (0x20), 'Administrator' (0x8),
+    or a configured GM/DM role (checked via DISCORD_BOT_TOKEN).
     Used for the Setup page.
     """
     discord_id = current_user_payload.get("sub")
@@ -228,6 +288,10 @@ async def get_admin_discord_guilds(
         logger.warning(f"Unauthorized admin guilds view attempt by discord_id: {discord_id}. Allowed admins: {allowed_admins}")
         raise HTTPException(status_code=403, detail="You are not authorized to view admin guilds.")
 
+    bot_token = getattr(settings, "DISCORD_BOT_TOKEN", "")
+    has_bot_token = isinstance(bot_token, str) and bool(bot_token.strip())
+    admin_role_names = _get_admin_role_names()
+
     async with httpx.AsyncClient() as client:
         # Use httpx to make Discord API calls
         response = await client.get(
@@ -235,16 +299,34 @@ async def get_admin_discord_guilds(
             headers={"Authorization": f"Bearer {discord_token}"}
         )
 
-    if response.status_code != 200:
-        raise HTTPException(status_code=400, detail="Failed to fetch guilds.")
+        if response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Failed to fetch guilds.")
 
-    guilds = response.json()
+        guilds = response.json()
 
-    # Filter for Manage Guild permission (0x20)
-    admin_guilds = []
-    for g in guilds:
-        perms = int(g.get("permissions", "0"))
-        if (perms & 0x20) == 0x20: # MANAGE_GUILD
-            admin_guilds.append(g)
+        # Filter for Manage Guild (0x20) or Administrator (0x8) permission
+        admin_guilds = []
+        remaining_guilds = []
+        for g in guilds:
+            perms = int(g.get("permissions", "0"))
+            if (perms & 0x20) == 0x20 or (perms & 0x8) == 0x8:
+                admin_guilds.append(g)
+            else:
+                remaining_guilds.append(g)
+
+        # Also include guilds where the user holds a GM/DM role (when the bot is in the guild)
+        if remaining_guilds and has_bot_token and admin_role_names:
+            sem = asyncio.Semaphore(10)
+
+            async def _check_guild(g: dict) -> bool:
+                async with sem:
+                    return await _user_has_admin_discord_role(
+                        client, g["id"], discord_id, bot_token, admin_role_names
+                    )
+
+            matches = await asyncio.gather(*[_check_guild(g) for g in remaining_guilds])
+            for g, is_match in zip(remaining_guilds, matches):
+                if is_match:
+                    admin_guilds.append(g)
 
     return admin_guilds

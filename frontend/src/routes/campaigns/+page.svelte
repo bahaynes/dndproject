@@ -296,7 +296,7 @@
 		{#if adminGuilds.length > 0}
 			<div class="mb-8 border-t pt-8">
 				<h2 class="mb-4 text-xl font-semibold">Setup New Campaign</h2>
-				<p class="mb-4 text-sm text-base-content/60">You have admin rights on these Discord servers.</p>
+				<p class="mb-4 text-sm text-base-content/60">You have admin or GM rights on these Discord servers.</p>
 				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 					{#each adminGuilds as guild}
 						<!-- Filter out already setup guilds -->
