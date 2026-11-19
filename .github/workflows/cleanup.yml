@@ -9,7 +9,7 @@ on:
       keep_count:
         description: "Minimum number of recent image versions to keep per package"
         required: false
-        default: "10"
+        default: "2"
         type: string
       dry_run:
         description: "Log what would be deleted without actually deleting"
@@ -106,18 +106,18 @@ jobs:
           cat << 'EOF' > /tmp/ar-cleanup-policy.json
           [
             {
-              "name": "delete-untagged-after-7d",
+              "name": "delete-untagged-after-1d",
               "action": {"type": "Delete"},
               "condition": {
                 "tagState": "UNTAGGED",
-                "olderThan": "604800s"
+                "olderThan": "86400s"
               }
             },
             {
-              "name": "keep-recent-10-versions",
+              "name": "keep-recent-2-versions",
               "action": {"type": "Keep"},
               "mostRecentVersions": {
-                "keepCount": 10
+                "keepCount": 2
               }
             }
           ]
@@ -132,7 +132,7 @@ jobs:
 
       - name: Prune Old Container Images
         env:
-          KEEP_COUNT: ${{ inputs.keep_count || '10' }}
+          KEEP_COUNT: ${{ inputs.keep_count || '2' }}
           DRY_RUN: ${{ inputs.dry_run || 'false' }}
         run: |
           # Collect all images currently referenced by live Cloud Run services so we never delete an active image
