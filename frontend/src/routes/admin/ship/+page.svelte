@@ -1,9 +1,25 @@
 <script lang="ts">
 	import { api } from '$lib/api';
+	import { auth } from '$lib/auth';
 	import { onMount } from 'svelte';
 	import type { Ship } from '$lib/types';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
+
+	interface DiscordRoleOption {
+		id: string;
+		name: string;
+		color: number;
+	}
+
+	interface CampaignMember {
+		id: number;
+		username: string;
+		discord_id: string;
+		avatar_url?: string | null;
+		role: 'admin' | 'player' | string;
+		is_active: boolean;
+	}
 
 	let settings: Ship | null = null;
 	let loading = true;
@@ -12,6 +28,19 @@
 	let saveMsg = '';
 	let saveError = '';
 	let seedMsg = '';
+
+	// Discord Roles & Members
+	let discordRoles: DiscordRoleOption[] = [];
+	let dmRoleId = '';
+	let playerRoleId = '';
+	let botConnected = false;
+	let rolesWarning = '';
+	let savingRoles = false;
+	let rolesMsg = '';
+	let rolesError = '';
+	let members: CampaignMember[] = [];
+	let updatingMemberId: number | null = null;
+	let membersError = '';
 
 	// World Import / Export
 	let exporting = false;
@@ -55,9 +84,11 @@
 	async function loadSettings() {
 		loading = true;
 		try {
-			const [shipRes, presetsRes] = await Promise.all([
+			const [shipRes, presetsRes, rolesRes, membersRes] = await Promise.all([
 				api('GET', '/ship/'),
-				api('GET', '/admin/presets').catch(() => [])
+				api('GET', '/admin/presets').catch(() => []),
+				api('GET', '/campaigns/current/discord-roles').catch(() => null),
+				api('GET', '/campaigns/current/members').catch(() => [])
 			]);
 			settings = shipRes;
 			editName = settings!.name;
@@ -66,8 +97,49 @@
 			if (presets.length > 0 && !presets.some((p) => p.slug === selectedPreset)) {
 				selectedPreset = presets[0].slug;
 			}
+			if (rolesRes) {
+				discordRoles = Array.isArray(rolesRes.roles) ? rolesRes.roles : [];
+				dmRoleId = rolesRes.dm_role_id ?? '';
+				playerRoleId = rolesRes.player_role_id ?? '';
+				botConnected = Boolean(rolesRes.bot_connected);
+				rolesWarning = rolesRes.warning ?? '';
+			}
+			members = Array.isArray(membersRes) ? membersRes : [];
 		} catch (e) {}
 		loading = false;
+	}
+
+	async function saveDiscordRoles() {
+		savingRoles = true;
+		rolesMsg = '';
+		rolesError = '';
+		try {
+			await api('PUT', '/campaigns/current/roles', {
+				dm_role_id: dmRoleId || null,
+				player_role_id: playerRoleId || null
+			});
+			rolesMsg = 'Discord role mapping saved.';
+		} catch (e) {
+			rolesError = e instanceof Error ? e.message : 'Failed to save Discord roles.';
+		}
+		savingRoles = false;
+	}
+
+	async function toggleMemberRole(member: CampaignMember) {
+		const nextRole = member.role === 'admin' ? 'player' : 'admin';
+		updatingMemberId = member.id;
+		membersError = '';
+		try {
+			const updated: CampaignMember = await api(
+				'PUT',
+				`/campaigns/current/members/${member.id}/role`,
+				{ role: nextRole }
+			);
+			members = members.map((m) => (m.id === updated.id ? updated : m));
+		} catch (e) {
+			membersError = e instanceof Error ? e.message : 'Failed to update member role.';
+		}
+		updatingMemberId = null;
 	}
 
 	async function saveSettings() {
@@ -348,4 +420,144 @@
 			<div class="alert alert-error text-xs">{worldError}</div>
 		{/if}
 	</section>
+
+	<div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+		<section class="panel p-5 space-y-4">
+			<div>
+				<h2 class="text-base font-semibold text-base-content">Discord Role Mapping</h2>
+				<p class="text-xs text-base-content/70">
+					Choose which Discord server roles map to Campaign Admin (DM/GM) and Player when members join.
+				</p>
+			</div>
+
+			{#if rolesWarning}
+				<div class="alert alert-warning text-xs">{rolesWarning}</div>
+			{/if}
+
+			{#if botConnected}
+				<div>
+					<label for="dm-role-select" class="mb-1 block text-xs font-medium text-base-content/75">
+						DM / Admin Role
+					</label>
+					<select
+						id="dm-role-select"
+						class="select select-bordered select-sm w-full"
+						bind:value={dmRoleId}
+					>
+						<option value="">Auto (match GM / DM role name)</option>
+						{#each discordRoles as role}
+							<option value={role.id}>@{role.name}</option>
+						{/each}
+					</select>
+				</div>
+
+				<div>
+					<label for="player-role-select" class="mb-1 block text-xs font-medium text-base-content/75">
+						Player Role
+					</label>
+					<select
+						id="player-role-select"
+						class="select select-bordered select-sm w-full"
+						bind:value={playerRoleId}
+					>
+						<option value="">None configured</option>
+						{#each discordRoles as role}
+							<option value={role.id}>@{role.name}</option>
+						{/each}
+					</select>
+				</div>
+			{:else}
+				<div>
+					<label for="dm-role-input" class="mb-1 block text-xs font-medium text-base-content/75">
+						DM / Admin Role ID
+					</label>
+					<input
+						id="dm-role-input"
+						type="text"
+						class="input input-bordered input-sm w-full"
+						placeholder="Leave blank for Auto (GM / DM)"
+						bind:value={dmRoleId}
+					/>
+				</div>
+
+				<div>
+					<label for="player-role-input" class="mb-1 block text-xs font-medium text-base-content/75">
+						Player Role ID
+					</label>
+					<input
+						id="player-role-input"
+						type="text"
+						class="input input-bordered input-sm w-full"
+						placeholder="Discord Role ID"
+						bind:value={playerRoleId}
+					/>
+				</div>
+			{/if}
+
+			{#if rolesMsg}
+				<div class="alert alert-success text-xs">{rolesMsg}</div>
+			{/if}
+			{#if rolesError}
+				<div class="alert alert-error text-xs">{rolesError}</div>
+			{/if}
+
+			<div>
+				<button class="btn btn-primary btn-sm" on:click={saveDiscordRoles} disabled={savingRoles}>
+					{savingRoles ? 'Saving...' : 'Save Role Mapping'}
+				</button>
+			</div>
+		</section>
+
+		<section class="panel p-5 space-y-4">
+			<div>
+				<h2 class="text-base font-semibold text-base-content">Campaign Members</h2>
+				<p class="text-xs text-base-content/70">
+					Promote trusted players to Campaign Admin or demote admins back to Player.
+				</p>
+			</div>
+
+			{#if membersError}
+				<div class="alert alert-error text-xs">{membersError}</div>
+			{/if}
+
+			{#if members.length === 0}
+				<p class="text-xs text-base-content/60">No members found in this campaign.</p>
+			{:else}
+				<div class="divide-y divide-base-content/10">
+					{#each members as member (member.id)}
+						<div class="flex items-center justify-between gap-3 py-2.5">
+							<div class="min-w-0">
+								<p class="truncate text-sm font-medium text-base-content">
+									{member.username}
+									{#if $auth.user?.id === member.id}
+										<span class="ml-1 text-xs text-base-content/50">(you)</span>
+									{/if}
+								</p>
+								<span
+									class="badge badge-xs {member.role === 'admin'
+										? 'badge-primary'
+										: 'badge-ghost'}"
+								>
+									{member.role}
+								</span>
+							</div>
+							<button
+								class="btn btn-xs btn-outline"
+								disabled={updatingMemberId === member.id || $auth.user?.id === member.id}
+								on:click={() => toggleMemberRole(member)}
+							>
+								{#if updatingMemberId === member.id}
+									Updating...
+								{:else if member.role === 'admin'}
+									Demote to Player
+								{:else}
+									Promote to Admin
+								{/if}
+							</button>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</section>
+	</div>
 {/if}

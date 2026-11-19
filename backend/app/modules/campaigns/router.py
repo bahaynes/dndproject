@@ -8,11 +8,12 @@ import logging
 from ...database import get_db
 from ...config import get_settings
 from ... import security
-from ...dependencies import get_current_user_global
+from ...dependencies import get_current_user_global, get_current_active_admin_user
 
 from . import schemas, service as crud
 from ..auth import service as auth_crud
 from ..auth import schemas as auth_schemas
+from ..auth import models as auth_models
 
 router = APIRouter()
 settings = get_settings()
@@ -342,3 +343,135 @@ async def get_admin_discord_guilds(
                     admin_guilds.append(g)
 
     return admin_guilds
+
+
+@router.get("/current/discord-roles", response_model=schemas.CampaignDiscordRolesResponse, tags=["Admin"])
+async def get_current_campaign_discord_roles(
+    current_user: auth_models.User = Depends(get_current_active_admin_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Lists Discord roles for the current campaign's guild (via DISCORD_BOT_TOKEN)
+    along with the campaign's configured dm_role_id and player_role_id.
+    """
+    campaign = crud.get_campaign(db, current_user.campaign_id)
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    bot_token = getattr(settings, "DISCORD_BOT_TOKEN", "")
+    if not isinstance(bot_token, str) or not bot_token.strip():
+        return schemas.CampaignDiscordRolesResponse(
+            roles=[],
+            dm_role_id=campaign.dm_role_id,
+            player_role_id=campaign.player_role_id,
+            bot_connected=False,
+            warning="DISCORD_BOT_TOKEN is not configured; enter role IDs manually or configure the bot token.",
+        )
+
+    async with httpx.AsyncClient() as client:
+        roles_res = await client.get(
+            f"https://discord.com/api/guilds/{campaign.discord_guild_id}/roles",
+            headers={"Authorization": f"Bot {bot_token}"},
+        )
+
+    if roles_res.status_code != 200:
+        return schemas.CampaignDiscordRolesResponse(
+            roles=[],
+            dm_role_id=campaign.dm_role_id,
+            player_role_id=campaign.player_role_id,
+            bot_connected=False,
+            warning="Could not fetch roles from Discord. Make sure the bot has been invited to this server.",
+        )
+
+    raw_roles = roles_res.json()
+    filtered_roles = [
+        r for r in raw_roles
+        if r.get("id") != campaign.discord_guild_id and r.get("name") != "@everyone"
+    ]
+    filtered_roles.sort(key=lambda r: r.get("position", 0), reverse=True)
+
+    return schemas.CampaignDiscordRolesResponse(
+        roles=[
+            schemas.DiscordRoleOption(
+                id=r["id"],
+                name=r["name"],
+                color=r.get("color", 0),
+            )
+            for r in filtered_roles
+        ],
+        dm_role_id=campaign.dm_role_id,
+        player_role_id=campaign.player_role_id,
+        bot_connected=True,
+    )
+
+
+@router.put("/current/roles", response_model=schemas.Campaign, tags=["Admin"])
+async def update_current_campaign_roles(
+    roles_update: schemas.CampaignRolesUpdate,
+    current_user: auth_models.User = Depends(get_current_active_admin_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Updates the dm_role_id and player_role_id for the current campaign.
+    """
+    campaign = crud.get_campaign(db, current_user.campaign_id)
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    dm_role_id = roles_update.dm_role_id.strip() if roles_update.dm_role_id else None
+    player_role_id = roles_update.player_role_id.strip() if roles_update.player_role_id else None
+
+    campaign.dm_role_id = dm_role_id or None
+    campaign.player_role_id = player_role_id or None
+    db.commit()
+    db.refresh(campaign)
+    return campaign
+
+
+@router.get("/current/members", response_model=List[schemas.CampaignMemberOut], tags=["Admin"])
+async def get_current_campaign_members(
+    current_user: auth_models.User = Depends(get_current_active_admin_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Lists all users belonging to the current campaign.
+    """
+    return (
+        db.query(auth_models.User)
+        .filter(auth_models.User.campaign_id == current_user.campaign_id)
+        .order_by(auth_models.User.username.asc())
+        .all()
+    )
+
+
+@router.put("/current/members/{user_id}/role", response_model=schemas.CampaignMemberOut, tags=["Admin"])
+async def update_campaign_member_role(
+    user_id: int,
+    role_update: schemas.CampaignMemberRoleUpdate,
+    current_user: auth_models.User = Depends(get_current_active_admin_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Promotes or demotes a member within the current campaign ("admin" or "player").
+    """
+    if role_update.role not in ("admin", "player"):
+        raise HTTPException(status_code=400, detail="Role must be 'admin' or 'player'.")
+
+    member = (
+        db.query(auth_models.User)
+        .filter(
+            auth_models.User.id == user_id,
+            auth_models.User.campaign_id == current_user.campaign_id,
+        )
+        .first()
+    )
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found in this campaign.")
+
+    if member.id == current_user.id and role_update.role != "admin":
+        raise HTTPException(status_code=400, detail="Cannot demote yourself.")
+
+    member.role = role_update.role
+    db.commit()
+    db.refresh(member)
+    return member

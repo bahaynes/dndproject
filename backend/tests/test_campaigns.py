@@ -566,3 +566,117 @@ class TestBotInviteUrl:
             mock_settings.DISCORD_CLIENT_ID = ""
             r = client.get("/api/campaigns/bot-invite-url")
         assert r.status_code == 503
+
+
+# ---------------------------------------------------------------------------
+# /api/campaigns/current/* (role mapping & member management)
+# ---------------------------------------------------------------------------
+
+class TestCampaignRoleSettings:
+    def _campaign_token(self, discord_id: str, campaign_id: int, role: str) -> str:
+        return security.create_access_token(
+            data={"sub": discord_id, "campaign_id": campaign_id, "role": role}
+        )
+
+    def _seed_campaign_and_users(self, db_session):
+        from app.modules.campaigns import models as campaign_models
+        from app.modules.auth import models as auth_models
+
+        camp = campaign_models.Campaign(
+            name="Settings Camp",
+            discord_guild_id="guild_settings_1",
+            dm_role_id="r_dm",
+            player_role_id="r_player",
+        )
+        db_session.add(camp)
+        db_session.flush()
+
+        admin = auth_models.User(
+            username="AdminGM",
+            discord_id="settings_admin_1",
+            campaign_id=camp.id,
+            role="admin",
+        )
+        player = auth_models.User(
+            username="HeroPlayer",
+            discord_id="settings_player_1",
+            campaign_id=camp.id,
+            role="player",
+        )
+        db_session.add_all([admin, player])
+        db_session.commit()
+        return camp, admin, player
+
+    def test_admin_can_list_discord_roles_sorted_without_everyone(self, client, db_session):
+        camp, admin, _ = self._seed_campaign_and_users(db_session)
+        token = self._campaign_token(admin.discord_id, camp.id, "admin")
+
+        discord_roles = [
+            {"id": "guild_settings_1", "name": "@everyone", "position": 0, "color": 0},
+            {"id": "r_player", "name": "Adventurer", "position": 1, "color": 123},
+            {"id": "r_dm", "name": "GM", "position": 5, "color": 456},
+        ]
+        with patch("app.modules.campaigns.router.settings") as mock_settings:
+            mock_settings.DISCORD_BOT_TOKEN = "bot_token"
+            with _patch_campaigns_httpx({"guilds/guild_settings_1/roles": (200, discord_roles)}):
+                r = client.get(
+                    "/api/campaigns/current/discord-roles",
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["bot_connected"] is True
+        assert data["dm_role_id"] == "r_dm"
+        assert data["player_role_id"] == "r_player"
+        assert [role["name"] for role in data["roles"]] == ["GM", "Adventurer"]
+
+    def test_player_rejected_from_role_settings(self, client, db_session):
+        camp, _, player = self._seed_campaign_and_users(db_session)
+        token = self._campaign_token(player.discord_id, camp.id, "player")
+
+        r = client.get(
+            "/api/campaigns/current/discord-roles",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert r.status_code == 403
+
+    def test_admin_can_update_campaign_roles(self, client, db_session):
+        camp, admin, _ = self._seed_campaign_and_users(db_session)
+        token = self._campaign_token(admin.discord_id, camp.id, "admin")
+
+        r = client.put(
+            "/api/campaigns/current/roles",
+            json={"dm_role_id": "new_dm_role", "player_role_id": ""},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["dm_role_id"] == "new_dm_role"
+        assert data["player_role_id"] is None
+
+    def test_admin_can_list_and_promote_member_but_not_self_demote(self, client, db_session):
+        camp, admin, player = self._seed_campaign_and_users(db_session)
+        token = self._campaign_token(admin.discord_id, camp.id, "admin")
+
+        list_res = client.get(
+            "/api/campaigns/current/members",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert list_res.status_code == 200
+        assert len(list_res.json()) == 2
+
+        promote_res = client.put(
+            f"/api/campaigns/current/members/{player.id}/role",
+            json={"role": "admin"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert promote_res.status_code == 200
+        assert promote_res.json()["role"] == "admin"
+
+        self_demote_res = client.put(
+            f"/api/campaigns/current/members/{admin.id}/role",
+            json={"role": "player"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert self_demote_res.status_code == 400
