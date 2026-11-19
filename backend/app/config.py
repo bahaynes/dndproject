@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     # Comma-separated list of Discord User IDs allowed to setup campaigns
     ADMIN_DISCORD_IDS: str = ""
 
+    # Comma-separated list of Discord role names (case-insensitive) treated as GM/admin
+    ADMIN_DISCORD_ROLE_NAMES: str = "GM,DM"
+
     # Debug token for the /api/debug/* endpoints. Leave empty to disable those endpoints.
     DEBUG_TOKEN: str = ""
 

@@ -14,6 +14,7 @@
 	let error = '';
 	let selectedCampaignId: number | null = null;
 	let selectedGuildId: string | null = null;
+	let botInviteUrl = '';
 
 	onMount(async () => {
 		// Check for pending tokens (set by /login/callback after Discord OAuth)
@@ -40,8 +41,21 @@
 			}
 		}
 
+		loadBotInviteUrl();
 		await loadCampaigns();
 	});
+
+	async function loadBotInviteUrl() {
+		try {
+			const botRes = await fetch(`${API_BASE_URL}/campaigns/bot-invite-url`);
+			if (botRes.ok) {
+				const botData = await botRes.json();
+				botInviteUrl = botData.url || '';
+			}
+		} catch (e) {
+			console.error(e);
+		}
+	}
 
 	async function loadCampaigns() {
 		loading = true;
@@ -296,7 +310,7 @@
 		{#if adminGuilds.length > 0}
 			<div class="mb-8 border-t pt-8">
 				<h2 class="mb-4 text-xl font-semibold">Setup New Campaign</h2>
-				<p class="mb-4 text-sm text-base-content/60">You have admin rights on these Discord servers.</p>
+				<p class="mb-4 text-sm text-base-content/60">You have admin or GM rights on these Discord servers.</p>
 				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 					{#each adminGuilds as guild}
 						<!-- Filter out already setup guilds -->
@@ -314,6 +328,28 @@
 						{/if}
 					{/each}
 				</div>
+			</div>
+		{/if}
+
+		<!-- Bot Invite Callout -->
+		{#if botInviteUrl}
+			<div
+				class="mt-8 flex flex-wrap items-center justify-between gap-4 rounded border border-base-content/15 bg-base-200 p-4"
+			>
+				<div>
+					<p class="font-semibold">Not seeing your server here?</p>
+					<p class="text-sm text-base-content/60">
+						Invite the bot to your Discord server so we can verify your GM or player roles.
+					</p>
+				</div>
+				<a
+					href={botInviteUrl}
+					target="_blank"
+					rel="noopener noreferrer"
+					class="btn btn-sm btn-outline btn-primary"
+				>
+					Invite Bot to Discord
+				</a>
 			</div>
 		{/if}
 	{/if}

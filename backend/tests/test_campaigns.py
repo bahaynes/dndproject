@@ -436,6 +436,38 @@ class TestJoinCampaign:
             )
         assert r.status_code == 400
 
+    def test_gm_role_name_joins_as_admin_when_dm_role_id_unset(self, client, db_session):
+        from app.modules.campaigns import models as campaign_models
+        from app.modules.auth import models as auth_models
+
+        camp = campaign_models.Campaign(
+            name="GM Tag Camp",
+            discord_guild_id="guild_join_gm",
+        )
+        db_session.add(camp)
+        db_session.commit()
+
+        with patch("app.modules.campaigns.router.settings") as mock_settings:
+            mock_settings.DISCORD_BOT_TOKEN = "bot_token"
+            mock_settings.ADMIN_DISCORD_ROLE_NAMES = "GM,DM"
+            with _patch_campaigns_httpx({
+                "guilds/guild_join_gm/members": (200, {"roles": ["role_gm_99"]}),
+                "guilds/guild_join_gm/roles": (200, [{"id": "role_gm_99", "name": "GM"}]),
+            }):
+                token = _global_token("join_discord_gm", username="GMUser")
+                r = client.post(
+                    "/api/campaigns/join",
+                    json={"discord_guild_id": "guild_join_gm", "discord_access_token": "fake"},
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+        assert r.status_code == 200, r.text
+
+        user = db_session.query(auth_models.User).filter_by(
+            discord_id="join_discord_gm"
+        ).first()
+        assert user is not None
+        assert user.role == "admin"
+
 
 # ---------------------------------------------------------------------------
 # /api/campaigns/discord/guilds
@@ -464,6 +496,33 @@ class TestDiscordGuilds:
         assert len(data) == 1
         assert data[0]["id"] == "g1"
 
+    def test_returns_administrator_and_gm_role_guilds(self, client):
+        guilds = [
+            {"id": "g_admin", "name": "Has Admin", "permissions": str(0x8)},
+            {"id": "g_gm", "name": "Has GM Tag", "permissions": "0"},
+            {"id": "g_player", "name": "Only Player", "permissions": "0"},
+        ]
+        with patch("app.modules.campaigns.router.settings") as mock_settings:
+            mock_settings.ADMIN_DISCORD_IDS = "guilds_admin_gm"
+            mock_settings.DISCORD_BOT_TOKEN = "bot_token"
+            mock_settings.ADMIN_DISCORD_ROLE_NAMES = "GM,DM"
+            with _patch_campaigns_httpx({
+                "users/@me/guilds": (200, guilds),
+                "guilds/g_gm/members/guilds_admin_gm": (200, {"roles": ["r_gm"]}),
+                "guilds/g_gm/roles": (200, [{"id": "r_gm", "name": "GM"}]),
+                "guilds/g_player/members/guilds_admin_gm": (200, {"roles": ["r_player"]}),
+                "guilds/g_player/roles": (200, [{"id": "r_player", "name": "Player"}]),
+            }):
+                token = self._admin_token("guilds_admin_gm")
+                r = client.post(
+                    "/api/campaigns/discord/guilds",
+                    json={"discord_token": "fake"},
+                    headers={"Authorization": f"Bearer {token}"},
+                )
+        assert r.status_code == 200
+        data = r.json()
+        assert [g["id"] for g in data] == ["g_admin", "g_gm"]
+
     def test_rejects_non_admin(self, client):
         with patch("app.modules.campaigns.router.settings") as mock_settings:
             mock_settings.ADMIN_DISCORD_IDS = "real_admin_only"
@@ -486,3 +545,24 @@ class TestDiscordGuilds:
                     headers={"Authorization": f"Bearer {token}"},
                 )
         assert r.status_code == 400
+
+
+# ---------------------------------------------------------------------------
+# /api/campaigns/bot-invite-url
+# ---------------------------------------------------------------------------
+
+class TestBotInviteUrl:
+    def test_returns_bot_invite_url_without_auth(self, client):
+        with patch("app.modules.campaigns.router.settings") as mock_settings:
+            mock_settings.DISCORD_CLIENT_ID = "1234567890"
+            r = client.get("/api/campaigns/bot-invite-url")
+        assert r.status_code == 200
+        assert r.json() == {
+            "url": "https://discord.com/oauth2/authorize?client_id=1234567890&scope=bot&permissions=0"
+        }
+
+    def test_returns_503_when_client_id_missing(self, client):
+        with patch("app.modules.campaigns.router.settings") as mock_settings:
+            mock_settings.DISCORD_CLIENT_ID = ""
+            r = client.get("/api/campaigns/bot-invite-url")
+        assert r.status_code == 503
