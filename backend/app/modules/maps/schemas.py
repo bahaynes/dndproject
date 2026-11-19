@@ -63,6 +63,25 @@ class LayerBounds(BaseModel):
     max_y: float
 
 
+RouteType = Literal["road", "trail", "sea_lane", "river"]
+
+
+class RouteCoord(BaseModel):
+    q: int
+    r: int
+
+
+class MapRoute(BaseModel):
+    id: str
+    name: str = ""
+    type: RouteType = "road"
+    hexes: List[RouteCoord] = []
+
+
+class MapRoutesUpdate(BaseModel):
+    routes: List[MapRoute]
+
+
 TravelScale = Literal["local", "frontier", "expedition"]
 
 
@@ -94,7 +113,13 @@ class HexMap(HexMapBase):
     satellite_image_key: Optional[str] = Field(default=None, exclude=True)
     layer_bounds: Optional[LayerBounds] = None
     source_region: Optional[Dict[str, Any]] = None
+    routes: List[MapRoute] = []
     hexes: List[Hex] = []
+
+    @field_validator('routes', mode='before')
+    @classmethod
+    def coerce_none_routes_to_list(cls, v: Any) -> List[Any]:
+        return v if v is not None else []
 
     @computed_field
     @property

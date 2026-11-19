@@ -200,3 +200,21 @@ def get_map_layer_image(
         media_type="image/png",
         headers={"Cache-Control": "private, max-age=300"},
     )
+
+
+@router.put("/{map_id}/routes", response_model=schemas.HexMap, tags=["Admin"])
+def update_map_routes(
+    map_id: int,
+    payload: schemas.MapRoutesUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_admin_user),
+):
+    """Replace the road, trail, river, and sea-lane routes on a HexMap."""
+    db_map = crud.get_map(db, map_id=map_id)
+    if not db_map or db_map.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Map not found")
+
+    db_map.routes = [r.model_dump() for r in payload.routes]
+    db.commit()
+    db.refresh(db_map)
+    return db_map

@@ -289,3 +289,40 @@ def test_bake_earth_from_center_pin_and_travel_scale(client, campaign, admin_aut
     assert sr["center_lat"] == 64.1466
     assert sr["center_lon"] == -21.9426
     assert sr["travel_scale"] == "frontier"
+
+
+def test_update_map_routes(client, campaign, admin_auth_headers, player_auth_headers):
+    m = _create_map(client, admin_auth_headers)
+    payload = {
+        "routes": [
+            {
+                "id": "route-1",
+                "name": "King's Road",
+                "type": "road",
+                "hexes": [{"q": 0, "r": 0}, {"q": 1, "r": 0}, {"q": 2, "r": -1}],
+            },
+            {
+                "id": "route-2",
+                "name": "Meridian Sea Lane",
+                "type": "sea_lane",
+                "hexes": [{"q": 0, "r": 0}, {"q": -1, "r": 1}],
+            },
+        ]
+    }
+
+    # Player cannot update routes
+    res_forbidden = client.put(f"/api/maps/{m['id']}/routes", json=payload, headers=player_auth_headers)
+    assert res_forbidden.status_code == 403
+
+    # Admin updates routes
+    res = client.put(f"/api/maps/{m['id']}/routes", json=payload, headers=admin_auth_headers)
+    assert res.status_code == 200
+    routes = res.json()["routes"]
+    assert len(routes) == 2
+    assert routes[0]["name"] == "King's Road"
+    assert routes[0]["type"] == "road"
+    assert len(routes[0]["hexes"]) == 3
+
+    # GET returns saved routes
+    fetched = client.get(f"/api/maps/{m['id']}", headers=player_auth_headers).json()
+    assert len(fetched["routes"]) == 2

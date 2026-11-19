@@ -1,8 +1,22 @@
 import { get } from 'svelte/store';
 import { auth } from '$lib/auth';
 import { API_BASE_URL } from '$lib/config';
+import { hexToPixel } from './hexMath';
 
 export type MapLayerMode = 'tactical' | 'topo' | 'satellite';
+export type RouteType = 'road' | 'trail' | 'sea_lane' | 'river';
+
+export interface RouteCoord {
+	q: number;
+	r: number;
+}
+
+export interface MapRoute {
+	id: string;
+	name: string;
+	type: RouteType;
+	hexes: RouteCoord[];
+}
 
 export interface LayerBounds {
 	min_x: number;
@@ -57,4 +71,24 @@ export async function fetchAuthedLayerUrl(apiPath: string): Promise<string> {
 	}
 	const blob = await res.blob();
 	return URL.createObjectURL(blob);
+}
+
+/**
+ * Converts a sequence of hex coordinates into a smooth quadratic Bezier SVG path.
+ */
+export function routeToSvgPath(hexes: RouteCoord[], hexSize: number): string {
+	if (hexes.length < 2) return '';
+	const pts = hexes.map((h) => hexToPixel(h.q, h.r, hexSize));
+	if (pts.length === 2) {
+		return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
+	}
+	let d = `M ${pts[0].x} ${pts[0].y}`;
+	for (let i = 1; i < pts.length - 1; i++) {
+		const midX = (pts[i].x + pts[i + 1].x) / 2;
+		const midY = (pts[i].y + pts[i + 1].y) / 2;
+		d += ` Q ${pts[i].x} ${pts[i].y} ${midX} ${midY}`;
+	}
+	const last = pts[pts.length - 1];
+	d += ` L ${last.x} ${last.y}`;
+	return d;
 }

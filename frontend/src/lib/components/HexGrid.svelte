@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import HexCell from './HexCell.svelte';
 	import type { HexCoord } from '../utils/hexMath';
+	import { routeToSvgPath, type MapRoute, type RouteCoord } from '../utils/mapLayers';
 
 	interface HexData {
 		q: number;
@@ -24,6 +25,37 @@
 	export let baseLayerUrl: string | null = null;
 	export let layerBounds: { min_x: number; min_y: number; max_x: number; max_y: number } | null = null;
 	export let showDangerTiers: boolean = false;
+	export let routes: MapRoute[] = [];
+	export let activeDraftRoute: MapRoute | null = null;
+
+	$: discoveredKeys = new Set(hexes.filter((h) => h.is_discovered).map((h) => `${h.q},${h.r}`));
+
+	function visibleRouteSegments(route: MapRoute): RouteCoord[][] {
+		if (adminMode) return route.hexes.length >= 2 ? [route.hexes] : [];
+		const segments: RouteCoord[][] = [];
+		let current: RouteCoord[] = [];
+		for (let i = 0; i < route.hexes.length - 1; i++) {
+			const a = route.hexes[i];
+			const b = route.hexes[i + 1];
+			const visible = discoveredKeys.has(`${a.q},${a.r}`) || discoveredKeys.has(`${b.q},${b.r}`);
+			if (visible) {
+				if (current.length === 0) current.push(a);
+				current.push(b);
+			} else if (current.length > 0) {
+				if (current.length >= 2) segments.push(current);
+				current = [];
+			}
+		}
+		if (current.length >= 2) segments.push(current);
+		return segments;
+	}
+
+	const ROUTE_STYLES: Record<string, { stroke: string; width: number; dash?: string; casing?: string }> = {
+		road: { stroke: '#e2c07d', width: 3.2, casing: 'rgba(20, 16, 12, 0.8)' },
+		trail: { stroke: '#c8a97e', width: 2, dash: '5 5' },
+		sea_lane: { stroke: '#38bdf8', width: 2.5, dash: '8 6' },
+		river: { stroke: '#60a5fa', width: 3.5, casing: 'rgba(15, 35, 65, 0.7)' }
+	};
 
 	$: overlayMode = Boolean(baseLayerUrl && layerBounds);
 	$: dangerRings = [
@@ -213,6 +245,53 @@
 				/>
 			{/each}
 		</g>
+
+		<!-- Roads / Trails / Rivers / Sea Lanes -->
+		{#if routes.length > 0 || (activeDraftRoute && activeDraftRoute.hexes.length >= 2)}
+			<g pointer-events="none" class="map-routes">
+				{#each routes as route (route.id)}
+					{@const style = ROUTE_STYLES[route.type] || ROUTE_STYLES.road}
+					{#each visibleRouteSegments(route) as seg}
+						{@const d = routeToSvgPath(seg, hexSize)}
+						{#if d}
+							{#if style.casing}
+								<path
+									{d}
+									fill="none"
+									stroke={style.casing}
+									stroke-width={style.width + 3}
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								/>
+							{/if}
+							<path
+								{d}
+								fill="none"
+								stroke={style.stroke}
+								stroke-width={style.width}
+								stroke-dasharray={style.dash || undefined}
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							/>
+						{/if}
+					{/each}
+				{/each}
+				{#if activeDraftRoute && activeDraftRoute.hexes.length >= 2}
+					{@const draftD = routeToSvgPath(activeDraftRoute.hexes, hexSize)}
+					{#if draftD}
+						<path
+							d={draftD}
+							fill="none"
+							stroke="#facc15"
+							stroke-width="3.5"
+							stroke-dasharray="6 4"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						/>
+					{/if}
+				{/if}
+			</g>
+		{/if}
 
 		{#if showDangerTiers}
 			<g pointer-events="none">
