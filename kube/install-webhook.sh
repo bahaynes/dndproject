@@ -19,6 +19,17 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 QUADLET_DIR="$HOME/.config/containers/systemd"
 PUID="$(id -u)"
 
+DEPLOY_SSH_DIR="$HOME/.ssh/dnd-deploy"
+if [ ! -d "$DEPLOY_SSH_DIR" ] || [ ! -f "$DEPLOY_SSH_DIR/id_ed25519" ]; then
+    echo "ERROR: Dedicated GitHub deploy key directory not found at $DEPLOY_SSH_DIR" >&2
+    echo "Create a dedicated read-only deploy key instead of mounting all of ~/.ssh:" >&2
+    echo "  mkdir -p \"$DEPLOY_SSH_DIR\" && chmod 700 \"$DEPLOY_SSH_DIR\"" >&2
+    echo "  ssh-keygen -t ed25519 -N '' -f \"$DEPLOY_SSH_DIR/id_ed25519\" -C 'dnd-webhook-deploy'" >&2
+    echo "  ssh-keyscan github.com > \"$DEPLOY_SSH_DIR/known_hosts\" && chmod 600 \"$DEPLOY_SSH_DIR/known_hosts\"" >&2
+    echo "  # Add $DEPLOY_SSH_DIR/id_ed25519.pub as a read-only Deploy Key in GitHub repo settings." >&2
+    exit 1
+fi
+
 echo "==> Building webhook container image..."
 podman build -t localhost/dnd-webhook:latest -f "$SCRIPT_DIR/Containerfile.webhook" "$PROJECT_DIR"
 
@@ -29,7 +40,7 @@ echo "==> Templating webhook-pod.yaml..."
 RENDERED="$SCRIPT_DIR/webhook-pod-rendered.yaml"
 sed \
     -e "s|/home/USER/git/hub/dndproject|$PROJECT_DIR|g" \
-    -e "s|/home/USER/.ssh|$HOME/.ssh|g" \
+    -e "s|/home/USER/.ssh/dnd-deploy|$DEPLOY_SSH_DIR|g" \
     -e "s|/run/user/PUID/podman/podman.sock|/run/user/${PUID}/podman/podman.sock|g" \
     "$SCRIPT_DIR/webhook-pod.yaml" > "$RENDERED"
 

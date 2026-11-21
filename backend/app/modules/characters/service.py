@@ -42,10 +42,17 @@ def get_character(db: Session, character_id: int):
     return db.query(models.Character).filter(models.Character.id == character_id).first()
 
 
-def update_character(db: Session, character_id: int, character: schemas.CharacterCreate):
+def update_character(
+    db: Session,
+    character_id: int,
+    character: schemas.CharacterUpdate | schemas.CharacterCreate,
+    allow_level_change: bool = True,
+):
     db_character = get_character(db, character_id)
     if db_character:
         update_data = character.model_dump(exclude_unset=True)
+        if not allow_level_change:
+            update_data.pop("level", None)
         for key, value in update_data.items():
             setattr(db_character, key, value)
         db.commit()

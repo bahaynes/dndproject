@@ -17,6 +17,24 @@ class TownLocation(BaseModel):
     y: int = 50
     link_path: Optional[str] = None
 
+    @field_validator("link_path", mode="before")
+    @classmethod
+    def _validate_link_path(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        if not isinstance(v, str):
+            raise ValueError("link_path must be a string")
+        stripped = v.strip()
+        if not stripped:
+            return None
+        if (
+            not stripped.startswith("/")
+            or stripped.startswith("//")
+            or any(ch in stripped for ch in ("\r", "\n", "\\"))
+        ):
+            raise ValueError("link_path must be a relative path starting with '/'")
+        return stripped
+
 
 class ShipBase(BaseModel):
     name: str = "The Ship"

@@ -48,9 +48,9 @@ class Hex(HexBase):
 
 class HexMapBase(BaseModel):
     name: str
-    width: int = 20
-    height: int = 20
-    hex_size: int = 60
+    width: int = Field(default=20, ge=1, le=200)
+    height: int = Field(default=20, ge=1, le=200)
+    hex_size: int = Field(default=60, ge=10, le=300)
     default_terrain: str = "plains"
 
 class HexMapCreate(HexMapBase):

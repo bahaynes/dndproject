@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from sqlalchemy.orm import Session
 
-from ...dependencies import get_db, get_current_active_user, get_current_active_admin_user, get_current_user
+from ...dependencies import get_db, get_current_active_user, get_current_active_admin_user
 from ..auth.schemas import User
 from . import schemas, service as crud
 
@@ -26,7 +26,7 @@ def read_missions(
     include_retired: bool = False,
     include_hidden: bool = False,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     # Only admins can see retired or hidden missions
     is_admin = current_user.role == "admin"
@@ -50,7 +50,7 @@ def read_missions(
 def read_mission(
     mission_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     db_mission = crud.get_mission(db, mission_id=mission_id)
     if db_mission is None:
@@ -58,6 +58,9 @@ def read_mission(
 
     # Ensure mission belongs to user's campaign
     if db_mission.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Mission not found")
+
+    if current_user.role != "admin" and (db_mission.is_retired or not db_mission.is_discoverable):
         raise HTTPException(status_code=404, detail="Mission not found")
 
     return db_mission

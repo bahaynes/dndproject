@@ -23,6 +23,17 @@ spec:
           value: "/app"
         - name: MODE
           value: "prod"
+        - name: APP_ENV
+          value: "production"
+        - name: ENABLE_DEV_TOKEN
+          value: "false"
+        - name: RATE_LIMIT_ENABLED
+          value: "true"
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: app-secret-key
+              key: secret
         - name: ONESHOT_OUTPUT_DIR
           value: "/data/oneshots"
         - name: LLM_API_BASE

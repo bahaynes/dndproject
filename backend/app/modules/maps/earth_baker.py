@@ -19,6 +19,7 @@ TERRARIUM_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 TILE_SIZE = 256
 MAX_OUTPUT_DIM = 1200
+MAX_FETCH_TILES = 64
 
 TRAVEL_SCALE_KM_PER_HEX: dict[str, float] = {
     "local": 4.828,       # 3 miles (1h at 5e normal 3 mph pace)
@@ -113,10 +114,19 @@ async def _fetch_terrarium_grid(
 
     tx0, tx1 = int(gx0 // TILE_SIZE), int(gx1 // TILE_SIZE)
     ty0, ty1 = int(gy0 // TILE_SIZE), int(gy1 // TILE_SIZE)
+    tile_count = (tx1 - tx0 + 1) * (ty1 - ty0 + 1)
+    if tile_count > MAX_FETCH_TILES:
+        raise ValueError("Requested region is too large to bake; select a smaller bounding box.")
 
     tiles_w = (tx1 - tx0 + 1) * TILE_SIZE
     tiles_h = (ty1 - ty0 + 1) * TILE_SIZE
     mosaic = np.zeros((tiles_h, tiles_w, 3), dtype=np.uint8)
+
+    sem = asyncio.Semaphore(8)
+
+    async def _fetch_tile(client: httpx.AsyncClient, url: str):
+        async with sem:
+            return await client.get(url)
 
     async with httpx.AsyncClient(timeout=20.0) as client:
         tasks = []
@@ -124,7 +134,7 @@ async def _fetch_terrarium_grid(
         for ty in range(ty0, ty1 + 1):
             for tx in range(tx0, tx1 + 1):
                 url = TERRARIUM_URL.format(z=zoom, x=tx, y=ty)
-                tasks.append(client.get(url))
+                tasks.append(_fetch_tile(client, url))
                 coords.append((tx, ty))
         responses = await asyncio.gather(*tasks)
 

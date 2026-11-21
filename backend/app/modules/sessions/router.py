@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from sqlalchemy.orm import Session
 
-from ...dependencies import get_db, get_current_active_user, get_current_active_admin_user, get_current_user
+from ...dependencies import get_db, get_current_active_user, get_current_active_admin_user
 from ..auth.schemas import User
 from . import schemas, service as crud
 
@@ -21,7 +21,7 @@ def read_sessions(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     sessions = crud.get_game_sessions(db, campaign_id=current_user.campaign_id, skip=skip, limit=limit)
     return sessions
@@ -30,7 +30,7 @@ def read_sessions(
 def read_session(
     session_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     db_session = crud.get_game_session(db, session_id=session_id)
     if db_session is None or db_session.campaign_id != current_user.campaign_id:
@@ -55,6 +55,36 @@ def propose_mission(
     if not is_signed_up and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Join the session before proposing a quest or hex")
 
+    if proposal.mission_id is not None:
+        from ..missions import models as mission_models
+        db_mission = (
+            db.query(mission_models.Mission)
+            .filter(
+                mission_models.Mission.id == proposal.mission_id,
+                mission_models.Mission.campaign_id == current_user.campaign_id,
+            )
+            .first()
+        )
+        if not db_mission or (
+            current_user.role != "admin"
+            and (db_mission.is_retired or not db_mission.is_discoverable)
+        ):
+            raise HTTPException(status_code=404, detail="Mission not found")
+
+    if proposal.hex_id is not None:
+        from ..maps import models as map_models
+        db_hex = (
+            db.query(map_models.Hex)
+            .join(map_models.HexMap)
+            .filter(
+                map_models.Hex.id == proposal.hex_id,
+                map_models.HexMap.campaign_id == current_user.campaign_id,
+            )
+            .first()
+        )
+        if not db_hex:
+            raise HTTPException(status_code=404, detail="Hex not found")
+
     return crud.create_session_proposal(
         db,
         session_id=proposal.session_id,
@@ -70,7 +100,7 @@ def toggle_backing(
     current_user: User = Depends(get_current_active_user)
 ):
     db_proposal = crud.get_session_proposal(db, proposal_id)
-    if not db_proposal:
+    if not db_proposal or db_proposal.session.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Proposal not found")
 
     # Use the character the player actually signed up with in this session (if any)
@@ -118,7 +148,7 @@ def swap_character(
         raise HTTPException(status_code=404, detail="Game session not found")
 
     new_char = char_service.get_character(db, character_id=data.character_id)
-    if not new_char:
+    if not new_char or new_char.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Character not found")
 
     updated, error = crud.swap_character_in_session(db, session=session, owner_id=current_user.id, new_character=new_char)
@@ -161,6 +191,9 @@ def force_confirm(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_admin_user)
 ):
+    db_proposal = crud.get_session_proposal(db, proposal_id)
+    if not db_proposal or db_proposal.session.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Proposal not found")
     session, error = crud.force_confirm_proposal(db, proposal_id=proposal_id)
     if error:
         raise HTTPException(status_code=400, detail=error)
@@ -172,6 +205,9 @@ def veto_proposal(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_admin_user)
 ):
+    db_proposal = crud.get_session_proposal(db, proposal_id)
+    if not db_proposal or db_proposal.session.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Proposal not found")
     proposal, error = crud.veto_proposal(db, proposal_id=proposal_id)
     if error:
         raise HTTPException(status_code=400, detail=error)
@@ -239,6 +275,13 @@ def kick_player(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_admin_user)
 ):
+    from ..characters import service as char_service
+    db_session = crud.get_game_session(db, session_id=session_id)
+    if not db_session or db_session.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Game session not found")
+    db_character = char_service.get_character(db, character_id=character_id)
+    if not db_character or db_character.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Character not found")
     session, error = crud.remove_character_from_session(db, session_id=session_id, character_id=character_id)
     if error:
         raise HTTPException(status_code=400, detail=error)

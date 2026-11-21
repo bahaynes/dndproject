@@ -10,6 +10,7 @@ Usage:
     curl -X POST -H "X-Debug-Token: <your-token>" -H "Content-Type: application/json" \\
          -d '{"token": "<jwt>"}' http://localhost:8000/api/debug/auth-trace
 """
+import hmac
 import re
 import logging
 import httpx
@@ -18,8 +19,8 @@ from fastapi import APIRouter, Depends, HTTPException, Header
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from jose import JWTError, jwt
-from jose.exceptions import ExpiredSignatureError
+import jwt
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 
 from ...config import get_settings
 from ...dependencies import get_db
@@ -35,7 +36,7 @@ def require_debug_token(x_debug_token: Optional[str] = Header(None)):
     if not settings.DEBUG_TOKEN:
         # Hide the existence of debug endpoints when no token is configured.
         raise HTTPException(status_code=404, detail="Not found")
-    if x_debug_token != settings.DEBUG_TOKEN:
+    if not hmac.compare_digest(x_debug_token or "", settings.DEBUG_TOKEN):
         raise HTTPException(status_code=403, detail="Forbidden")
 
 
@@ -125,7 +126,7 @@ async def debug_auth_trace(body: AuthTraceRequest, db: Session = Depends(get_db)
     except ExpiredSignatureError:
         steps.append({"step": "jwt_decode", "ok": False, "error": "token_expired"})
         return {"steps": steps, "verdict": "FAIL"}
-    except JWTError as exc:
+    except InvalidTokenError as exc:
         steps.append({"step": "jwt_decode", "ok": False, "error": str(exc)})
         return {"steps": steps, "verdict": "FAIL"}
 

@@ -2,8 +2,8 @@ import logging
 from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-from jose.exceptions import ExpiredSignatureError
+import jwt
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from sqlalchemy.orm import Session
 
 from .database import get_db
@@ -36,7 +36,7 @@ async def get_current_user_global(
     except ExpiredSignatureError:
         logger.warning("JWT rejected: token expired")
         raise _credentials_exception
-    except JWTError as exc:
+    except InvalidTokenError as exc:
         logger.warning("JWT rejected: decode failure", extra={"error": str(exc)})
         raise _credentials_exception
 
@@ -64,7 +64,7 @@ async def get_current_user(
     except ExpiredSignatureError:
         logger.warning("JWT rejected: token expired")
         raise _credentials_exception
-    except JWTError as exc:
+    except InvalidTokenError as exc:
         logger.warning("JWT rejected: decode failure", extra={"error": str(exc)})
         raise _credentials_exception
 

@@ -4,6 +4,9 @@ on:
   pull_request:
     types: [closed]
 
+permissions:
+  contents: read
+
 env:
   PROJECT_ID: ${{ vars.GCP_PROJECT_ID || 'dndproject-495514' }}
   REGION: us-central1
@@ -18,17 +21,17 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Google Auth
         id: auth
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2
 
       - name: Delete Cloud Run Services
         run: |
@@ -40,20 +43,23 @@ jobs:
           echo "Deleting dnd-backend-pr-${PR_NUMBER}..."
           gcloud run services delete dnd-backend-pr-${PR_NUMBER} --region ${REGION} --project ${PROJECT_ID} --quiet || echo "Backend service already deleted or not found."
 
-      - name: Get branch name
-        id: branch_name
-        uses: tj-actions/branch-names@v8
+      - name: Determine Branch Slug
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          BRANCH_SLUG=$(printf '%s' "$HEAD_REF" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+//; s/-+$//' | cut -c1-50)
+          echo "BRANCH_SLUG=${BRANCH_SLUG:-pr}" >> "$GITHUB_ENV"
 
       - name: Delete Neon Branch
-        uses: neondatabase/delete-branch-action@v3
+        uses: neondatabase/delete-branch-action@4468d825d5a88ef4012f1705a82f02ec3072f776 # v3
         continue-on-error: true
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch: preview/pr-${{ github.event.number }}-${{ steps.branch_name.outputs.current_branch }}
+          branch: preview/pr-${{ github.event.number }}-${{ env.BRANCH_SLUG }}
           api_key: ${{ secrets.NEON_API_KEY }}
 
       - name: Set Deployment Inactive
-        uses: actions/github-script@v6
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
         with:
           script: |
             const environment = `pr-${context.issue.number}`;

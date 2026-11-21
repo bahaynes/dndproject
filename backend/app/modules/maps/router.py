@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from typing import List, Literal
 from sqlalchemy.orm import Session
 
-from ...dependencies import get_db, get_current_user, get_current_active_admin_user, get_current_active_user
+from ...dependencies import get_db, get_current_active_admin_user, get_current_active_user
 from ..auth.schemas import User
 from . import schemas, service as crud
 from .earth_baker import bake_earth_region, compute_bbox_from_center
@@ -10,11 +10,22 @@ from .storage import get_layer_storage
 
 router = APIRouter()
 
+
+def _serialize_map_for_user(db_map, is_admin: bool) -> schemas.HexMap:
+    """Serialize HexMap to schema and strip DM-only hex notes for non-admin users."""
+    map_out = schemas.HexMap.model_validate(db_map)
+    if not is_admin:
+        for hex_out in map_out.hexes:
+            hex_out.notes = None
+    return map_out
+
+
 @router.get("/", response_model=List[schemas.HexMap], tags=["Maps"])
 def read_maps(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
+    is_admin = current_user.role == "admin"
     maps = crud.get_maps(db, campaign_id=current_user.campaign_id)
     if not maps:
         # Lazy creation for existing campaigns
@@ -25,8 +36,8 @@ def read_maps(
             hex_size=60
         )
         new_map = crud.create_map(db, default_map, campaign_id=current_user.campaign_id, seed=True)
-        return [new_map]
-    return maps
+        return [_serialize_map_for_user(new_map, is_admin=is_admin)]
+    return [_serialize_map_for_user(m, is_admin=is_admin) for m in maps]
 
 @router.post("/", response_model=schemas.HexMap, tags=["Admin"])
 def create_map(
@@ -40,13 +51,13 @@ def create_map(
 def read_map(
     map_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     db_map = crud.get_map(db, map_id=map_id)
     if not db_map or db_map.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Map not found")
         
-    return db_map
+    return _serialize_map_for_user(db_map, is_admin=(current_user.role == "admin"))
 
 @router.put("/{map_id}/hexes/{q}/{r}", response_model=schemas.Hex, tags=["Admin"])
 def update_hex(
@@ -180,7 +191,7 @@ def get_map_layer_image(
     map_id: int,
     layer_type: Literal["topo", "satellite"],
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_active_user),
 ):
     """Serve the baked Topographical or Satellite PNG layer for a campaign map."""
     db_map = crud.get_map(db, map_id=map_id)

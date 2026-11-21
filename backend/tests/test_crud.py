@@ -242,34 +242,30 @@ def test_game_session_crud(db_session, campaign):
     assert updated_session.name == "New Session Name"
     assert updated_session.status == "Closed"
 
-def test_data_import_export(db_session, campaign):
-    # This might fail if import/export logic doesn't support multitenancy yet.
-    # Assuming export exports ALL data? Or admin endpoints are scoped?
-    # admin/service.py probably dumps everything.
-    auth_service.create_user(db_session, auth_schemas.UserCreate(username="exportuser", discord_id="exportuser", campaign_id=campaign.id, role="player"))
-    item_service.create_item(db_session, item_schemas.ItemCreate(name="Export Item", description="An item for export"), campaign_id=campaign.id)
+def test_world_import_export_isolation(db_session, campaign):
+    item_service.create_item(
+        db_session,
+        item_schemas.ItemCreate(name="Campaign One Relic", description="Scoped item"),
+        campaign_id=campaign.id,
+    )
 
-    exported_data = admin_service.export_game_data(db_session)
-    # Check if exported data includes correct counts
-    # Note: export_game_data implementation needs to be checked if it was updated for new models?
-    # If not, it might miss campaign_id on import or fail.
-    # For now, let's assume it dumps schemas matching models.
-    assert len(exported_data.users) >= 1
-    assert len(exported_data.items) >= 1
+    other_camp = campaign_models.Campaign(name="Other Campaign", discord_guild_id="0987654321")
+    db_session.add(other_camp)
+    db_session.commit()
+    db_session.refresh(other_camp)
+    item_service.create_item(
+        db_session,
+        item_schemas.ItemCreate(name="Other Campaign Relic", description="Isolated item"),
+        campaign_id=other_camp.id,
+    )
 
-    # We verify that at least our user is there.
-    found_user = False
-    for u in exported_data.users:
-        if u.username == "exportuser":
-            found_user = True
-            break
-    assert found_user
+    exported = admin_service.export_world(db_session, campaign.id)
+    exported_names = [i.name for i in exported.items]
+    assert "Campaign One Relic" in exported_names
+    assert "Other Campaign Relic" not in exported_names
 
-    result = admin_service.import_game_data(db_session, exported_data)
-    assert result["message"] == "Data wipe successful. Full import is not yet implemented."
-
-    users = auth_service.get_users(db_session)
-    assert len(users) == 0
-    # get_items requires campaign_id now, so verify raw DB or pass ID
-    items = item_service.get_items(db_session, campaign_id=campaign.id)
-    assert len(items) == 0
+    result = admin_service.import_world(db_session, other_camp.id, exported, mode="merge")
+    assert result.items_created == 1
+    other_items = [i.name for i in item_service.get_items(db_session, campaign_id=other_camp.id)]
+    assert "Campaign One Relic" in other_items
+    assert "Other Campaign Relic" in other_items
