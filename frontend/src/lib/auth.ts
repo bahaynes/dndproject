@@ -57,6 +57,8 @@ function createAuthStore() {
 				localStorage.removeItem('accessToken');
 				localStorage.removeItem('pendingToken');
 				localStorage.removeItem('pendingDiscordToken');
+				sessionStorage.removeItem('pendingToken');
+				sessionStorage.removeItem('pendingDiscordToken');
 			}
 			set(initialState);
 		}

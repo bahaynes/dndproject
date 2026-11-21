@@ -33,16 +33,28 @@ WEBHOOK_SECRET=<the output from openssl>
 
 Set the same value in GitHub → repo **Settings** → **Webhooks** → **Secret**.
 
-### 2. Build images and install the webhook service
+### 2. Create a dedicated read-only Deploy Key
+
+To avoid exposing your personal `~/.ssh` keys to the webhook container, create a dedicated deploy key directory:
+
+```bash
+mkdir -p ~/.ssh/dnd-deploy && chmod 700 ~/.ssh/dnd-deploy
+ssh-keygen -t ed25519 -N '' -f ~/.ssh/dnd-deploy/id_ed25519 -C 'dnd-webhook-deploy'
+ssh-keyscan github.com > ~/.ssh/dnd-deploy/known_hosts && chmod 600 ~/.ssh/dnd-deploy/known_hosts
+```
+
+Add `~/.ssh/dnd-deploy/id_ed25519.pub` in GitHub → repo **Settings** → **Deploy keys** (without write access).
+
+### 3. Build images and install the webhook service
 
 ```bash
 ./kube/build.sh           # builds dnd-webhook:latest (and app images)
 ./kube/install-webhook.sh # generates secret, installs quadlet, reloads systemd
 ```
 
-`install-webhook.sh` templates `webhook-pod.yaml` with your actual repo path and UID, writes the rendered file to `kube/webhook-pod-rendered.yaml` (gitignored), and installs the `dnd-webhook.kube` Quadlet unit.
+`install-webhook.sh` templates `webhook-pod.yaml` with your actual repo path, `~/.ssh/dnd-deploy`, and UID, writes the rendered file to `kube/webhook-pod-rendered.yaml` (gitignored), and installs the `dnd-webhook.kube` Quadlet unit.
 
-### 3. Enable and start the service
+### 4. Enable and start the service
 
 ```bash
 systemctl --user enable --now dnd-webhook.service
@@ -58,7 +70,7 @@ Enable lingering so the unit survives logout:
 loginctl enable-linger "$USER"
 ```
 
-### 4. Register the webhook in GitHub
+### 5. Register the webhook in GitHub
 
 1. Go to your repo → **Settings** → **Webhooks** → **Add webhook**
 2. **Payload URL:** `https://westmarches.bahaynes.com/webhook`
@@ -93,9 +105,10 @@ systemctl --user restart dnd-webhook.service
 
 ## Security notes
 
-- The container's port 9000 is bound to `hostIP: 127.0.0.1` — not reachable directly from the internet.
+- The container's port 9000 is bound to `hostIP: 127.0.0.1` — not reachable directly from the internet. (If Caddy runs in rootless `slirp4netns` and cannot reach `host.containers.internal:9000` over loopback, place `dnd-webhook` and `dnd-westmarches` on a shared rootless Podman network instead of removing `hostIP: 127.0.0.1`.)
+- Only `~/.ssh/dnd-deploy` (a dedicated read-only GitHub Deploy Key) is mounted into `/home/appuser/.ssh`, rather than your full `~/.ssh` directory.
 - All traffic enters through Caddy over HTTPS, which terminates TLS before forwarding.
 - Requests with a missing or invalid `X-Hub-Signature-256` header are rejected by the `webhook` binary; `deploy.sh` is never called.
 - `deploy.sh` refuses to run as root.
-- `WEBHOOK_SECRET` is stored as a Kubernetes Secret (base64 in `kube/secrets.yaml`, which is gitignored) and injected as an env var at runtime.
+- `WEBHOOK_SECRET` is stored as a Kubernetes Secret (base64 in `kube/secrets.yaml`, which is `chmod 600` and gitignored) and injected as an env var at runtime.
 - The Podman socket is bind-mounted read-write into the container — this gives the webhook the ability to manage containers on the host, which is intentional for the auto-deploy use case.

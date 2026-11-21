@@ -37,6 +37,21 @@ class Settings(BaseSettings):
 
     # Environment name — set to "production" to disable dev-only endpoints like /api/auth/dev-token.
     APP_ENV: str = "development"
+    ENABLE_DEV_TOKEN: bool = False
+
+    # Additional comma-separated CORS origins beyond FRONTEND_URL
+    CORS_ORIGINS: str = ""
+
+    # Shared secret sent by Caddy reverse proxy to Cloud Run backend (optional; disabled when empty)
+    PROXY_SHARED_SECRET: str = ""
+
+    # In-process sliding-window rate limiter on auth and bake-earth endpoints
+    RATE_LIMIT_ENABLED: bool = False
+
+    # LLM Service (OpenRouter)
+    LLM_API_KEY: str = ""
+    LLM_API_BASE: str = "https://openrouter.ai/api/v1"
+    LLM_MODEL: str = "deepseek/deepseek-chat"
 
     # Map Layer / Tile Storage ("local" for dev, "gcs" for Cloud Run)
     TILE_STORAGE_BACKEND: str = "local"
@@ -62,7 +77,20 @@ class Settings(BaseSettings):
             logger.critical("DATABASE_URL is empty in settings. The application cannot start without a valid database connection string.")
             raise ValueError("DATABASE_URL environment variable is empty. Please check your configuration and secrets.")
 
-        # Insecure default secret key
+        # Production security invariants — fail closed
+        if self.APP_ENV == "production":
+            if self.SECRET_KEY == _DEFAULT_SECRET_KEY or len(self.SECRET_KEY.strip()) < 32:
+                logger.critical(
+                    "SECRET_KEY must be set to a strong secret (>= 32 characters) in production."
+                )
+                raise ValueError(
+                    "SECRET_KEY must be set to a strong secret (>= 32 characters) when APP_ENV=production."
+                )
+            if self.ENABLE_DEV_TOKEN:
+                logger.critical("ENABLE_DEV_TOKEN cannot be enabled when APP_ENV=production.")
+                raise ValueError("ENABLE_DEV_TOKEN cannot be true when APP_ENV=production.")
+
+        # Insecure default secret key (non-production warning)
         if self.SECRET_KEY == _DEFAULT_SECRET_KEY:
             logger.warning(
                 "SECRET_KEY is using the insecure default value — set SECRET_KEY in your .env"

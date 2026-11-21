@@ -7,6 +7,9 @@ on:
     branches: [ "main" ]
     types: [opened, synchronize, reopened]
 
+permissions:
+  contents: read
+
 concurrency:
   group: deploy-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -18,7 +21,73 @@ env:
   IMAGE_PREFIX: us-central1-docker.pkg.dev/${{ vars.GCP_PROJECT_ID || 'dndproject-495514' }}/dndproject-repo
 
 jobs:
+  test-backend:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version-file: '.python-version'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+
+      - name: Install dependencies
+        working-directory: backend
+        run: uv sync --group dev
+
+      - name: Run tests
+        working-directory: backend
+        run: uv run pytest tests/
+
+  test-frontend:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 12
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run tests
+        run: pnpm run test:ci
+
   build-and-deploy:
+    needs: [test-backend, test-frontend]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -32,22 +101,22 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Setup Node.js (for frontend build envs)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '24'
 
       - name: Google Auth
         id: auth
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # v2
 
       - name: Configure Docker
         run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
@@ -57,16 +126,24 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             echo "APP_ENV=preview" >> $GITHUB_ENV
+            echo "RATE_LIMIT_ENABLED=false" >> $GITHUB_ENV
             echo "SERVICE_SUFFIX=-pr-${{ github.event.number }}" >> $GITHUB_ENV
           else
             echo "APP_ENV=production" >> $GITHUB_ENV
+            echo "RATE_LIMIT_ENABLED=true" >> $GITHUB_ENV
             echo "SERVICE_SUFFIX=" >> $GITHUB_ENV
           fi
+          PROXY_SHARED_SECRET=$(openssl rand -hex 32)
+          echo "::add-mask::$PROXY_SHARED_SECRET"
+          echo "PROXY_SHARED_SECRET=$PROXY_SHARED_SECRET" >> $GITHUB_ENV
 
-      - name: Get branch name
+      - name: Determine Branch Slug
         if: github.event_name == 'pull_request'
-        id: branch_name
-        uses: tj-actions/branch-names@v8
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          BRANCH_SLUG=$(printf '%s' "$HEAD_REF" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+//; s/-+$//' | cut -c1-50)
+          echo "BRANCH_SLUG=${BRANCH_SLUG:-pr}" >> "$GITHUB_ENV"
 
       - name: Get branch expiration date
         if: github.event_name == 'pull_request'
@@ -76,22 +153,24 @@ jobs:
       - name: Create Neon Branch
         if: github.event_name == 'pull_request'
         id: create_neon_branch
-        uses: neondatabase/create-branch-action@v6
+        uses: neondatabase/create-branch-action@fb620d43d4c565abaf088b848a4e28e5c4ea4d9c # v6
         with:
           project_id: ${{ vars.NEON_PROJECT_ID }}
-          branch_name: preview/pr-${{ github.event.number }}-${{ steps.branch_name.outputs.current_branch }}
+          branch_name: preview/pr-${{ github.event.number }}-${{ env.BRANCH_SLUG }}
           api_key: ${{ secrets.NEON_API_KEY }}
           expires_at: ${{ env.EXPIRES_AT }}
 
       - name: Set PR Environment Variables
         if: github.event_name == 'pull_request'
+        env:
+          DB_URL_POOLER: ${{ steps.create_neon_branch.outputs.db_url_with_pooler }}
+          DB_URL: ${{ steps.create_neon_branch.outputs.db_url }}
         run: |
-          DB_URL_POOLER="${{ steps.create_neon_branch.outputs.db_url_with_pooler }}"
-          DB_URL="${{ steps.create_neon_branch.outputs.db_url }}"
-
           if [ -n "$DB_URL_POOLER" ]; then
+            echo "::add-mask::$DB_URL_POOLER"
             echo "DATABASE_URL=$DB_URL_POOLER" >> $GITHUB_ENV
           elif [ -n "$DB_URL" ]; then
+            echo "::add-mask::$DB_URL"
             echo "DATABASE_URL=$DB_URL" >> $GITHUB_ENV
           else
             echo "::error::Both db_url and db_url_with_pooler are empty from the Neon branch creation step."
@@ -103,13 +182,13 @@ jobs:
 
       - name: Set up Python
         if: github.event_name == 'pull_request'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version-file: '.python-version'
 
       - name: Install uv
         if: github.event_name == 'pull_request'
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
 
       - name: Run Alembic Migrations
         if: github.event_name == 'pull_request'
@@ -127,26 +206,27 @@ jobs:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
           NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
         run: |
-          npm install -g neonctl
-          DB_URL=$(neonctl connection-string --project-id $NEON_PROJECT_ID --branch main --role-name neondb_owner --database-name neondb)
+          npm install -g neonctl@9.9.0
+          DB_URL=$(neonctl connection-string --project-id "$NEON_PROJECT_ID" --branch main --role-name neondb_owner --database-name neondb)
 
           if [ -z "$DB_URL" ]; then
             echo "::error::Failed to fetch DATABASE_URL from Neon API. Please check your NEON_API_KEY and NEON_PROJECT_ID."
             python3 -c "import sys; sys.exit(1)"
           fi
 
+          echo "::add-mask::$DB_URL"
           echo "DATABASE_URL=$DB_URL" >> $GITHUB_ENV
           echo "DISCORD_REDIRECT_URI=https://westmarches.bahaynes.com/api/auth/discord/callback" >> $GITHUB_ENV
 
       - name: Set up Python (Production)
         if: github.event_name == 'push'
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version-file: '.python-version'
 
       - name: Install uv (Production)
         if: github.event_name == 'push'
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
 
       - name: Run Alembic Migrations (Production)
         if: github.event_name == 'push'
@@ -164,15 +244,97 @@ jobs:
 
       - name: Deploy Backend to Cloud Run
         id: deploy-backend
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          USE_GCP_SECRET_MANAGER: ${{ vars.USE_GCP_SECRET_MANAGER || 'false' }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+          DISCORD_CLIENT_SECRET: ${{ secrets.DISCORD_CLIENT_SECRET }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          ADMIN_DISCORD_IDS: ${{ secrets.ADMIN_DISCORD_IDS }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
         run: |
-          gcloud run deploy dnd-backend${{ env.SERVICE_SUFFIX }} \
-            --image ${{ env.BACKEND_IMAGE }} \
-            --region ${{ env.REGION }} \
-            --project ${{ env.PROJECT_ID }} \
-            --allow-unauthenticated \
-            --port 10000 \
-            --set-env-vars="^|^MODE=prod|APP_ENV=${{ env.APP_ENV }}|DATABASE_URL=${{ env.DATABASE_URL }}|DISCORD_CLIENT_ID=${{ secrets.DISCORD_CLIENT_ID }}|DISCORD_CLIENT_SECRET=${{ secrets.DISCORD_CLIENT_SECRET }}|DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }}|ADMIN_DISCORD_IDS=${{ secrets.ADMIN_DISCORD_IDS }}|LLM_API_KEY=${{ secrets.LLM_API_KEY }}|DISCORD_REDIRECT_URI=${{ env.DISCORD_REDIRECT_URI }}|FRONTEND_URL=https://dnd-frontend${{ env.SERVICE_SUFFIX }}-placeholder.run.app" \
-            --format="value(status.url)" > backend_url.txt
+          umask 077
+          ENV_FILE=$(mktemp)
+          chmod 600 "$ENV_FILE"
+          trap 'rm -f "$ENV_FILE"' EXIT
+
+          if [ "$USE_GCP_SECRET_MANAGER" = "true" ]; then
+            python3 - "$ENV_FILE" << 'PY_EOF'
+          import json
+          import os
+          import sys
+
+          payload = {
+              "MODE": "prod",
+              "APP_ENV": os.environ["APP_ENV"],
+              "ENABLE_DEV_TOKEN": "false",
+              "RATE_LIMIT_ENABLED": os.environ["RATE_LIMIT_ENABLED"],
+              "PROXY_SHARED_SECRET": os.environ["PROXY_SHARED_SECRET"],
+              "DATABASE_URL": os.environ["DATABASE_URL"],
+              "DISCORD_REDIRECT_URI": os.environ["DISCORD_REDIRECT_URI"],
+              "FRONTEND_URL": f"https://dnd-frontend{os.environ.get('SERVICE_SUFFIX', '')}-placeholder.run.app",
+          }
+          with open(sys.argv[1], "w", encoding="utf-8") as f:
+              json.dump(payload, f)
+          PY_EOF
+
+            gcloud run deploy dnd-backend${{ env.SERVICE_SUFFIX }} \
+              --image ${{ env.BACKEND_IMAGE }} \
+              --region ${{ env.REGION }} \
+              --project ${{ env.PROJECT_ID }} \
+              --allow-unauthenticated \
+              --port 10000 \
+              --env-vars-file "$ENV_FILE" \
+              --set-secrets="SECRET_KEY=dnd-secret-key:latest,DISCORD_CLIENT_ID=dnd-discord-client-id:latest,DISCORD_CLIENT_SECRET=dnd-discord-client-secret:latest,DISCORD_BOT_TOKEN=dnd-discord-bot-token:latest,ADMIN_DISCORD_IDS=dnd-admin-discord-ids:latest,LLM_API_KEY=dnd-llm-api-key:latest" \
+              --format="value(status.url)" > backend_url.txt
+          else
+            EFFECTIVE_SECRET_KEY="$SECRET_KEY"
+            if [ "$EVENT_NAME" = "push" ]; then
+              if [ -z "$EFFECTIVE_SECRET_KEY" ] || [ "$EFFECTIVE_SECRET_KEY" = "a_very_secret_key_that_should_be_in_env_file" ] || [ "${#EFFECTIVE_SECRET_KEY}" -lt 32 ]; then
+                echo "::error::SECRET_KEY secret must be configured (>= 32 characters) for production deployments."
+                exit 1
+              fi
+            elif [ -z "$EFFECTIVE_SECRET_KEY" ] || [ "${#EFFECTIVE_SECRET_KEY}" -lt 32 ]; then
+              EFFECTIVE_SECRET_KEY=$(openssl rand -hex 32)
+              echo "::add-mask::$EFFECTIVE_SECRET_KEY"
+            fi
+            export EFFECTIVE_SECRET_KEY
+
+            python3 - "$ENV_FILE" << 'PY_EOF'
+          import json
+          import os
+          import sys
+
+          payload = {
+              "MODE": "prod",
+              "APP_ENV": os.environ["APP_ENV"],
+              "ENABLE_DEV_TOKEN": "false",
+              "RATE_LIMIT_ENABLED": os.environ["RATE_LIMIT_ENABLED"],
+              "SECRET_KEY": os.environ["EFFECTIVE_SECRET_KEY"],
+              "PROXY_SHARED_SECRET": os.environ["PROXY_SHARED_SECRET"],
+              "DATABASE_URL": os.environ["DATABASE_URL"],
+              "DISCORD_CLIENT_ID": os.environ["DISCORD_CLIENT_ID"],
+              "DISCORD_CLIENT_SECRET": os.environ["DISCORD_CLIENT_SECRET"],
+              "DISCORD_BOT_TOKEN": os.environ["DISCORD_BOT_TOKEN"],
+              "ADMIN_DISCORD_IDS": os.environ["ADMIN_DISCORD_IDS"],
+              "LLM_API_KEY": os.environ.get("LLM_API_KEY", ""),
+              "DISCORD_REDIRECT_URI": os.environ["DISCORD_REDIRECT_URI"],
+              "FRONTEND_URL": f"https://dnd-frontend{os.environ.get('SERVICE_SUFFIX', '')}-placeholder.run.app",
+          }
+          with open(sys.argv[1], "w", encoding="utf-8") as f:
+              json.dump(payload, f)
+          PY_EOF
+
+            gcloud run deploy dnd-backend${{ env.SERVICE_SUFFIX }} \
+              --image ${{ env.BACKEND_IMAGE }} \
+              --region ${{ env.REGION }} \
+              --project ${{ env.PROJECT_ID }} \
+              --allow-unauthenticated \
+              --port 10000 \
+              --env-vars-file "$ENV_FILE" \
+              --format="value(status.url)" > backend_url.txt
+          fi
 
           BACKEND_URL=$(cat backend_url.txt)
           echo "url=$BACKEND_URL" >> $GITHUB_OUTPUT
@@ -189,11 +351,22 @@ jobs:
           :80 {
               encode gzip
 
+              header {
+                  Strict-Transport-Security "max-age=31536000; includeSubDomains"
+                  X-Content-Type-Options "nosniff"
+                  X-Frame-Options "DENY"
+                  Referrer-Policy "no-referrer"
+                  Permissions-Policy "geolocation=(), microphone=(), camera=()"
+                  Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://cdn.discordapp.com; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+                  -Server
+              }
+
               # API requests
               @api path /api/*
               handle @api {
                   reverse_proxy https://${BACKEND_HOST} {
                       header_up Host ${BACKEND_HOST}
+                      header_up X-Proxy-Secret {\$PROXY_SHARED_SECRET}
                   }
               }
 
@@ -216,12 +389,27 @@ jobs:
       - name: Deploy Frontend to Cloud Run
         id: deploy-frontend
         run: |
+          umask 077
+          FRONTEND_ENV_FILE=$(mktemp)
+          chmod 600 "$FRONTEND_ENV_FILE"
+          trap 'rm -f "$FRONTEND_ENV_FILE"' EXIT
+
+          python3 - "$FRONTEND_ENV_FILE" << 'PY_EOF'
+          import json
+          import os
+          import sys
+
+          with open(sys.argv[1], "w", encoding="utf-8") as f:
+              json.dump({"PROXY_SHARED_SECRET": os.environ["PROXY_SHARED_SECRET"]}, f)
+          PY_EOF
+
           gcloud run deploy dnd-frontend${{ env.SERVICE_SUFFIX }} \
             --image ${{ env.FRONTEND_IMAGE }} \
             --region ${{ env.REGION }} \
             --project ${{ env.PROJECT_ID }} \
             --allow-unauthenticated \
             --port 80 \
+            --env-vars-file "$FRONTEND_ENV_FILE" \
             --format="value(status.url)" > frontend_url.txt
 
           FRONTEND_URL=$(cat frontend_url.txt)
@@ -238,7 +426,7 @@ jobs:
 
       - name: Comment on PR
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v6
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
         with:
           script: |
             github.rest.issues.createComment({

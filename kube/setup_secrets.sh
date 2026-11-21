@@ -8,6 +8,7 @@
 # for use with podman kube play.
 #
 # Required .env variables:
+#   - SECRET_KEY (>= 32 chars, e.g. openssl rand -hex 32)
 #   - DISCORD_CLIENT_ID
 #   - DISCORD_CLIENT_SECRET
 #   - DISCORD_BOT_TOKEN
@@ -31,11 +32,19 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
-# Load .env vars (ignore comments)
-export $(grep -v '^#' .env | xargs)
+# Safely load .env vars without word-splitting or glob expansion
+set -a
+# shellcheck disable=SC1091
+source .env
+set +a
 
 SECRETS_FILE="kube/secrets.yaml"
+umask 077
 if [ "$WEBHOOK_ONLY" = false ]; then
+    if [ -z "${SECRET_KEY:-}" ] || [ "${SECRET_KEY}" = "a_very_secret_key_that_should_be_in_env_file" ] || [ "${#SECRET_KEY}" -lt 32 ]; then
+        echo "Error: SECRET_KEY in .env must be set to a strong secret (>= 32 characters)." >&2
+        exit 1
+    fi
     echo "# Auto-generated secrets - DO NOT COMMIT" > "$SECRETS_FILE"
 fi
 
@@ -68,6 +77,7 @@ echo "==> Generating secrets..."
 if [ "$WEBHOOK_ONLY" = true ]; then
     generate_k8s_secret "webhook-secret" "secret" "${WEBHOOK_SECRET:-}"
 else
+    generate_k8s_secret "app-secret-key" "secret" "$SECRET_KEY"
     generate_k8s_secret "discord-client-id" "id" "$DISCORD_CLIENT_ID"
     generate_k8s_secret "discord-client-secret" "secret" "$DISCORD_CLIENT_SECRET"
     generate_k8s_secret "discord-bot-token" "token" "$DISCORD_BOT_TOKEN"
@@ -77,4 +87,5 @@ else
     generate_k8s_secret "webhook-secret" "secret" "${WEBHOOK_SECRET:-}"
 fi
 
+chmod 600 "$SECRETS_FILE"
 echo "==> Secrets written to $SECRETS_FILE"

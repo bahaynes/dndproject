@@ -22,6 +22,10 @@ spec:
           value: "postgresql://postgres:postgres@localhost:5432/dnd_westmarches"
         - name: PYTHONPATH
           value: "/app"
+        - name: APP_ENV
+          value: "development"
+        - name: ENABLE_DEV_TOKEN
+          value: "true"
         - name: DISCORD_CLIENT_ID
           value: "${DISCORD_CLIENT_ID}"
         - name: DISCORD_CLIENT_SECRET

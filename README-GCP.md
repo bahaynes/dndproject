@@ -24,5 +24,9 @@ We recommend mapping your custom domains directly within Cloud Run:
 3. GCP will provide CNAME or A/AAAA records. Update your DNS settings in Cloudflare to point to these records. Make sure Cloudflare's proxy status is set to "DNS Only" (Grey Cloud) initially to allow Google to provision the SSL certificates, after which you can enable it (Orange Cloud) with "Full (Strict)" SSL mode.
 4. (Optional) If you map a separate domain like `api.dndproject.bahaynes.com` to `dnd-backend`, make sure to update the frontend's `VITE_API_URL` to point directly to that domain instead of the default backend URL.
 
-## Database
-The Database is hosted on Neon PostgreSQL. The `DATABASE_URL` is automatically configured into the Cloud Run service environment via the deployment script.
+## Database & Secrets
+The Database is hosted on Neon PostgreSQL. Do not commit database credentials to scripts or manifests.
+
+- **Required Secrets**: `DATABASE_URL`, `SECRET_KEY` (>= 32 random chars, e.g. `openssl rand -hex 32`), `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `DISCORD_BOT_TOKEN`, `ADMIN_DISCORD_IDS`, and optional `LLM_API_KEY`.
+- **GCP Secret Manager (Recommended)**: Run `./kube/setup-gcp-secrets.sh` to upload secrets to Secret Manager, grant `roles/secretmanager.secretAccessor` to the Cloud Run runtime service account, and set the GitHub repository variable `USE_GCP_SECRET_MANAGER=true` so CI deploys mount secrets directly via `--set-secrets`.
+- **Proxy Protection**: Cloud Run deployments generate a per-deploy `PROXY_SHARED_SECRET` shared between the Caddy frontend proxy (`X-Proxy-Secret` header) and the backend service so direct unproxied calls to `dnd-backend` are rejected.

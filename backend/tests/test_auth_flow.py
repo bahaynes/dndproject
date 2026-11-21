@@ -8,7 +8,7 @@ Covers:
 - Global vs campaign-scoped token enforcement
 """
 from unittest.mock import patch, MagicMock
-from jose import jwt
+import jwt
 from app.config import get_settings
 
 
@@ -69,9 +69,12 @@ class TestDiscordLoginRedirect:
         assert "discord.com/api/oauth2/authorize" in r.headers["location"]
 
     def test_redirect_contains_effective_redirect_uri(self, client):
+        from urllib.parse import parse_qs, urlparse
+
         settings = get_settings()
         r = client.get("/api/auth/discord/login", follow_redirects=False)
-        assert settings.DISCORD_REDIRECT_URI in r.headers["location"]
+        parsed_qs = parse_qs(urlparse(r.headers["location"]).query)
+        assert parsed_qs["redirect_uri"][0] == settings.DISCORD_REDIRECT_URI
 
     def test_sets_return_to_cookie_for_relative_path(self, client):
         r = client.get("/api/auth/discord/login?return_to=/dashboard", follow_redirects=False)
@@ -90,36 +93,54 @@ class TestDiscordLoginRedirect:
 # ---------------------------------------------------------------------------
 
 class TestDiscordCallback:
-    def test_successful_callback_redirects_to_frontend(self, client):
-        with _patch_httpx():
-            r = client.get("/api/auth/discord/callback?code=validcode", follow_redirects=False)
-        assert r.status_code in (302, 307)
-        assert "/login/callback" in r.headers["location"]
-        assert "token=" in r.headers["location"]
+    def _initiate_login_state(self, client) -> str:
+        from urllib.parse import parse_qs, urlparse
 
-    def test_callback_jwt_contains_discord_id_and_global_type(self, client):
+        r_login = client.get("/api/auth/discord/login", follow_redirects=False)
+        assert r_login.status_code in (302, 307)
+        assert "oauth_state_nonce" in r_login.cookies
+        query = parse_qs(urlparse(r_login.headers["location"]).query)
+        return query["state"][0]
+
+    def test_successful_callback_redirects_to_frontend_and_exchanges_cookie(self, client):
+        state = self._initiate_login_state(client)
         with _patch_httpx():
-            r = client.get("/api/auth/discord/callback?code=validcode", follow_redirects=False)
+            r = client.get(
+                f"/api/auth/discord/callback?code=validcode&state={state}",
+                follow_redirects=False,
+            )
+        assert r.status_code in (302, 307)
         location = r.headers["location"]
-        # Extract token from query string
-        token = next(
-            part.split("=", 1)[1]
-            for part in location.split("?", 1)[1].split("&")
-            if part.startswith("token=")
-        )
+        assert location.endswith("/login/callback")
+        assert "token=" not in location
+        assert "discord_token=" not in location
+        assert "oauth_exchange" in r.cookies
+
+        r_exchange = client.post("/api/auth/exchange")
+        assert r_exchange.status_code == 200
+        body = r_exchange.json()
+        assert body["discord_token"] == "disc_access_token"
         settings = get_settings()
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        payload = jwt.decode(body["token"], settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         assert payload["sub"] == "disc123"
         assert payload["type"] == "global"
 
     def test_token_exchange_failure_returns_400(self, client):
+        state = self._initiate_login_state(client)
         with _patch_httpx(post_status=401):
-            r = client.get("/api/auth/discord/callback?code=badcode", follow_redirects=False)
+            r = client.get(
+                f"/api/auth/discord/callback?code=badcode&state={state}",
+                follow_redirects=False,
+            )
         assert r.status_code == 400
 
     def test_user_info_failure_returns_400(self, client):
+        state = self._initiate_login_state(client)
         with _patch_httpx(get_status=401):
-            r = client.get("/api/auth/discord/callback?code=goodcode", follow_redirects=False)
+            r = client.get(
+                f"/api/auth/discord/callback?code=goodcode&state={state}",
+                follow_redirects=False,
+            )
         assert r.status_code == 400
 
 
@@ -148,10 +169,10 @@ class TestJWTDependencies:
 
     def test_admin_endpoint_rejects_player(self, client, player_auth_headers):
         """Admin-only endpoints must reject players."""
-        r = client.get("/api/admin/export", headers=player_auth_headers)
+        r = client.get("/api/admin/world/export", headers=player_auth_headers)
         assert r.status_code == 403
 
     def test_admin_endpoint_accepts_admin(self, client, admin_auth_headers):
         """Admin-only endpoints should return 200 for admin users."""
-        r = client.get("/api/admin/export", headers=admin_auth_headers)
+        r = client.get("/api/admin/world/export", headers=admin_auth_headers)
         assert r.status_code == 200

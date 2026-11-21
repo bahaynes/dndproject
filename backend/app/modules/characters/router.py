@@ -16,7 +16,9 @@ def create_character(
     current_user: User = Depends(get_current_active_user),
 ):
     # Remove restriction: Users can have multiple characters now
-    
+    if current_user.role != "admin":
+        character = character.model_copy(update={"level": 1})
+
     new_char = crud.create_character(
         db=db, 
         character=character, 
@@ -73,9 +75,13 @@ def read_my_characters(
     return db.query(models.Character).filter(models.Character.owner_id == current_user.id).all()
 
 @router.get("/{character_id}", response_model=schemas.Character)
-def read_character(character_id: int, db: Session = Depends(get_db)):
+def read_character(
+    character_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
     db_character = crud.get_character(db, character_id=character_id)
-    if db_character is None:
+    if db_character is None or db_character.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Character not found")
     return db_character
 
@@ -83,17 +89,25 @@ def read_character(character_id: int, db: Session = Depends(get_db)):
 @router.put("/{character_id}", response_model=schemas.Character)
 def update_character(
     character_id: int,
-    character: schemas.CharacterCreate,
+    character: schemas.CharacterUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
     db_character = crud.get_character(db, character_id=character_id)
-    if db_character is None:
+    if db_character is None or db_character.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Character not found")
     # Authorization check: only owner or admin can edit
-    if db_character.owner_id != current_user.id and current_user.role != "admin":
+    is_admin = current_user.role == "admin"
+    if db_character.owner_id != current_user.id and not is_admin:
         raise HTTPException(status_code=403, detail="Not authorized to update this character")
-    return crud.update_character(db=db, character_id=character_id, character=character)
+    if not is_admin and character.level is not None and character.level != db_character.level:
+        raise HTTPException(status_code=403, detail="Only admins can change character level")
+    return crud.update_character(
+        db=db,
+        character_id=character_id,
+        character=character,
+        allow_level_change=is_admin,
+    )
 
 @router.post("/{character_id}/activate", response_model=User)
 def activate_character(
@@ -102,7 +116,11 @@ def activate_character(
     current_user: User = Depends(get_current_active_user)
 ):
     db_character = crud.get_character(db, character_id=character_id)
-    if not db_character or db_character.owner_id != current_user.id:
+    if (
+        not db_character
+        or db_character.campaign_id != current_user.campaign_id
+        or db_character.owner_id != current_user.id
+    ):
         raise HTTPException(status_code=404, detail="Character not found or not owned by you")
     
     current_user.active_character_id = db_character.id
@@ -119,7 +137,7 @@ def update_character_status(
 ):
     """Admin sets character status (Active / Dead / Benched)."""
     db_character = crud.get_character(db, character_id=character_id)
-    if db_character is None:
+    if db_character is None or db_character.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Character not found")
     if data.status not in ("Active", "Dead", "Benched"):
         raise HTTPException(status_code=400, detail="status must be Active, Dead, or Benched")
@@ -140,13 +158,15 @@ def delete_character(
     current_user: User = Depends(get_current_active_user)
 ):
     db_character = crud.get_character(db, character_id=character_id)
-    if not db_character:
+    if not db_character or db_character.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Character not found")
         
     if db_character.owner_id != current_user.id and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Not authorized to delete this character")
     
-    # If deleting active character, unset active_character_id
+    # If deleting active character, unset active_character_id for owner and current_user
+    if db_character.owner and db_character.owner.active_character_id == character_id:
+        db_character.owner.active_character_id = None
     if current_user.active_character_id == character_id:
         current_user.active_character_id = None
         

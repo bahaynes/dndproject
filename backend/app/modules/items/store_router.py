@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import List
 from sqlalchemy.orm import Session
 
-from ...dependencies import get_db, get_current_active_user, get_current_active_admin_user, get_current_user
+from ...dependencies import get_db, get_current_active_user, get_current_active_admin_user
 from ..auth.schemas import User
 from . import schemas, service as crud
 
@@ -26,7 +26,7 @@ def read_store_items(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     store_items = crud.get_store_items_by_campaign(db, campaign_id=current_user.campaign_id, skip=skip, limit=limit)
     return store_items
@@ -35,7 +35,7 @@ def read_store_items(
 def read_store_item(
     store_item_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     db_store_item = crud.get_store_item(db, store_item_id=store_item_id)
     if db_store_item is None:
@@ -49,7 +49,7 @@ def read_store_item(
 @router.post("/items/{store_item_id}/purchase", tags=["Store"])
 def purchase_store_item(
     store_item_id: int,
-    quantity: int = 1,
+    quantity: int = Query(1, ge=1),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):

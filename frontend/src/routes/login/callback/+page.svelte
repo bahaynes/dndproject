@@ -1,24 +1,34 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
+	import { API_BASE_URL } from '$lib/config';
 
-	// No network calls. Stash the OAuth tokens and hard-redirect to /campaigns.
+	// Exchange the HttpOnly oauth_exchange cookie via POST so tokens never travel in URLs.
 	// Must use window.location (not goto) because adapter-static serves a pre-rendered
 	// shell and SvelteKit's router isn't ready for goto() on first load.
-	onMount(() => {
+	onMount(async () => {
 		if (!browser) return;
 
-		const params = new URLSearchParams(window.location.search);
-		const token = params.get('token');
-		const discordToken = params.get('discord_token');
+		try {
+			const res = await fetch(`${API_BASE_URL}/auth/exchange`, {
+				method: 'POST',
+				credentials: 'include'
+			});
 
-		if (token && discordToken) {
-			localStorage.setItem('pendingToken', token);
-			localStorage.setItem('pendingDiscordToken', discordToken);
-			window.location.replace('/campaigns');
-		} else {
-			window.location.replace('/login');
+			if (res.ok) {
+				const data = await res.json();
+				if (data?.token && data?.discord_token) {
+					sessionStorage.setItem('pendingToken', data.token);
+					sessionStorage.setItem('pendingDiscordToken', data.discord_token);
+					window.location.replace('/campaigns');
+					return;
+				}
+			}
+		} catch {
+			// Fall through to /login on exchange error
 		}
+
+		window.location.replace('/login');
 	});
 </script>
 

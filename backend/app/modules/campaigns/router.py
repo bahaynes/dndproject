@@ -66,6 +66,9 @@ async def login_to_campaign(
     if not user:
         raise HTTPException(status_code=403, detail="You are not a member of this campaign.")
 
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="Your account in this campaign is inactive.")
+
     # Create Campaign Scoped Token
     access_token = security.create_access_token(data={
         "sub": discord_id,
@@ -218,16 +221,27 @@ async def join_campaign(
     if not app_role:
          raise HTTPException(status_code=403, detail="You do not have the required Player or DM role in this server.")
 
-    # Create User Record
-    user_create = auth_schemas.UserCreate(
-        username=username,
-        discord_id=discord_id,
-        avatar_url=f"https://cdn.discordapp.com/avatars/{discord_id}/{avatar}.png" if avatar else None,
-        campaign_id=campaign.id,
-        role=app_role
+    # Create or reactivate/sync existing User Record
+    existing_user = auth_crud.get_user_by_discord_id(
+        db, discord_id=discord_id, campaign_id=campaign.id
     )
-
-    new_user = auth_crud.create_user(db, user_create)
+    if existing_user:
+        if not existing_user.is_active:
+            raise HTTPException(
+                status_code=403,
+                detail="Your account in this campaign is inactive.",
+            )
+        existing_user.role = app_role
+        db.commit()
+    else:
+        user_create = auth_schemas.UserCreate(
+            username=username,
+            discord_id=discord_id,
+            avatar_url=f"https://cdn.discordapp.com/avatars/{discord_id}/{avatar}.png" if avatar else None,
+            campaign_id=campaign.id,
+            role=app_role
+        )
+        auth_crud.create_user(db, user_create)
 
     # Generate Token
     access_token = security.create_access_token(data={
@@ -251,7 +265,7 @@ async def setup_campaign(
     discord_id = current_user_payload.get("sub")
     allowed_admins = [admin_id.strip() for admin_id in settings.ADMIN_DISCORD_IDS.split(",") if admin_id.strip()]
     if discord_id not in allowed_admins:
-        logger.warning(f"Unauthorized setup attempt by discord_id: {discord_id}. Allowed admins: {allowed_admins}")
+        logger.warning(f"Unauthorized setup attempt by discord_id: {discord_id}")
         raise HTTPException(status_code=403, detail="You are not authorized to setup campaigns.")
 
     # Check if already exists
@@ -298,7 +312,7 @@ async def get_admin_discord_guilds(
     discord_id = current_user_payload.get("sub")
     allowed_admins = [admin_id.strip() for admin_id in settings.ADMIN_DISCORD_IDS.split(",") if admin_id.strip()]
     if discord_id not in allowed_admins:
-        logger.warning(f"Unauthorized admin guilds view attempt by discord_id: {discord_id}. Allowed admins: {allowed_admins}")
+        logger.warning(f"Unauthorized admin guilds view attempt by discord_id: {discord_id}")
         raise HTTPException(status_code=403, detail="You are not authorized to view admin guilds.")
 
     bot_token = getattr(settings, "DISCORD_BOT_TOKEN", "")

@@ -1,10 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 
 # Import from other modules
 from ..items.schemas import InventoryItem
-from .base_schema import CharacterBase
+from .base_schema import CharacterBase, validate_http_url
 from ..missions.schemas import Mission
 from ..sessions.schemas import GameSession
 
@@ -24,6 +24,20 @@ class CharacterStats(CharacterStatsBase):
 
 class CharacterCreate(CharacterBase):
     pass
+
+
+class CharacterUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    character_sheet_url: Optional[str] = None
+    class_name: Optional[str] = None
+    level: Optional[int] = Field(default=None, ge=1, le=20)
+
+    @field_validator("character_sheet_url", "image_url", mode="before")
+    @classmethod
+    def _validate_urls(cls, v: Optional[str]) -> Optional[str]:
+        return validate_http_url(v)
 
 class Character(CharacterBase):
     id: int
