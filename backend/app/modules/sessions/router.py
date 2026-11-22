@@ -43,6 +43,16 @@ def _validate_session_references(
             raise HTTPException(status_code=404, detail="Hex not found")
 
 
+def _serialize_proposal_for_user(db_proposal, is_admin: bool) -> schemas.SessionProposal:
+    prop_out = schemas.SessionProposal.model_validate(db_proposal)
+    if not is_admin and prop_out.mission and (
+        prop_out.mission.is_retired or not prop_out.mission.is_discoverable
+    ):
+        prop_out.mission = None
+        prop_out.mission_id = None
+    return prop_out
+
+
 def _serialize_session_for_user(db_session, is_admin: bool) -> schemas.GameSessionWithPlayers:
     session_out = schemas.GameSessionWithPlayers.model_validate(db_session)
     if not is_admin:
@@ -171,7 +181,7 @@ def toggle_backing(
     if error:
         raise HTTPException(status_code=400, detail=error)
 
-    return db_proposal
+    return _serialize_proposal_for_user(db_proposal, is_admin=(current_user.role == "admin"))
 
 
 @router.post("/{session_id}/signup", response_model=schemas.GameSessionWithPlayers, tags=["Game Sessions"])
@@ -191,7 +201,7 @@ def signup_for_session(
     updated_session, error = crud.add_character_to_game_session(db, session=session, character=character)
     if error:
         raise HTTPException(status_code=400, detail=error)
-    return updated_session
+    return _serialize_session_for_user(updated_session, is_admin=(current_user.role == "admin"))
 
 @router.post("/{session_id}/swap-character", response_model=schemas.GameSessionWithPlayers, tags=["Game Sessions"])
 def swap_character(
@@ -212,7 +222,7 @@ def swap_character(
     updated, error = crud.swap_character_in_session(db, session=session, owner_id=current_user.id, new_character=new_char)
     if error:
         raise HTTPException(status_code=400, detail=error)
-    return updated
+    return _serialize_session_for_user(updated, is_admin=(current_user.role == "admin"))
 
 @router.delete("/{session_id}/signup", response_model=schemas.GameSessionWithPlayers, tags=["Game Sessions"])
 def cancel_signup(
@@ -229,7 +239,8 @@ def cancel_signup(
     if not character:
         raise HTTPException(status_code=400, detail="User has no active character selected")
 
-    return crud.remove_character_from_game_session(db, session=session, character=character)
+    updated = crud.remove_character_from_game_session(db, session=session, character=character)
+    return _serialize_session_for_user(updated, is_admin=(current_user.role == "admin"))
 
 @router.put("/{session_id}", response_model=schemas.GameSession, tags=["Game Sessions"])
 def update_session(
@@ -295,7 +306,8 @@ def submit_field_report(
     if character not in db_session.players:
         raise HTTPException(status_code=403, detail="Only players who participated in this session can submit a field report")
 
-    return crud.update_field_report(db, session=db_session, field_report=report.field_report)
+    updated = crud.update_field_report(db, session=db_session, field_report=report.field_report)
+    return _serialize_session_for_user(updated, is_admin=(current_user.role == "admin"))
 
 @router.post("/{session_id}/complete", response_model=schemas.GameSessionWithPlayers, tags=["Admin"])
 def complete_session(
@@ -307,6 +319,13 @@ def complete_session(
     db_session = crud.get_game_session(db, session_id=session_id)
     if not db_session or db_session.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Game session not found")
+
+    _validate_session_references(
+        db,
+        campaign_id=current_user.campaign_id,
+        confirmed_mission_id=data.mission_id,
+        confirmed_hex_id=data.hex_id,
+    )
 
     session, error = crud.complete_session(
         db, session=db_session, data=data, campaign_id=current_user.campaign_id

@@ -25,10 +25,20 @@ if [ ! -d "$DEPLOY_SSH_DIR" ] || [ ! -f "$DEPLOY_SSH_DIR/id_ed25519" ]; then
     echo "Create a dedicated read-only deploy key instead of mounting all of ~/.ssh:" >&2
     echo "  mkdir -p \"$DEPLOY_SSH_DIR\" && chmod 700 \"$DEPLOY_SSH_DIR\"" >&2
     echo "  ssh-keygen -t ed25519 -N '' -f \"$DEPLOY_SSH_DIR/id_ed25519\" -C 'dnd-webhook-deploy'" >&2
-    echo "  ssh-keyscan github.com > \"$DEPLOY_SSH_DIR/known_hosts\" && chmod 600 \"$DEPLOY_SSH_DIR/known_hosts\"" >&2
+    echo "  ssh-keyscan -t ed25519,rsa github.com > \"$DEPLOY_SSH_DIR/known_hosts\"" >&2
+    echo "  ssh-keygen -lf \"$DEPLOY_SSH_DIR/known_hosts\" # verify against GitHub's published fingerprints" >&2
+    echo "  chmod 600 \"$DEPLOY_SSH_DIR/known_hosts\"" >&2
     echo "  # Add $DEPLOY_SSH_DIR/id_ed25519.pub as a read-only Deploy Key in GitHub repo settings." >&2
     exit 1
 fi
+
+KEY_UID="$(stat -c '%u' "$DEPLOY_SSH_DIR/id_ed25519")"
+if [ "$KEY_UID" != "$PUID" ]; then
+    echo "ERROR: $DEPLOY_SSH_DIR/id_ed25519 is owned by UID $KEY_UID, expected $PUID (UserNS=keep-id)." >&2
+    exit 1
+fi
+chmod 700 "$DEPLOY_SSH_DIR"
+chmod 600 "$DEPLOY_SSH_DIR/id_ed25519"
 
 echo "==> Building webhook container image..."
 podman build -t localhost/dnd-webhook:latest -f "$SCRIPT_DIR/Containerfile.webhook" "$PROJECT_DIR"

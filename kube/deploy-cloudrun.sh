@@ -140,6 +140,7 @@ cat << CADDY_EOF > frontend/Caddyfile.cloudrun
         reverse_proxy https://${BACKEND_HOST} {
             header_up Host ${BACKEND_HOST}
             header_up X-Proxy-Secret {\$PROXY_SHARED_SECRET}
+            header_up X-Real-IP {http.request.remote.host}
         }
     }
 

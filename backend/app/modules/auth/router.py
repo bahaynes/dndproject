@@ -96,7 +96,14 @@ async def login_via_discord(
 
     if settings.APP_ENV == "production" and settings.FRONTEND_URL:
         frontend_host = urlparse(settings.FRONTEND_URL).hostname
-        if frontend_host and request.url.hostname and request.url.hostname != frontend_host:
+        forwarded_host = (
+            request.headers.get("X-Forwarded-Host", "")
+            .split(",", 1)[0]
+            .strip()
+            .split(":", 1)[0]
+            .lower()
+        )
+        if frontend_host and forwarded_host and forwarded_host != frontend_host.lower():
             target = f"{settings.FRONTEND_URL.rstrip('/')}/api/auth/discord/login"
             if safe_return_to:
                 target = f"{target}?{urlencode({'return_to': safe_return_to})}"

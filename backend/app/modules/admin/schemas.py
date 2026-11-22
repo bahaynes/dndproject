@@ -1,11 +1,15 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
-from ..ship.schemas import TownLocation
+from ..ship.schemas import TownLocation, TownLocationOut
 
 
 class WorldHub(BaseModel):
     name: str
     motd: Optional[str] = None
+    town_locations: List[TownLocationOut] = []
+
+
+class WorldHubImport(WorldHub):
     town_locations: List[TownLocation] = []
 
 
@@ -19,6 +23,11 @@ class WorldFaction(BaseModel):
 class WorldItem(BaseModel):
     name: str
     description: Optional[str] = None
+    store_price: Optional[int] = None
+    store_quantity: Optional[int] = None
+
+
+class WorldItemImport(WorldItem):
     store_price: Optional[int] = Field(default=None, ge=0)
     store_quantity: Optional[int] = Field(default=None, ge=-1)
 
@@ -58,11 +67,17 @@ class WorldHex(BaseModel):
 
 class WorldMap(BaseModel):
     name: str
+    width: int = 20
+    height: int = 20
+    hex_size: int = 60
+    default_terrain: str = "plains"
+    hexes: List[WorldHex] = []
+
+
+class WorldMapImport(WorldMap):
     width: int = Field(default=20, ge=1, le=200)
     height: int = Field(default=20, ge=1, le=200)
     hex_size: int = Field(default=60, ge=10, le=300)
-    default_terrain: str = "plains"
-    hexes: List[WorldHex] = []
 
 
 class WorldBundle(BaseModel):
@@ -76,8 +91,14 @@ class WorldBundle(BaseModel):
     maps: List[WorldMap] = []
 
 
+class WorldBundleImport(WorldBundle):
+    hub: Optional[WorldHubImport] = None
+    items: List[WorldItemImport] = []
+    maps: List[WorldMapImport] = []
+
+
 class WorldImportRequest(BaseModel):
-    bundle: WorldBundle
+    bundle: WorldBundleImport
     mode: Literal["merge", "replace"] = "merge"
 
 

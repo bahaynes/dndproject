@@ -24,6 +24,7 @@
         reverse_proxy https://dnd-backend-yh7tabjahq-uc.a.run.app {
             header_up Host dnd-backend-yh7tabjahq-uc.a.run.app
             header_up X-Proxy-Secret {$PROXY_SHARED_SECRET}
+            header_up X-Real-IP {http.request.remote.host}
         }
     }
 

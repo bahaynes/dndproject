@@ -100,9 +100,10 @@ def export_world(db: Session, campaign_id: int) -> schemas.WorldBundle:
         schemas.WorldHub(
             name=hub.name,
             motd=hub.motd,
-            town_locations=[ship_schemas.TownLocation.model_validate(loc) for loc in (hub.town_locations or [])]
-            if hasattr(schemas, "TownLocation")
-            else [schemas.TownLocation.model_validate(loc) for loc in (hub.town_locations or [])],
+            town_locations=[
+                schemas.TownLocationOut.model_validate(loc)
+                for loc in (hub.town_locations or [])
+            ],
         )
         if hub
         else None

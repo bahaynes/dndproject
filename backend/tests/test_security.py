@@ -558,10 +558,17 @@ def test_rate_limiter_blocks_excess_auth_requests(client, monkeypatch):
     get_settings.cache_clear()
     app_main._rate_limit_buckets.clear()
     try:
-        for _ in range(60):
-            r = client.get("/api/auth/dev-status", headers={"X-Forwarded-For": "203.0.113.99"})
+        for idx in range(60):
+            # Spoofed leftmost X-Forwarded-For values must not bypass rate limiting
+            r = client.get(
+                "/api/auth/dev-status",
+                headers={"X-Forwarded-For": f"198.51.100.{idx}, 203.0.113.99"},
+            )
             assert r.status_code == 200
-        r_limited = client.get("/api/auth/dev-status", headers={"X-Forwarded-For": "203.0.113.99"})
+        r_limited = client.get(
+            "/api/auth/dev-status",
+            headers={"X-Forwarded-For": "198.51.100.250, 203.0.113.99"},
+        )
         assert r_limited.status_code == 429
     finally:
         app_main._rate_limit_buckets.clear()
@@ -727,8 +734,9 @@ def test_coderabbit_followups_redaction_scoping_and_legacy_normalization(
     )
     assert r_det.status_code in (302, 307)
 
-    # 6. Proxy secret supports comma-separated rotation & rejects non-ASCII cleanly
-    monkeypatch.setenv("PROXY_SHARED_SECRET", "old_secret,new_secret")
+    # 6. Proxy secret supports PROXY_SHARED_SECRET_PREVIOUS rotation & rejects non-ASCII cleanly
+    monkeypatch.setenv("PROXY_SHARED_SECRET", "new_secret")
+    monkeypatch.setenv("PROXY_SHARED_SECRET_PREVIOUS", "old_secret")
     get_settings.cache_clear()
     try:
         assert client.get("/api/auth/dev-status", headers={"X-Proxy-Secret": "old_secret"}).status_code == 200
@@ -736,4 +744,67 @@ def test_coderabbit_followups_redaction_scoping_and_legacy_normalization(
         assert client.get("/api/auth/dev-status", headers=[(b"x-proxy-secret", b"n\xf6n-ascii")]).status_code == 403
     finally:
         monkeypatch.delenv("PROXY_SHARED_SECRET", raising=False)
+        monkeypatch.delenv("PROXY_SHARED_SECRET_PREVIOUS", raising=False)
+        get_settings.cache_clear()
+
+    # 7. Export succeeds for legacy out-of-range map width while import still rejects it
+    wide_map = map_models.HexMap(
+        campaign_id=campaign.id, name="Legacy Wide", width=250, height=20, hex_size=60
+    )
+    db_session.add(wide_map)
+    db_session.commit()
+    r_exp = client.get("/api/admin/world/export", headers=admin_auth_headers)
+    assert r_exp.status_code == 200
+    assert any(m["name"] == "Legacy Wide" and m["width"] == 250 for m in r_exp.json()["maps"])
+
+    # 8. Session completion rejects cross-campaign mission; signup & toggle_back redact hidden mission
+    assert (
+        client.post(
+            f"/api/sessions/{sess['id']}/complete",
+            json={"result": "failure", "mission_id": other_mission["id"]},
+            headers=admin_auth_headers,
+        ).status_code
+        == 404
+    )
+    r_signup = client.post(f"/api/sessions/{sess['id']}/signup", headers=player_auth_headers)
+    assert r_signup.status_code == 200
+    assert r_signup.json()["confirmed_mission"] is None
+
+    hidden_prop = client.post(
+        "/api/sessions/proposals",
+        json={"session_id": sess["id"], "mission_id": hidden_mission["id"]},
+        headers=admin_auth_headers,
+    ).json()
+    r_back = client.post(
+        f"/api/sessions/proposals/{hidden_prop['id']}/toggle_back",
+        headers=player_auth_headers,
+    )
+    assert r_back.status_code == 200
+    assert r_back.json()["mission"] is None
+
+    # 9. Production OAuth login behind Caddy proxy does not redirect-loop on matching X-Forwarded-Host
+    monkeypatch.setenv("APP_ENV", "production")
+    monkeypatch.setenv("SECRET_KEY", "a" * 32)
+    monkeypatch.setenv("ENABLE_DEV_TOKEN", "false")
+    monkeypatch.setenv("FRONTEND_URL", "https://westmarches.bahaynes.com")
+    get_settings.cache_clear()
+    try:
+        r_proxied = client.get(
+            "/api/auth/discord/login",
+            headers={"Host": "dnd-backend-123.run.app", "X-Forwarded-Host": "westmarches.bahaynes.com"},
+            follow_redirects=False,
+        )
+        assert r_proxied.status_code in (302, 307)
+        assert "discord.com/api/oauth2/authorize" in r_proxied.headers["location"]
+
+        r_alt_host = client.get(
+            "/api/auth/discord/login",
+            headers={"Host": "dnd-backend-123.run.app", "X-Forwarded-Host": "dnd-frontend-123.run.app"},
+            follow_redirects=False,
+        )
+        assert r_alt_host.status_code in (302, 307)
+        assert r_alt_host.headers["location"] == "https://westmarches.bahaynes.com/api/auth/discord/login"
+    finally:
+        for var in ("APP_ENV", "SECRET_KEY", "ENABLE_DEV_TOKEN", "FRONTEND_URL"):
+            monkeypatch.delenv(var, raising=False)
         get_settings.cache_clear()

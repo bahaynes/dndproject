@@ -95,12 +95,14 @@ async def rate_limit_middleware(request: Request, call_next):
             limit = _BAKE_EARTH_RATE_LIMIT
 
         if bucket_name is not None:
+            real_ip = request.headers.get("X-Real-IP", "").strip()
             forwarded_for = request.headers.get("X-Forwarded-For", "")
-            client_ip = (
-                forwarded_for.split(",", 1)[0].strip()
-                if forwarded_for.strip()
-                else (request.client.host if request.client else "unknown")
-            )
+            if real_ip:
+                client_ip = real_ip
+            elif forwarded_for.strip():
+                client_ip = forwarded_for.split(",")[-1].strip()
+            else:
+                client_ip = request.client.host if request.client else "unknown"
             now = time.monotonic()
             cutoff = now - _RATE_LIMIT_WINDOW_SECONDS
             key = (bucket_name, client_ip)
@@ -110,12 +112,12 @@ async def rate_limit_middleware(request: Request, call_next):
                 ]
                 for stale_key in stale_keys:
                     del _rate_limit_buckets[stale_key]
-                while len(_rate_limit_buckets) >= _MAX_RATE_LIMIT_BUCKETS:
-                    oldest_key = min(
-                        _rate_limit_buckets,
-                        key=lambda k: _rate_limit_buckets[k][-1] if _rate_limit_buckets[k] else 0.0,
+                if len(_rate_limit_buckets) >= _MAX_RATE_LIMIT_BUCKETS:
+                    return JSONResponse(
+                        status_code=429,
+                        content={"detail": "Too many requests"},
+                        headers={"Retry-After": "60"},
                     )
-                    del _rate_limit_buckets[oldest_key]
             bucket = _rate_limit_buckets[key]
             while bucket and bucket[0] <= cutoff:
                 bucket.popleft()
@@ -133,7 +135,9 @@ async def rate_limit_middleware(request: Request, call_next):
 @app.middleware("http")
 async def proxy_secret_middleware(request: Request, call_next):
     settings = get_settings()
-    accepted = [s.strip() for s in settings.PROXY_SHARED_SECRET.split(",") if s.strip()]
+    accepted = [
+        s for s in (settings.PROXY_SHARED_SECRET, settings.PROXY_SHARED_SECRET_PREVIOUS) if s
+    ]
     if (
         accepted
         and request.url.path.startswith("/api/")

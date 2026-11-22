@@ -40,7 +40,11 @@ To avoid exposing your personal `~/.ssh` keys to the webhook container, create a
 ```bash
 mkdir -p ~/.ssh/dnd-deploy && chmod 700 ~/.ssh/dnd-deploy
 ssh-keygen -t ed25519 -N '' -f ~/.ssh/dnd-deploy/id_ed25519 -C 'dnd-webhook-deploy'
-ssh-keyscan github.com > ~/.ssh/dnd-deploy/known_hosts && chmod 600 ~/.ssh/dnd-deploy/known_hosts
+ssh-keyscan -t ed25519,rsa github.com > ~/.ssh/dnd-deploy/known_hosts
+ssh-keygen -lf ~/.ssh/dnd-deploy/known_hosts
+# Verify the printed SHA256 fingerprints match GitHub's published SSH key fingerprints
+# (https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints)
+chmod 600 ~/.ssh/dnd-deploy/known_hosts
 ```
 
 Add `~/.ssh/dnd-deploy/id_ed25519.pub` in GitHub → repo **Settings** → **Deploy keys** (without write access).
@@ -105,7 +109,7 @@ systemctl --user restart dnd-webhook.service
 
 ## Security notes
 
-- The container's port 9000 is bound to `hostIP: 127.0.0.1` — not reachable directly from the internet. (If Caddy runs in rootless `slirp4netns` and cannot reach `host.containers.internal:9000` over loopback, place `dnd-webhook` and `dnd-westmarches` on a shared rootless Podman network AND update Caddy's `/webhook` upstream in `frontend/Caddyfile` to `dnd-webhook:9000` instead of `host.containers.internal:9000`, while keeping the loopback `hostIP: 127.0.0.1` binding.)
+- The container's port 9000 is bound to `hostIP: 127.0.0.1` — not reachable directly from the internet. (If Caddy runs in rootless `slirp4netns` and cannot reach `host.containers.internal:9000` over loopback, declare a persistent shared rootless Podman network in both Quadlet units via `Network=dnd-net` so `podman kube play --replace` preserves the attachment on every auto-deploy, AND update Caddy's `/webhook` upstream in `frontend/Caddyfile` to `dnd-webhook:9000`, while keeping `hostIP: 127.0.0.1`.)
 - Only `~/.ssh/dnd-deploy` (a dedicated read-only GitHub Deploy Key) is mounted into `/home/appuser/.ssh`, rather than your full `~/.ssh` directory.
 - All traffic enters through Caddy over HTTPS, which terminates TLS before forwarding.
 - Requests with a missing or invalid `X-Hub-Signature-256` header are rejected by the `webhook` binary; `deploy.sh` is never called.

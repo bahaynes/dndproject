@@ -44,6 +44,7 @@ class Settings(BaseSettings):
 
     # Shared secret sent by Caddy reverse proxy to Cloud Run backend (optional; disabled when empty)
     PROXY_SHARED_SECRET: str = ""
+    PROXY_SHARED_SECRET_PREVIOUS: str = ""
 
     # In-process sliding-window rate limiter on auth and bake-earth endpoints
     RATE_LIMIT_ENABLED: bool = False
