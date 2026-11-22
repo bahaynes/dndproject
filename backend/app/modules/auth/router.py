@@ -1,54 +1,139 @@
+import hmac
 import logging
+import re
+import secrets
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
+from typing import Optional
+from urllib.parse import urlencode, urlparse
+
+import httpx
+import jwt
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-import httpx
-from typing import Optional
-from ...config import get_settings
 
 from ... import security
-from ...dependencies import get_db, get_current_user, get_current_user_global
-from . import schemas, service as crud, models
+from ...config import get_settings
+from ...dependencies import get_current_active_user, get_current_user_global, get_db
 from ..campaigns import service as campaign_service
+from . import models, schemas, service as crud
 
 logger = logging.getLogger("app.auth")
 
 router = APIRouter()
 
-import base64
-import json
+_PR_CALLBACK_HOST_RE = re.compile(
+    r"dnd-frontend-pr-\d+-(?:[a-z0-9-]+-uc\.a|\d+\.us-central1)\.run\.app"
+)
+
+
+def _dev_login_allowed(settings) -> bool:
+    return bool(settings.ENABLE_DEV_TOKEN and settings.APP_ENV != "production")
+
+
+def _is_safe_return_to(return_to: str, settings) -> bool:
+    if not return_to or any(ch in return_to for ch in ("\r", "\n", "\\")):
+        return False
+    if return_to.startswith("/"):
+        return not return_to.startswith("//")
+    try:
+        parsed = urlparse(return_to)
+    except Exception:
+        return False
+    hostname = parsed.hostname
+    if not hostname or parsed.username is not None or parsed.password is not None:
+        return False
+    if hostname == "localhost" and settings.APP_ENV != "production":
+        return parsed.scheme in ("http", "https")
+    allowed_hosts = {"westmarches.bahaynes.com", "dndproject.bahaynes.com"}
+    if settings.FRONTEND_URL:
+        frontend_host = urlparse(settings.FRONTEND_URL).hostname
+        if frontend_host:
+            allowed_hosts.add(frontend_host)
+    return parsed.scheme == "https" and hostname in allowed_hosts
+
+
+def _is_allowed_proxy_callback(callback_url: str, app_env: str) -> bool:
+    if not callback_url:
+        return False
+    try:
+        parsed = urlparse(callback_url)
+    except Exception:
+        return False
+    if (
+        parsed.path != "/api/auth/discord/callback"
+        or parsed.query
+        or parsed.fragment
+        or parsed.username is not None
+        or parsed.password is not None
+    ):
+        return False
+    hostname = parsed.hostname
+    if not hostname:
+        return False
+    if hostname == "localhost" and app_env != "production":
+        return parsed.scheme in ("http", "https")
+    if parsed.scheme != "https":
+        return False
+    if hostname in ("westmarches.bahaynes.com", "dndproject.bahaynes.com"):
+        return True
+    return bool(_PR_CALLBACK_HOST_RE.fullmatch(hostname))
+
 
 @router.get("/discord/login", tags=["Authentication"])
 async def login_via_discord(
+    request: Request,
     return_to: Optional[str] = None,
 ):
-    settings = get_settings()
     """
     Redirects the user to Discord OAuth2 login page.
-    Optionally accepts a 'return_to' query param to redirect back to a specific frontend URL (e.g. Vercel preview).
+    Optionally accepts a 'return_to' query param to redirect back to a specific frontend URL.
     """
+    settings = get_settings()
+    safe_return_to = return_to if (return_to and _is_safe_return_to(return_to, settings)) else None
+
+    if settings.APP_ENV == "production" and settings.FRONTEND_URL:
+        frontend_host = urlparse(settings.FRONTEND_URL).hostname
+        forwarded_host = (
+            request.headers.get("X-Forwarded-Host", "")
+            .split(",", 1)[0]
+            .strip()
+            .split(":", 1)[0]
+            .lower()
+        )
+        if frontend_host and forwarded_host and forwarded_host != frontend_host.lower():
+            target = f"{settings.FRONTEND_URL.rstrip('/')}/api/auth/discord/login"
+            if safe_return_to:
+                target = f"{target}?{urlencode({'return_to': safe_return_to})}"
+            return RedirectResponse(url=target)
+
     scope = "identify guilds"
+    nonce = secrets.token_urlsafe(32)
 
-    state_data = {}
-    if return_to:
-        state_data["return_to"] = return_to
+    my_callback_url = f"{settings.FRONTEND_URL.rstrip('/')}/api/auth/discord/callback"
+    state_payload: dict[str, str] = {
+        "type": "oauth_state",
+        "nonce": nonce,
+        "callback": my_callback_url,
+    }
+    if safe_return_to:
+        state_payload["return_to"] = safe_return_to
 
-    # The callback is usually handled on the same domain that initiated it
-    my_callback_url = f"{settings.FRONTEND_URL}/api/auth/discord/callback"
-    state_data["callback"] = my_callback_url
-
-    state_str = base64.urlsafe_b64encode(json.dumps(state_data).encode()).decode()
-
-    discord_auth_url = (
-        f"https://discord.com/api/oauth2/authorize"
-        f"?client_id={settings.DISCORD_CLIENT_ID}"
-        f"&redirect_uri={settings.DISCORD_REDIRECT_URI}"
-        f"&response_type=code"
-        f"&scope={scope}"
-        f"&state={state_str}"
+    state_str = security.create_access_token(
+        data=state_payload,
+        expires_delta=timedelta(minutes=10),
     )
+
+    query = urlencode({
+        "client_id": settings.DISCORD_CLIENT_ID,
+        "redirect_uri": settings.DISCORD_REDIRECT_URI,
+        "response_type": "code",
+        "scope": scope,
+        "state": state_str,
+    })
+    discord_auth_url = f"https://discord.com/api/oauth2/authorize?{query}"
 
     logger.info(
         "Initiating Discord OAuth redirect",
@@ -58,46 +143,30 @@ async def login_via_discord(
         },
     )
 
+    is_prod = settings.APP_ENV == "production"
     response = RedirectResponse(url=discord_auth_url)
+    response.set_cookie(
+        key="oauth_state_nonce",
+        value=nonce,
+        max_age=600,
+        httponly=True,
+        samesite="lax",
+        secure=is_prod,
+        path="/api/auth",
+    )
 
-    # Validate and store return_to in a cookie if provided
-    if return_to:
-        # Simple validation: allow localhost, *.vercel.app, and the production domain
-        allowed_domains = ["localhost", ".vercel.app", "westmarches.bahaynes.com"]
-        is_allowed = False
-
-        if return_to.startswith("/"):
-            is_allowed = True
-        else:
-            try:
-                from urllib.parse import urlparse
-                parsed = urlparse(return_to)
-                hostname = parsed.hostname
-                if hostname:
-                    for domain in allowed_domains:
-                        if domain.startswith("."): # wildcard
-                            if hostname.endswith(domain):
-                                is_allowed = True
-                                break
-                        elif hostname == domain:
-                            is_allowed = True
-                            break
-            except Exception:
-                pass
-
-        if is_allowed:
-             # Set cookie for 5 minutes
-            response.set_cookie(
-                key="auth_return_to",
-                value=return_to,
-                max_age=300,
-                httponly=True,
-                samesite="lax",
-                secure=False # Set to True in production if using https, but lax works mostly
-            )
+    if safe_return_to:
+        response.set_cookie(
+            key="auth_return_to",
+            value=safe_return_to,
+            max_age=300,
+            httponly=True,
+            samesite="lax",
+            secure=is_prod,
+            path="/api/auth",
+        )
 
     return response
-
 
 
 @router.get("/discord/proxy-callback", tags=["Authentication"])
@@ -107,46 +176,61 @@ async def discord_proxy_callback(code: str, state: str):
     Discord redirect URI must be a fixed URL (production).
     This endpoint receives the callback and forwards it to the PR environment specified in the state.
     """
+    settings = get_settings()
     try:
-        import base64
-        import json
-        state_data = json.loads(base64.urlsafe_b64decode(state).decode())
-        callback_url = state_data.get("callback")
+        state_data = jwt.decode(state, options={"verify_signature": False})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid state")
 
-    if not callback_url:
+    if not isinstance(state_data, dict) or state_data.get("type") != "oauth_state":
+        raise HTTPException(status_code=400, detail="Invalid state")
+
+    callback_url = state_data.get("callback")
+    if not isinstance(callback_url, str) or not callback_url:
         raise HTTPException(status_code=400, detail="Missing callback URL in state")
 
-    # Validate callback_url to prevent open redirect
-    from urllib.parse import urlparse
-    parsed = urlparse(callback_url)
-    hostname = parsed.hostname
-
-    allowed = False
-    if hostname:
-        if hostname == "localhost":
-            allowed = True
-        elif hostname.endswith(".run.app"):
-            allowed = True
-        elif hostname.endswith(".bahaynes.com"):
-            allowed = True
-
-    if not allowed:
+    if not _is_allowed_proxy_callback(callback_url, settings.APP_ENV):
         raise HTTPException(status_code=400, detail="Invalid callback domain")
 
-    # Redirect to the target callback, preserving code and state
-    from urllib.parse import urlencode
     query_params = urlencode({"code": code, "state": state})
     return RedirectResponse(url=f"{callback_url}?{query_params}")
 
+
 @router.get("/discord/callback", tags=["Authentication"])
-async def discord_callback(code: str, request: Request, response: Response, state: Optional[str] = None, db: Session = Depends(get_db)):
-    settings = get_settings()
+async def discord_callback(
+    code: str,
+    request: Request,
+    response: Response,
+    state: Optional[str] = None,
+    db: Session = Depends(get_db),
+):
     """
     Handles the callback from Discord, exchanges code for token, and gets user info.
-    Returns a temporary token that allows the user to list/select campaigns.
+    Sets a short-lived HttpOnly exchange cookie and redirects to the frontend callback page.
     """
+    settings = get_settings()
+
+    if not state:
+        raise HTTPException(status_code=400, detail="Missing OAuth state")
+
+    try:
+        state_data = jwt.decode(state, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    except (ExpiredSignatureError, InvalidTokenError):
+        raise HTTPException(status_code=400, detail="Invalid or expired OAuth state")
+
+    if state_data.get("type") != "oauth_state":
+        raise HTTPException(status_code=400, detail="Invalid OAuth state")
+
+    state_nonce = state_data.get("nonce")
+    cookie_nonce = request.cookies.get("oauth_state_nonce")
+    if (
+        not isinstance(state_nonce, str)
+        or not state_nonce
+        or not cookie_nonce
+        or not hmac.compare_digest(state_nonce, cookie_nonce)
+    ):
+        raise HTTPException(status_code=400, detail="OAuth state mismatch")
+
     logger.info("Discord OAuth callback received", extra={"code_present": bool(code)})
 
     # Exchange code for token
@@ -168,8 +252,6 @@ async def discord_callback(code: str, request: Request, response: Response, stat
             "Discord token exchange failed",
             extra={
                 "status_code": token_response.status_code,
-                # Discord returns a JSON body with error + error_description — this is the key diagnostic.
-                # e.g. {"error": "invalid_grant", "error_description": "Invalid \"redirect_uri\" in request."}
                 "discord_error": token_response.text,
                 "redirect_uri_used": settings.DISCORD_REDIRECT_URI,
             },
@@ -207,44 +289,76 @@ async def discord_callback(code: str, request: Request, response: Response, stat
         extra={"discord_id": discord_id, "username": username},
     )
 
-    # We construct a special token payload
-    token_payload = {
-        "sub": discord_id,
-        "type": "global",
-        "username": username,
-        "avatar": avatar,
-    }
+    exchange_token = security.create_access_token(
+        data={
+            "sub": discord_id,
+            "type": "oauth_exchange",
+            "username": username,
+            "avatar": avatar,
+            "discord_token": access_token,
+        },
+        expires_delta=timedelta(minutes=2),
+    )
 
-    jwt_token = security.create_access_token(data=token_payload)
-
-    # Determine redirect URL
-    return_to = request.cookies.get("auth_return_to")
-    if state:
-        try:
-            state_data = json.loads(base64.urlsafe_b64decode(state).decode())
-            if state_data.get("return_to"):
-                return_to = state_data.get("return_to")
-        except Exception:
-            pass
-
-    base_url = settings.FRONTEND_URL
-
-    # Redirect to frontend with token
-    frontend_url = f"{base_url}/login/callback?token={jwt_token}&discord_token={access_token}"
-
-    if return_to:
-        from urllib.parse import quote
-        frontend_url += f"&next={quote(return_to)}"
-
+    frontend_url = f"{settings.FRONTEND_URL.rstrip('/')}/login/callback"
     redirect = RedirectResponse(url=frontend_url)
-    if return_to:
-        redirect.delete_cookie("auth_return_to")
+    redirect.set_cookie(
+        key="oauth_exchange",
+        value=exchange_token,
+        max_age=120,
+        httponly=True,
+        samesite="lax",
+        secure=(settings.APP_ENV == "production"),
+        path="/api/auth",
+    )
+    redirect.delete_cookie("oauth_state_nonce", path="/api/auth")
+    redirect.delete_cookie("auth_return_to", path="/api/auth")
 
     return redirect
 
 
+@router.post("/exchange", tags=["Authentication"])
+async def exchange_oauth_cookie(request: Request, response: Response):
+    """
+    Exchanges the short-lived HttpOnly oauth_exchange cookie for a global JWT
+    and Discord access token without exposing credentials in URL query strings.
+    """
+    settings = get_settings()
+    exchange_cookie = request.cookies.get("oauth_exchange")
+    if not exchange_cookie:
+        raise HTTPException(status_code=401, detail="Missing OAuth exchange session")
+
+    try:
+        payload = jwt.decode(
+            exchange_cookie,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+        )
+    except (ExpiredSignatureError, InvalidTokenError):
+        raise HTTPException(status_code=401, detail="Invalid or expired OAuth exchange session")
+
+    discord_id = payload.get("sub")
+    if payload.get("type") != "oauth_exchange" or not discord_id:
+        raise HTTPException(status_code=401, detail="Invalid OAuth exchange session")
+
+    jwt_token = security.create_access_token(
+        data={
+            "sub": discord_id,
+            "type": "global",
+            "username": payload.get("username"),
+            "avatar": payload.get("avatar"),
+        }
+    )
+
+    response.delete_cookie("oauth_exchange", path="/api/auth")
+    return {
+        "token": jwt_token,
+        "discord_token": payload.get("discord_token"),
+    }
+
+
 @router.get("/me", response_model=schemas.User, tags=["Users"])
-async def read_users_me(current_user: models.User = Depends(get_current_user)):
+async def read_users_me(current_user: models.User = Depends(get_current_active_user)):
     return current_user
 
 @router.get("/me/global", tags=["Users"])
@@ -275,10 +389,10 @@ class DevTokenRequest(BaseModel):
 @router.get("/dev-status", include_in_schema=False)
 async def dev_status():
     """
-    Returns whether dev login is enabled (true in development and PR preview, false in production).
+    Returns whether dev login is enabled (requires ENABLE_DEV_TOKEN=true and APP_ENV != production).
     """
     settings = get_settings()
-    return {"dev_login_enabled": settings.APP_ENV != "production"}
+    return {"dev_login_enabled": _dev_login_allowed(settings)}
 
 
 @router.post("/dev-token", include_in_schema=False)
@@ -286,13 +400,13 @@ async def dev_token(
     request: DevTokenRequest,
     db: Session = Depends(get_db),
 ):
-    settings = get_settings()
     """
     Dev-only endpoint for e2e testing. Returns a valid campaign-scoped JWT,
     creating the campaign and user in the database if they don't exist.
-    Disabled (404) when APP_ENV=production.
+    Disabled (404) unless ENABLE_DEV_TOKEN=true and APP_ENV != production.
     """
-    if settings.APP_ENV == "production":
+    settings = get_settings()
+    if not _dev_login_allowed(settings):
         raise HTTPException(status_code=404, detail="Not found")
 
     from ..campaigns import schemas as campaign_schemas

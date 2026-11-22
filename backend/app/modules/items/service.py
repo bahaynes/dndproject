@@ -17,7 +17,13 @@ def create_item(db: Session, item: schemas.ItemCreate, campaign_id: int):
     return db_item
 
 # Inventory CRUD
+def get_inventory_item(db: Session, inventory_item_id: int):
+    return db.query(models.InventoryItem).filter(models.InventoryItem.id == inventory_item_id).first()
+
+
 def add_item_to_inventory(db: Session, character_id: int, item_id: int, quantity: int = 1):
+    if quantity <= 0:
+        raise ValueError("Quantity must be positive")
     # Check if the item already exists in the character's inventory
     db_inventory_item = db.query(models.InventoryItem).filter(
         models.InventoryItem.character_id == character_id,
@@ -83,6 +89,8 @@ def add_items_to_inventory_bulk(db: Session, items_to_add: list[dict]):
     return results
 
 def remove_item_from_inventory(db: Session, inventory_item_id: int, quantity: int = 1):
+    if quantity <= 0:
+        raise ValueError("Quantity must be positive")
     db_inventory_item = db.query(models.InventoryItem).filter(models.InventoryItem.id == inventory_item_id).first()
     if not db_inventory_item:
         return None
@@ -120,6 +128,11 @@ def delete_store_item(db: Session, store_item: models.StoreItem):
 
 def purchase_item(db: Session, character: Character, store_item: models.StoreItem, quantity: int):
     from ..ledger.models import LedgerEntry
+
+    if quantity <= 0:
+        return {"error": "Quantity must be positive"}
+    if store_item.price < 0:
+        return {"error": "Invalid store item price"}
 
     total_cost = store_item.price * quantity
     if total_cost > character.stats.gold:

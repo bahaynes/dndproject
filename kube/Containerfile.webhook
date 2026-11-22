@@ -9,11 +9,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         podman \
     && rm -rf /var/lib/apt/lists/*
 
-# Download adnanh/webhook binary
+# Download adnanh/webhook binary and verify SHA256
 ARG WEBHOOK_VERSION=2.8.3
+ARG WEBHOOK_SHA256=3cdf93f0615f11bfc575c158d0d613666394228f6e830ff6f792178933773f7b
 RUN curl -fsSL \
         "https://github.com/adnanh/webhook/releases/download/${WEBHOOK_VERSION}/webhook-linux-amd64.tar.gz" \
         -o webhook.tar.gz \
+    && echo "${WEBHOOK_SHA256}  webhook.tar.gz" | sha256sum -c - \
     && tar -xzf webhook.tar.gz \
     && mv webhook-linux-amd64/webhook /usr/local/bin/webhook \
     && chmod +x /usr/local/bin/webhook \

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
 	import type { Ship, TownLocation } from '$lib/types';
+	import { safeInternalPath } from '$lib/utils/url';
 	import PageHeader from '$lib/components/PageHeader.svelte';
 	import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
@@ -36,6 +37,7 @@
 	});
 
 	$: selected = locations.find((l) => l.id === selectedId) ?? locations[0] ?? null;
+	$: safeLinkPath = safeInternalPath(selected?.link_path);
 
 	function linkLabel(path: string | null | undefined): string {
 		if (!path) return 'Go';
@@ -258,10 +260,10 @@
 						</div>
 					{/if}
 
-					{#if selected.link_path}
+					{#if safeLinkPath}
 						<div class="pt-1">
-							<a href={selected.link_path} class="btn btn-primary btn-sm w-full">
-								{linkLabel(selected.link_path)}
+							<a href={safeLinkPath} class="btn btn-primary btn-sm w-full">
+								{linkLabel(safeLinkPath)}
 							</a>
 						</div>
 					{/if}

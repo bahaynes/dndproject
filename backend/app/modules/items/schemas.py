@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 # Item Schemas
@@ -20,6 +20,7 @@ class InventoryItemBase(BaseModel):
 
 class InventoryItemCreate(InventoryItemBase):
     item_id: int
+    quantity: int = Field(..., ge=1)
 
 class InventoryItem(InventoryItemBase):
     id: int
@@ -29,8 +30,8 @@ class InventoryItem(InventoryItemBase):
 
 # StoreItem Schemas
 class StoreItemBase(BaseModel):
-    price: int
-    quantity_available: int
+    price: int = Field(..., ge=0)
+    quantity_available: int = Field(..., ge=-1)
 
 class StoreItemCreate(StoreItemBase):
     item_id: int

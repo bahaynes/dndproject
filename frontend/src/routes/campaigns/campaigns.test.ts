@@ -20,6 +20,7 @@ vi.mock('$lib/auth', () => ({
 describe('Campaigns Page', () => {
 	beforeEach(() => {
 		localStorage.clear();
+		sessionStorage.clear();
 		vi.clearAllMocks();
 	});
 

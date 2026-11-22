@@ -4,9 +4,7 @@ from pathlib import Path
 from typing import Literal
 from sqlalchemy.orm import Session, joinedload
 
-from ..auth import models as auth_models
 from ..campaigns import models as campaign_models
-from ..characters import models as char_models
 from ..factions import models as faction_models
 from ..items import models as item_models
 from ..maps import models as map_models
@@ -64,40 +62,6 @@ def load_baseline_world() -> schemas.WorldBundle:
     return load_world_preset("baseline_world")
 
 
-def export_game_data(db: Session) -> schemas.GameDataExport:
-    users = db.query(auth_models.User).options(joinedload(auth_models.User.campaign)).all()
-    items = db.query(item_models.Item).all()
-    store_items = db.query(item_models.StoreItem).all()
-    missions = db.query(mission_models.Mission).all()
-    game_sessions = db.query(session_models.GameSession).all()
-
-    return schemas.GameDataExport(
-        users=users,
-        items=items,
-        store_items=store_items,
-        missions=missions,
-        game_sessions=game_sessions,
-    )
-
-
-def import_game_data(db: Session, data: schemas.GameDataExport):
-    # Legacy stub kept for backwards compatibility
-    db.execute(session_models.game_session_players.delete())
-    db.execute(mission_models.mission_players.delete())
-    db.query(item_models.InventoryItem).delete()
-    db.query(item_models.StoreItem).delete()
-    db.query(mission_models.MissionReward).delete()
-    db.query(session_models.GameSession).delete()
-    db.query(mission_models.Mission).delete()
-    db.query(item_models.Item).delete()
-    db.query(char_models.CharacterStats).delete()
-    db.query(char_models.Character).delete()
-    db.query(auth_models.User).delete()
-    db.commit()
-
-    return {"message": "Data wipe successful. Full import is not yet implemented."}
-
-
 def export_world(db: Session, campaign_id: int) -> schemas.WorldBundle:
     campaign = db.query(campaign_models.Campaign).filter_by(id=campaign_id).first()
     hub = db.query(ship_models.Ship).filter_by(campaign_id=campaign_id).first()
@@ -136,9 +100,10 @@ def export_world(db: Session, campaign_id: int) -> schemas.WorldBundle:
         schemas.WorldHub(
             name=hub.name,
             motd=hub.motd,
-            town_locations=[ship_schemas.TownLocation.model_validate(loc) for loc in (hub.town_locations or [])]
-            if hasattr(schemas, "TownLocation")
-            else [schemas.TownLocation.model_validate(loc) for loc in (hub.town_locations or [])],
+            town_locations=[
+                schemas.TownLocationOut.model_validate(loc)
+                for loc in (hub.town_locations or [])
+            ],
         )
         if hub
         else None

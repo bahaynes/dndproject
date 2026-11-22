@@ -15,9 +15,11 @@ spec:
         runAsUser: 1000
         runAsGroup: 1000
         runAsNonRoot: true
+        allowPrivilegeEscalation: false
       ports:
-        # Caddy is the sole entry point. Binding globally allows docker proxy.
+        # Caddy is the sole entry point. Bind exclusively on loopback.
         - containerPort: 9000
+          hostIP: 127.0.0.1
           hostPort: 9000
       env:
         - name: WEBHOOK_SECRET
@@ -59,6 +61,6 @@ spec:
         type: Socket
     - name: ssh-keys
       hostPath:
-        # Path updated by install-webhook.sh
-        path: /home/USER/.ssh
+        # Dedicated read-only GitHub Deploy Key directory updated by install-webhook.sh
+        path: /home/USER/.ssh/dnd-deploy
         type: Directory

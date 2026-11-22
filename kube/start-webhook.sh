@@ -36,8 +36,15 @@ export WEBHOOK_SECRET
 export REPO_DIR
 export DEPLOY_SCRIPT="$REPO_DIR/scripts/deploy.sh"
 
-# Render template → concrete hooks file
+# Render template → concrete hooks file with restrictive permissions
+umask 077
 envsubst < "$HOOKS_TPL" > "$HOOKS_FILE"
+chmod 600 "$HOOKS_FILE"
+
+ARGS=(-hooks "$HOOKS_FILE" -ip "$BIND_IP" -port 9000)
+if [ "${WEBHOOK_VERBOSE:-false}" = "true" ]; then
+    ARGS+=(-verbose)
+fi
 
 echo "Starting webhook listener on ${BIND_IP}:9000 ..."
-exec webhook -hooks "$HOOKS_FILE" -ip "$BIND_IP" -port 9000 -verbose
+exec webhook "${ARGS[@]}"

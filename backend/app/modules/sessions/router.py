@@ -2,11 +2,72 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from sqlalchemy.orm import Session
 
-from ...dependencies import get_db, get_current_active_user, get_current_active_admin_user, get_current_user
+from ...dependencies import get_db, get_current_active_user, get_current_active_admin_user
 from ..auth.schemas import User
 from . import schemas, service as crud
 
 router = APIRouter()
+
+
+def _validate_session_references(
+    db: Session,
+    campaign_id: int,
+    confirmed_mission_id: int | None,
+    confirmed_hex_id: int | None,
+) -> None:
+    if confirmed_mission_id is not None:
+        from ..missions import models as mission_models
+        db_mission = (
+            db.query(mission_models.Mission)
+            .filter(
+                mission_models.Mission.id == confirmed_mission_id,
+                mission_models.Mission.campaign_id == campaign_id,
+            )
+            .first()
+        )
+        if not db_mission:
+            raise HTTPException(status_code=404, detail="Mission not found")
+
+    if confirmed_hex_id is not None:
+        from ..maps import models as map_models
+        db_hex = (
+            db.query(map_models.Hex)
+            .join(map_models.HexMap)
+            .filter(
+                map_models.Hex.id == confirmed_hex_id,
+                map_models.HexMap.campaign_id == campaign_id,
+            )
+            .first()
+        )
+        if not db_hex:
+            raise HTTPException(status_code=404, detail="Hex not found")
+
+
+def _serialize_proposal_for_user(db_proposal, is_admin: bool) -> schemas.SessionProposal:
+    prop_out = schemas.SessionProposal.model_validate(db_proposal)
+    if not is_admin and prop_out.mission and (
+        prop_out.mission.is_retired or not prop_out.mission.is_discoverable
+    ):
+        prop_out.mission = None
+        prop_out.mission_id = None
+    return prop_out
+
+
+def _serialize_session_for_user(db_session, is_admin: bool) -> schemas.GameSessionWithPlayers:
+    session_out = schemas.GameSessionWithPlayers.model_validate(db_session)
+    if not is_admin:
+        if session_out.confirmed_mission and (
+            session_out.confirmed_mission.is_retired
+            or not session_out.confirmed_mission.is_discoverable
+        ):
+            session_out.confirmed_mission = None
+            session_out.confirmed_mission_id = None
+        for prop in session_out.proposals:
+            if prop.mission and (prop.mission.is_retired or not prop.mission.is_discoverable):
+                prop.mission = None
+                prop.mission_id = None
+    return session_out
+
 
 @router.post("/", response_model=schemas.GameSession, tags=["Game Sessions"])
 def create_session(
@@ -14,6 +75,12 @@ def create_session(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_admin_user)
 ):
+    _validate_session_references(
+        db,
+        campaign_id=current_user.campaign_id,
+        confirmed_mission_id=session.confirmed_mission_id,
+        confirmed_hex_id=session.confirmed_hex_id,
+    )
     return crud.create_game_session(db=db, session=session, campaign_id=current_user.campaign_id)
 
 @router.get("/", response_model=List[schemas.GameSessionWithPlayers], tags=["Game Sessions"])
@@ -21,22 +88,23 @@ def read_sessions(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
+    is_admin = current_user.role == "admin"
     sessions = crud.get_game_sessions(db, campaign_id=current_user.campaign_id, skip=skip, limit=limit)
-    return sessions
+    return [_serialize_session_for_user(s, is_admin=is_admin) for s in sessions]
 
 @router.get("/{session_id}", response_model=schemas.GameSessionWithPlayers, tags=["Game Sessions"])
 def read_session(
     session_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_active_user)
 ):
     db_session = crud.get_game_session(db, session_id=session_id)
     if db_session is None or db_session.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Game session not found")
 
-    return db_session
+    return _serialize_session_for_user(db_session, is_admin=(current_user.role == "admin"))
 
 @router.post("/proposals", response_model=schemas.SessionProposal, tags=["Game Sessions"])
 def propose_mission(
@@ -55,6 +123,36 @@ def propose_mission(
     if not is_signed_up and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Join the session before proposing a quest or hex")
 
+    if proposal.mission_id is not None:
+        from ..missions import models as mission_models
+        db_mission = (
+            db.query(mission_models.Mission)
+            .filter(
+                mission_models.Mission.id == proposal.mission_id,
+                mission_models.Mission.campaign_id == current_user.campaign_id,
+            )
+            .first()
+        )
+        if not db_mission or (
+            current_user.role != "admin"
+            and (db_mission.is_retired or not db_mission.is_discoverable)
+        ):
+            raise HTTPException(status_code=404, detail="Mission not found")
+
+    if proposal.hex_id is not None:
+        from ..maps import models as map_models
+        db_hex = (
+            db.query(map_models.Hex)
+            .join(map_models.HexMap)
+            .filter(
+                map_models.Hex.id == proposal.hex_id,
+                map_models.HexMap.campaign_id == current_user.campaign_id,
+            )
+            .first()
+        )
+        if not db_hex:
+            raise HTTPException(status_code=404, detail="Hex not found")
+
     return crud.create_session_proposal(
         db,
         session_id=proposal.session_id,
@@ -70,7 +168,7 @@ def toggle_backing(
     current_user: User = Depends(get_current_active_user)
 ):
     db_proposal = crud.get_session_proposal(db, proposal_id)
-    if not db_proposal:
+    if not db_proposal or db_proposal.session.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Proposal not found")
 
     # Use the character the player actually signed up with in this session (if any)
@@ -83,7 +181,7 @@ def toggle_backing(
     if error:
         raise HTTPException(status_code=400, detail=error)
 
-    return db_proposal
+    return _serialize_proposal_for_user(db_proposal, is_admin=(current_user.role == "admin"))
 
 
 @router.post("/{session_id}/signup", response_model=schemas.GameSessionWithPlayers, tags=["Game Sessions"])
@@ -103,7 +201,7 @@ def signup_for_session(
     updated_session, error = crud.add_character_to_game_session(db, session=session, character=character)
     if error:
         raise HTTPException(status_code=400, detail=error)
-    return updated_session
+    return _serialize_session_for_user(updated_session, is_admin=(current_user.role == "admin"))
 
 @router.post("/{session_id}/swap-character", response_model=schemas.GameSessionWithPlayers, tags=["Game Sessions"])
 def swap_character(
@@ -118,13 +216,13 @@ def swap_character(
         raise HTTPException(status_code=404, detail="Game session not found")
 
     new_char = char_service.get_character(db, character_id=data.character_id)
-    if not new_char:
+    if not new_char or new_char.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Character not found")
 
     updated, error = crud.swap_character_in_session(db, session=session, owner_id=current_user.id, new_character=new_char)
     if error:
         raise HTTPException(status_code=400, detail=error)
-    return updated
+    return _serialize_session_for_user(updated, is_admin=(current_user.role == "admin"))
 
 @router.delete("/{session_id}/signup", response_model=schemas.GameSessionWithPlayers, tags=["Game Sessions"])
 def cancel_signup(
@@ -141,7 +239,8 @@ def cancel_signup(
     if not character:
         raise HTTPException(status_code=400, detail="User has no active character selected")
 
-    return crud.remove_character_from_game_session(db, session=session, character=character)
+    updated = crud.remove_character_from_game_session(db, session=session, character=character)
+    return _serialize_session_for_user(updated, is_admin=(current_user.role == "admin"))
 
 @router.put("/{session_id}", response_model=schemas.GameSession, tags=["Game Sessions"])
 def update_session(
@@ -153,6 +252,12 @@ def update_session(
     db_session = crud.get_game_session(db, session_id=session_id)
     if not db_session or db_session.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Game session not found")
+    _validate_session_references(
+        db,
+        campaign_id=current_user.campaign_id,
+        confirmed_mission_id=session_update.confirmed_mission_id,
+        confirmed_hex_id=session_update.confirmed_hex_id,
+    )
     return crud.update_game_session(db, session=db_session, session_update=session_update)
 
 @router.post("/proposals/{proposal_id}/force_confirm", response_model=schemas.GameSessionWithPlayers, tags=["Admin"])
@@ -161,6 +266,9 @@ def force_confirm(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_admin_user)
 ):
+    db_proposal = crud.get_session_proposal(db, proposal_id)
+    if not db_proposal or db_proposal.session.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Proposal not found")
     session, error = crud.force_confirm_proposal(db, proposal_id=proposal_id)
     if error:
         raise HTTPException(status_code=400, detail=error)
@@ -172,6 +280,9 @@ def veto_proposal(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_admin_user)
 ):
+    db_proposal = crud.get_session_proposal(db, proposal_id)
+    if not db_proposal or db_proposal.session.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Proposal not found")
     proposal, error = crud.veto_proposal(db, proposal_id=proposal_id)
     if error:
         raise HTTPException(status_code=400, detail=error)
@@ -195,7 +306,8 @@ def submit_field_report(
     if character not in db_session.players:
         raise HTTPException(status_code=403, detail="Only players who participated in this session can submit a field report")
 
-    return crud.update_field_report(db, session=db_session, field_report=report.field_report)
+    updated = crud.update_field_report(db, session=db_session, field_report=report.field_report)
+    return _serialize_session_for_user(updated, is_admin=(current_user.role == "admin"))
 
 @router.post("/{session_id}/complete", response_model=schemas.GameSessionWithPlayers, tags=["Admin"])
 def complete_session(
@@ -207,6 +319,13 @@ def complete_session(
     db_session = crud.get_game_session(db, session_id=session_id)
     if not db_session or db_session.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Game session not found")
+
+    _validate_session_references(
+        db,
+        campaign_id=current_user.campaign_id,
+        confirmed_mission_id=data.mission_id,
+        confirmed_hex_id=data.hex_id,
+    )
 
     session, error = crud.complete_session(
         db, session=db_session, data=data, campaign_id=current_user.campaign_id
@@ -239,6 +358,13 @@ def kick_player(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_admin_user)
 ):
+    from ..characters import service as char_service
+    db_session = crud.get_game_session(db, session_id=session_id)
+    if not db_session or db_session.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Game session not found")
+    db_character = char_service.get_character(db, character_id=character_id)
+    if not db_character or db_character.campaign_id != current_user.campaign_id:
+        raise HTTPException(status_code=404, detail="Character not found")
     session, error = crud.remove_character_from_session(db, session_id=session_id, character_id=character_id)
     if error:
         raise HTTPException(status_code=400, detail=error)

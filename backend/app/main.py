@@ -1,10 +1,15 @@
+import hmac
+import time
 import uuid
+from collections import defaultdict, deque
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 # Configure structured JSON logging before any other app imports so that
 # module-level startup code (e.g. Settings validation) uses the JSON formatter.
 from .logging_config import configure_logging, request_id_var
+from .config import get_settings
 configure_logging()
 
 # Import all models to ensure they are registered with Base
@@ -34,7 +39,115 @@ from .modules.debug import router as debug_router
 from .modules.ship import router as ship_router
 from .modules.ledger import router as ledger_router
 
-app = FastAPI()
+_settings = get_settings()
+
+app = FastAPI(
+    docs_url=None if _settings.APP_ENV == "production" else "/docs",
+    redoc_url=None if _settings.APP_ENV == "production" else "/redoc",
+    openapi_url=None if _settings.APP_ENV == "production" else "/openapi.json",
+)
+
+_RATE_LIMIT_WINDOW_SECONDS = 60.0
+_AUTH_RATE_LIMIT = 60
+_BAKE_EARTH_RATE_LIMIT = 10
+_MAX_RATE_LIMIT_BUCKETS = 10000
+_rate_limit_buckets: dict[tuple[str, str], deque[float]] = defaultdict(deque)
+
+
+def _build_allowed_origins(settings) -> list[str]:
+    candidates: list[str] = []
+    if settings.FRONTEND_URL:
+        candidates.append(settings.FRONTEND_URL.rstrip("/"))
+    if settings.CORS_ORIGINS:
+        candidates.extend(
+            origin.strip().rstrip("/")
+            for origin in settings.CORS_ORIGINS.split(",")
+            if origin.strip()
+        )
+    candidates.append("https://westmarches.bahaynes.com")
+    if settings.APP_ENV == "development":
+        candidates.extend([
+            "http://localhost",
+            "http://localhost:5173",
+            "http://localhost:3000",
+        ])
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for origin in candidates:
+        if origin and origin not in seen:
+            seen.add(origin)
+            deduped.append(origin)
+    return deduped
+
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    if get_settings().RATE_LIMIT_ENABLED:
+        path = request.url.path
+        bucket_name: str | None = None
+        limit = 0
+        if path.startswith("/api/auth/"):
+            bucket_name = "auth"
+            limit = _AUTH_RATE_LIMIT
+        elif path.startswith("/api/maps/") and path.endswith("/bake-earth"):
+            bucket_name = "bake_earth"
+            limit = _BAKE_EARTH_RATE_LIMIT
+
+        if bucket_name is not None:
+            real_ip = request.headers.get("X-Real-IP", "").strip()
+            forwarded_for = request.headers.get("X-Forwarded-For", "")
+            if real_ip:
+                client_ip = real_ip
+            elif forwarded_for.strip():
+                client_ip = forwarded_for.split(",")[-1].strip()
+            else:
+                client_ip = request.client.host if request.client else "unknown"
+            now = time.monotonic()
+            cutoff = now - _RATE_LIMIT_WINDOW_SECONDS
+            key = (bucket_name, client_ip)
+            if key not in _rate_limit_buckets and len(_rate_limit_buckets) >= _MAX_RATE_LIMIT_BUCKETS:
+                stale_keys = [
+                    k for k, dq in _rate_limit_buckets.items() if not dq or dq[-1] <= cutoff
+                ]
+                for stale_key in stale_keys:
+                    del _rate_limit_buckets[stale_key]
+                if len(_rate_limit_buckets) >= _MAX_RATE_LIMIT_BUCKETS:
+                    return JSONResponse(
+                        status_code=429,
+                        content={"detail": "Too many requests"},
+                        headers={"Retry-After": "60"},
+                    )
+            bucket = _rate_limit_buckets[key]
+            while bucket and bucket[0] <= cutoff:
+                bucket.popleft()
+            if len(bucket) >= limit:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Too many requests"},
+                    headers={"Retry-After": "60"},
+                )
+            bucket.append(now)
+
+    return await call_next(request)
+
+
+@app.middleware("http")
+async def proxy_secret_middleware(request: Request, call_next):
+    settings = get_settings()
+    accepted = [
+        s for s in (settings.PROXY_SHARED_SECRET, settings.PROXY_SHARED_SECRET_PREVIOUS) if s
+    ]
+    if (
+        accepted
+        and request.url.path.startswith("/api/")
+        and request.url.path != "/api/v1/health"
+    ):
+        provided = request.headers.get("X-Proxy-Secret", "").encode("utf-8")
+        if not any(hmac.compare_digest(provided, s.encode("utf-8")) for s in accepted):
+            return JSONResponse(status_code=403, content={"detail": "Forbidden"})
+    return await call_next(request)
+
 
 # Request ID middleware — injects a UUID into every request and all downstream log lines.
 @app.middleware("http")
@@ -45,21 +158,16 @@ async def request_id_middleware(request: Request, call_next):
     response.headers["X-Request-ID"] = req_id
     return response
 
+
 # CORS Middleware
-origins = [
-    "http://localhost",
-    "http://localhost:5173",  # SvelteKit default dev port
-    "http://localhost:3000",
-    "https://westmarches.bahaynes.com", # Production Custom Domain
-    "*",                      # Allow all for testing
-]
+origins = _build_allowed_origins(_settings)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-Debug-Token"],
 )
 
 @app.get("/api/v1/health", tags=["Health"])

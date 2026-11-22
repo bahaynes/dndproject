@@ -2,6 +2,7 @@
 	import { auth } from '$lib/auth';
 	import { api } from '$lib/api';
 	import type { Character, InventoryItem } from '$lib/types';
+	import { safeExternalUrl } from '$lib/utils/url';
 	import { ADVENTURERS_NAV } from '$lib/navigation';
 	import SubNav from '$lib/components/SubNav.svelte';
 	import PageHeader from '$lib/components/PageHeader.svelte';
@@ -34,6 +35,8 @@
 	$: xpCurrent = viewCharacter?.stats?.xp ?? 0;
 	$: xpNext = viewCharacter?.stats?.next_level_xp ?? null;
 	$: xpPct = xpNext ? Math.min(100, Math.round((xpCurrent / xpNext) * 100)) : 100;
+	$: safeSheetUrl = safeExternalUrl(viewCharacter?.character_sheet_url);
+	$: isAdmin = $auth.user?.role === 'admin';
 
 	async function fetchMyCharacters() {
 		try {
@@ -99,13 +102,16 @@
 		const { token, campaign, user } = $auth;
 		error = '';
 		try {
-			const updated = await api('PUT', `/characters/${viewCharacter.id}`, {
+			const payload: Record<string, unknown> = {
 				name: editName,
 				description: editDescription,
 				character_sheet_url: editCharacterSheetUrl,
-				class_name: editClassName || null,
-				level: editLevel
-			});
+				class_name: editClassName || null
+			};
+			if (isAdmin) {
+				payload.level = editLevel;
+			}
+			const updated = await api('PUT', `/characters/${viewCharacter.id}`, payload);
 			characters = characters.map((c) => (c.id === updated.id ? updated : c));
 			viewCharacter = updated;
 			isEditing = false;
@@ -239,14 +245,16 @@
 												bind:value={editClassName}
 												aria-label="Class"
 											/>
-											<input
-												type="number"
-												class="input input-bordered input-xs w-20 stat-num"
-												min="1"
-												max="20"
-												bind:value={editLevel}
-												aria-label="Level"
-											/>
+											{#if isAdmin}
+												<input
+													type="number"
+													class="input input-bordered input-xs w-20 stat-num"
+													min="1"
+													max="20"
+													bind:value={editLevel}
+													aria-label="Level"
+												/>
+											{/if}
 										</div>
 									{:else}
 										<div class="flex flex-wrap items-center gap-2">
@@ -354,10 +362,10 @@
 								<p class="whitespace-pre-wrap text-sm leading-relaxed text-base-content/80">
 									{viewCharacter.description || 'No backstory provided.'}
 								</p>
-								{#if viewCharacter.character_sheet_url}
+								{#if safeSheetUrl}
 									<div>
 										<a
-											href={viewCharacter.character_sheet_url}
+											href={safeSheetUrl}
 											target="_blank"
 											rel="noopener noreferrer"
 											class="btn btn-outline btn-xs border-primary/40 text-primary"

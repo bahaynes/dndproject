@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import bcrypt
-from jose import JWTError, jwt
+import jwt
 
 
 # Password Hashing (Re-implemented using bcrypt directly to support Python 3.13)

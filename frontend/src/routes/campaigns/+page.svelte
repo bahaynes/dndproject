@@ -18,8 +18,8 @@
 
 	onMount(async () => {
 		// Check for pending tokens (set by /login/callback after Discord OAuth)
-		const tempGlobal = localStorage.getItem('pendingToken');
-		const tempDiscord = localStorage.getItem('pendingDiscordToken');
+		const tempGlobal = sessionStorage.getItem('pendingToken');
+		const tempDiscord = sessionStorage.getItem('pendingDiscordToken');
 
 		if (tempGlobal) {
 			globalToken = tempGlobal;
@@ -143,13 +143,13 @@
 				login(user, token, user.campaign);
 
 				// Cleanup temp
-				localStorage.removeItem('pendingToken');
-				localStorage.removeItem('pendingDiscordToken');
+				sessionStorage.removeItem('pendingToken');
+				sessionStorage.removeItem('pendingDiscordToken');
 
 				goto('/dashboard', { replaceState: true });
 			} else if (res.status === 401) {
-				localStorage.removeItem('pendingToken');
-				localStorage.removeItem('pendingDiscordToken');
+				sessionStorage.removeItem('pendingToken');
+				sessionStorage.removeItem('pendingDiscordToken');
 				goto('/login', { replaceState: true });
 			} else {
 				const err = await res.json().catch(() => ({}));
@@ -183,8 +183,8 @@
 				const user = await userRes.json();
 				login(user, token, data.campaign);
 
-				localStorage.removeItem('pendingToken');
-				localStorage.removeItem('pendingDiscordToken');
+				sessionStorage.removeItem('pendingToken');
+				sessionStorage.removeItem('pendingDiscordToken');
 				goto('/dashboard', { replaceState: true });
 			} else {
 				const err = await res.json();
@@ -217,8 +217,8 @@
 				login(user, token, data.campaign);
 
 				// Cleanup temp
-				localStorage.removeItem('pendingToken');
-				localStorage.removeItem('pendingDiscordToken');
+				sessionStorage.removeItem('pendingToken');
+				sessionStorage.removeItem('pendingDiscordToken');
 
 				goto('/dashboard', { replaceState: true });
 			} else {
