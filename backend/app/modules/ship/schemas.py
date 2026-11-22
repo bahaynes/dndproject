@@ -3,6 +3,23 @@ from typing import Optional
 from datetime import datetime
 
 
+def _validate_relative_link_path(v: Optional[str]) -> Optional[str]:
+    if v is None:
+        return None
+    if not isinstance(v, str):
+        raise ValueError("link_path must be a string")
+    stripped = v.strip()
+    if not stripped:
+        return None
+    if (
+        not stripped.startswith("/")
+        or stripped.startswith("//")
+        or any(ch in stripped for ch in ("\r", "\n", "\\"))
+    ):
+        raise ValueError("link_path must be a relative path starting with '/'")
+    return stripped
+
+
 class TownLocation(BaseModel):
     """A visitable district or landmark on the campaign's Town Map."""
 
@@ -20,20 +37,19 @@ class TownLocation(BaseModel):
     @field_validator("link_path", mode="before")
     @classmethod
     def _validate_link_path(cls, v: Optional[str]) -> Optional[str]:
-        if v is None:
+        return _validate_relative_link_path(v)
+
+
+class TownLocationOut(TownLocation):
+    """Response variant of TownLocation that coerces legacy invalid link_path values to None."""
+
+    @field_validator("link_path", mode="before")
+    @classmethod
+    def _validate_link_path(cls, v: Optional[str]) -> Optional[str]:
+        try:
+            return _validate_relative_link_path(v)
+        except ValueError:
             return None
-        if not isinstance(v, str):
-            raise ValueError("link_path must be a string")
-        stripped = v.strip()
-        if not stripped:
-            return None
-        if (
-            not stripped.startswith("/")
-            or stripped.startswith("//")
-            or any(ch in stripped for ch in ("\r", "\n", "\\"))
-        ):
-            raise ValueError("link_path must be a relative path starting with '/'")
-        return stripped
 
 
 class ShipBase(BaseModel):
@@ -60,6 +76,7 @@ class ShipUpdate(BaseModel):
 class ShipOut(ShipBase):
     id: int
     campaign_id: int
+    town_locations: list[TownLocationOut] = Field(default_factory=list)
     status: str  # "nominal" | "low" | "critical"
     long_rest_cost: int
     next_threshold: Optional[int]

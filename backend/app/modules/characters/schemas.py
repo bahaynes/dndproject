@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional, List
 from datetime import datetime
 
@@ -23,10 +23,23 @@ class CharacterStats(CharacterStatsBase):
         from_attributes = True
 
 class CharacterCreate(CharacterBase):
-    pass
+    level: int = Field(default=1, ge=1, le=20)
+
+    @field_validator("character_sheet_url", "image_url", mode="before")
+    @classmethod
+    def _validate_urls(cls, v: Optional[str]) -> Optional[str]:
+        return validate_http_url(v)
 
 
 class CharacterUpdate(BaseModel):
+    """Partial character update payload.
+
+    Omitted fields remain unchanged; nullable fields (such as description,
+    class_name, image_url, and character_sheet_url) can be cleared with null;
+    non-nullable fields (name, level) reject explicit null; and only admins
+    may modify level.
+    """
+
     name: Optional[str] = None
     description: Optional[str] = None
     image_url: Optional[str] = None
@@ -39,6 +52,15 @@ class CharacterUpdate(BaseModel):
     def _validate_urls(cls, v: Optional[str]) -> Optional[str]:
         return validate_http_url(v)
 
+    @model_validator(mode="after")
+    def _reject_explicit_nulls(self) -> "CharacterUpdate":
+        if "name" in self.model_fields_set and self.name is None:
+            raise ValueError("name cannot be null")
+        if "level" in self.model_fields_set and self.level is None:
+            raise ValueError("level cannot be null")
+        return self
+
+
 class Character(CharacterBase):
     id: int
     owner_id: int
@@ -49,6 +71,14 @@ class Character(CharacterBase):
     inventory: List[InventoryItem] = []
     missions: List[Mission] = []
     game_sessions: List[GameSession] = []
+
+    @field_validator("character_sheet_url", "image_url", mode="before")
+    @classmethod
+    def _coerce_legacy_unsafe_urls(cls, v: Optional[str]) -> Optional[str]:
+        try:
+            return validate_http_url(v)
+        except ValueError:
+            return None
 
     class Config:
         from_attributes = True

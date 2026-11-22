@@ -1,5 +1,8 @@
 {
     # Cloud Run handles HTTPS externally
+    servers {
+        trusted_proxies static private_ranges
+    }
 }
 
 :80 {

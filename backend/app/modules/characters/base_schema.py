@@ -25,9 +25,4 @@ class CharacterBase(BaseModel):
     image_url: Optional[str] = None
     character_sheet_url: Optional[str] = None
     class_name: Optional[str] = None
-    level: int = Field(default=1, ge=1, le=20)
-
-    @field_validator("character_sheet_url", "image_url", mode="before")
-    @classmethod
-    def _validate_urls(cls, v: Optional[str]) -> Optional[str]:
-        return validate_http_url(v)
+    level: int = 1

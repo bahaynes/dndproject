@@ -38,6 +38,14 @@ if [ "${SECRET_KEY}" = "a_very_secret_key_that_should_be_in_env_file" ] || [ "${
     exit 1
 fi
 
+if [ -z "${PROXY_SHARED_SECRET:-}" ]; then
+    PROXY_SHARED_SECRET=$(gcloud run services describe dnd-frontend \
+      --region "${REGION}" \
+      --project "${PROJECT_ID}" \
+      --format="json" 2>/dev/null \
+      | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next((e["value"] for e in d.get("spec",{}).get("template",{}).get("spec",{}).get("containers",[{}])[0].get("env",[]) if e.get("name")=="PROXY_SHARED_SECRET"), ""))' \
+      || true)
+fi
 export PROXY_SHARED_SECRET="${PROXY_SHARED_SECRET:-$(openssl rand -hex 32)}"
 
 umask 077
@@ -108,6 +116,9 @@ BACKEND_HOST=$(echo "$BACKEND_URL" | awk -F/ '{print $3}')
 cat << CADDY_EOF > frontend/Caddyfile.cloudrun
 {
     # Cloud Run handles HTTPS externally
+    servers {
+        trusted_proxies static private_ranges
+    }
 }
 
 :80 {

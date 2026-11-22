@@ -8,12 +8,69 @@ from . import schemas, service as crud
 
 router = APIRouter()
 
+
+def _validate_session_references(
+    db: Session,
+    campaign_id: int,
+    confirmed_mission_id: int | None,
+    confirmed_hex_id: int | None,
+) -> None:
+    if confirmed_mission_id is not None:
+        from ..missions import models as mission_models
+        db_mission = (
+            db.query(mission_models.Mission)
+            .filter(
+                mission_models.Mission.id == confirmed_mission_id,
+                mission_models.Mission.campaign_id == campaign_id,
+            )
+            .first()
+        )
+        if not db_mission:
+            raise HTTPException(status_code=404, detail="Mission not found")
+
+    if confirmed_hex_id is not None:
+        from ..maps import models as map_models
+        db_hex = (
+            db.query(map_models.Hex)
+            .join(map_models.HexMap)
+            .filter(
+                map_models.Hex.id == confirmed_hex_id,
+                map_models.HexMap.campaign_id == campaign_id,
+            )
+            .first()
+        )
+        if not db_hex:
+            raise HTTPException(status_code=404, detail="Hex not found")
+
+
+def _serialize_session_for_user(db_session, is_admin: bool) -> schemas.GameSessionWithPlayers:
+    session_out = schemas.GameSessionWithPlayers.model_validate(db_session)
+    if not is_admin:
+        if session_out.confirmed_mission and (
+            session_out.confirmed_mission.is_retired
+            or not session_out.confirmed_mission.is_discoverable
+        ):
+            session_out.confirmed_mission = None
+            session_out.confirmed_mission_id = None
+        for prop in session_out.proposals:
+            if prop.mission and (prop.mission.is_retired or not prop.mission.is_discoverable):
+                prop.mission = None
+                prop.mission_id = None
+    return session_out
+
+
 @router.post("/", response_model=schemas.GameSession, tags=["Game Sessions"])
 def create_session(
     session: schemas.GameSessionCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_admin_user)
 ):
+    _validate_session_references(
+        db,
+        campaign_id=current_user.campaign_id,
+        confirmed_mission_id=session.confirmed_mission_id,
+        confirmed_hex_id=session.confirmed_hex_id,
+    )
     return crud.create_game_session(db=db, session=session, campaign_id=current_user.campaign_id)
 
 @router.get("/", response_model=List[schemas.GameSessionWithPlayers], tags=["Game Sessions"])
@@ -23,8 +80,9 @@ def read_sessions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
+    is_admin = current_user.role == "admin"
     sessions = crud.get_game_sessions(db, campaign_id=current_user.campaign_id, skip=skip, limit=limit)
-    return sessions
+    return [_serialize_session_for_user(s, is_admin=is_admin) for s in sessions]
 
 @router.get("/{session_id}", response_model=schemas.GameSessionWithPlayers, tags=["Game Sessions"])
 def read_session(
@@ -36,7 +94,7 @@ def read_session(
     if db_session is None or db_session.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Game session not found")
 
-    return db_session
+    return _serialize_session_for_user(db_session, is_admin=(current_user.role == "admin"))
 
 @router.post("/proposals", response_model=schemas.SessionProposal, tags=["Game Sessions"])
 def propose_mission(
@@ -183,6 +241,12 @@ def update_session(
     db_session = crud.get_game_session(db, session_id=session_id)
     if not db_session or db_session.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Game session not found")
+    _validate_session_references(
+        db,
+        campaign_id=current_user.campaign_id,
+        confirmed_mission_id=session_update.confirmed_mission_id,
+        confirmed_hex_id=session_update.confirmed_hex_id,
+    )
     return crud.update_game_session(db, session=db_session, session_update=session_update)
 
 @router.post("/proposals/{proposal_id}/force_confirm", response_model=schemas.GameSessionWithPlayers, tags=["Admin"])

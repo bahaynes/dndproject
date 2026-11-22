@@ -24,7 +24,9 @@ logger = logging.getLogger("app.auth")
 
 router = APIRouter()
 
-_PR_CALLBACK_HOST_RE = re.compile(r"dnd-frontend-pr-\d+-[a-z0-9-]+-uc\.a\.run\.app")
+_PR_CALLBACK_HOST_RE = re.compile(
+    r"dnd-frontend-pr-\d+-(?:[a-z0-9-]+-uc\.a|\d+\.us-central1)\.run\.app"
+)
 
 
 def _dev_login_allowed(settings) -> bool:
@@ -82,6 +84,7 @@ def _is_allowed_proxy_callback(callback_url: str, app_env: str) -> bool:
 
 @router.get("/discord/login", tags=["Authentication"])
 async def login_via_discord(
+    request: Request,
     return_to: Optional[str] = None,
 ):
     """
@@ -89,6 +92,16 @@ async def login_via_discord(
     Optionally accepts a 'return_to' query param to redirect back to a specific frontend URL.
     """
     settings = get_settings()
+    safe_return_to = return_to if (return_to and _is_safe_return_to(return_to, settings)) else None
+
+    if settings.APP_ENV == "production" and settings.FRONTEND_URL:
+        frontend_host = urlparse(settings.FRONTEND_URL).hostname
+        if frontend_host and request.url.hostname and request.url.hostname != frontend_host:
+            target = f"{settings.FRONTEND_URL.rstrip('/')}/api/auth/discord/login"
+            if safe_return_to:
+                target = f"{target}?{urlencode({'return_to': safe_return_to})}"
+            return RedirectResponse(url=target)
+
     scope = "identify guilds"
     nonce = secrets.token_urlsafe(32)
 
@@ -98,7 +111,6 @@ async def login_via_discord(
         "nonce": nonce,
         "callback": my_callback_url,
     }
-    safe_return_to = return_to if (return_to and _is_safe_return_to(return_to, settings)) else None
     if safe_return_to:
         state_payload["return_to"] = safe_return_to
 

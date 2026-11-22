@@ -50,6 +50,7 @@ app = FastAPI(
 _RATE_LIMIT_WINDOW_SECONDS = 60.0
 _AUTH_RATE_LIMIT = 60
 _BAKE_EARTH_RATE_LIMIT = 10
+_MAX_RATE_LIMIT_BUCKETS = 10000
 _rate_limit_buckets: dict[tuple[str, str], deque[float]] = defaultdict(deque)
 
 
@@ -102,7 +103,20 @@ async def rate_limit_middleware(request: Request, call_next):
             )
             now = time.monotonic()
             cutoff = now - _RATE_LIMIT_WINDOW_SECONDS
-            bucket = _rate_limit_buckets[(bucket_name, client_ip)]
+            key = (bucket_name, client_ip)
+            if key not in _rate_limit_buckets and len(_rate_limit_buckets) >= _MAX_RATE_LIMIT_BUCKETS:
+                stale_keys = [
+                    k for k, dq in _rate_limit_buckets.items() if not dq or dq[-1] <= cutoff
+                ]
+                for stale_key in stale_keys:
+                    del _rate_limit_buckets[stale_key]
+                while len(_rate_limit_buckets) >= _MAX_RATE_LIMIT_BUCKETS:
+                    oldest_key = min(
+                        _rate_limit_buckets,
+                        key=lambda k: _rate_limit_buckets[k][-1] if _rate_limit_buckets[k] else 0.0,
+                    )
+                    del _rate_limit_buckets[oldest_key]
+            bucket = _rate_limit_buckets[key]
             while bucket and bucket[0] <= cutoff:
                 bucket.popleft()
             if len(bucket) >= limit:
@@ -119,13 +133,14 @@ async def rate_limit_middleware(request: Request, call_next):
 @app.middleware("http")
 async def proxy_secret_middleware(request: Request, call_next):
     settings = get_settings()
+    accepted = [s.strip() for s in settings.PROXY_SHARED_SECRET.split(",") if s.strip()]
     if (
-        settings.PROXY_SHARED_SECRET
+        accepted
         and request.url.path.startswith("/api/")
         and request.url.path != "/api/v1/health"
     ):
-        provided = request.headers.get("X-Proxy-Secret", "")
-        if not hmac.compare_digest(provided, settings.PROXY_SHARED_SECRET):
+        provided = request.headers.get("X-Proxy-Secret", "").encode("utf-8")
+        if not any(hmac.compare_digest(provided, s.encode("utf-8")) for s in accepted):
             return JSONResponse(status_code=403, content={"detail": "Forbidden"})
     return await call_next(request)
 

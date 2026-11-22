@@ -37,6 +37,8 @@ def test_production_settings_rejects_default_or_short_secret_key():
     with pytest.raises(ValueError, match="SECRET_KEY"):
         Settings(
             APP_ENV="production",
+            SECRET_KEY="a_very_secret_key_that_should_be_in_env_file",
+            ENABLE_DEV_TOKEN=False,
             DATABASE_URL="sqlite:///./test.db",
             DISCORD_CLIENT_ID="cid",
             DISCORD_CLIENT_SECRET="csec",
@@ -46,6 +48,7 @@ def test_production_settings_rejects_default_or_short_secret_key():
         Settings(
             APP_ENV="production",
             SECRET_KEY="too_short",
+            ENABLE_DEV_TOKEN=False,
             DATABASE_URL="sqlite:///./test.db",
             DISCORD_CLIENT_ID="cid",
             DISCORD_CLIENT_SECRET="csec",
@@ -576,9 +579,161 @@ def test_debug_config_token_check(client, monkeypatch):
     get_settings.cache_clear()
     try:
         assert client.get("/api/debug/config", headers={"X-Debug-Token": "wrong"}).status_code == 403
+        assert client.get("/api/debug/config", headers=[(b"x-debug-token", b"t\xf6k\xe9n")]).status_code == 403
         r_ok = client.get("/api/debug/config", headers={"X-Debug-Token": "debug_secret_token_123"})
         assert r_ok.status_code == 200
         assert "env_vars_set" in r_ok.json()
     finally:
         monkeypatch.delenv("DEBUG_TOKEN", raising=False)
+        get_settings.cache_clear()
+
+
+def test_coderabbit_followups_redaction_scoping_and_legacy_normalization(
+    client, db_session, campaign, admin_auth_headers, player_auth_headers, monkeypatch
+):
+    from app.modules.ship import models as ship_models
+
+    # 1. CharacterUpdate rejects explicit null for name/level but allows clearing description
+    me = client.get("/api/auth/me", headers=player_auth_headers).json()
+    char_id = me["characters"][0]["id"]
+    assert client.put(f"/api/characters/{char_id}", json={"name": None}, headers=player_auth_headers).status_code == 422
+    assert client.put(f"/api/characters/{char_id}", json={"level": None}, headers=admin_auth_headers).status_code == 422
+    assert client.put(f"/api/characters/{char_id}", json={"description": None}, headers=player_auth_headers).status_code == 200
+
+    # 2. WorldBundle rejects out-of-range store_quantity or map dimensions
+    assert (
+        client.post(
+            "/api/admin/world/import",
+            headers=admin_auth_headers,
+            json={
+                "bundle": {
+                    "world_name": "Bad",
+                    "items": [{"name": "Broken", "store_price": 1, "store_quantity": -2}],
+                }
+            },
+        ).status_code
+        == 422
+    )
+    assert (
+        client.post(
+            "/api/admin/world/import",
+            headers=admin_auth_headers,
+            json={
+                "bundle": {
+                    "world_name": "Bad",
+                    "maps": [{"name": "TooWide", "width": 201}],
+                }
+            },
+        ).status_code
+        == 422
+    )
+
+    # 3. add_hex_note redacts DM notes & hidden linked_mission; update_hex & sessions check campaign
+    hidden_mission = client.post(
+        "/api/missions/",
+        json={"name": "Hidden Hex Quest", "description": "Secret", "is_discoverable": False, "rewards": []},
+        headers=admin_auth_headers,
+    ).json()
+    hmap = client.post("/api/maps/", json={"name": "Redaction Map", "width": 5, "height": 5}, headers=admin_auth_headers).json()
+    client.put(
+        f"/api/maps/{hmap['id']}/hexes/0/0",
+        json={"is_discovered": True, "notes": "DM secret", "linked_mission_id": hidden_mission["id"]},
+        headers=admin_auth_headers,
+    )
+    r_note = client.post(
+        f"/api/maps/{hmap['id']}/hexes/0/0/notes",
+        json={"text": "Player saw tracks"},
+        headers=player_auth_headers,
+    )
+    assert r_note.status_code == 200
+    assert r_note.json()["notes"] is None
+    assert r_note.json()["linked_mission"] is None
+
+    # Cross-campaign mission rejected in update_hex and create_session
+    other_camp, _, other_admin_headers = _create_second_campaign_admin(db_session)
+    other_mission = client.post(
+        "/api/missions/",
+        json={"name": "Other Camp Quest", "description": "d", "rewards": []},
+        headers=other_admin_headers,
+    ).json()
+    assert (
+        client.put(
+            f"/api/maps/{hmap['id']}/hexes/0/0",
+            json={"linked_mission_id": other_mission["id"]},
+            headers=admin_auth_headers,
+        ).status_code
+        == 404
+    )
+    assert (
+        client.post(
+            "/api/sessions/",
+            json={
+                "name": "Cross Camp Session",
+                "session_date": datetime.now(timezone.utc).isoformat(),
+                "confirmed_mission_id": other_mission["id"],
+            },
+            headers=admin_auth_headers,
+        ).status_code
+        == 404
+    )
+
+    # Hidden mission confirmed on a session is redacted for players
+    sess = client.post(
+        "/api/sessions/",
+        json={
+            "name": "Hidden Mission Session",
+            "session_date": datetime.now(timezone.utc).isoformat(),
+            "confirmed_mission_id": hidden_mission["id"],
+        },
+        headers=admin_auth_headers,
+    ).json()
+    r_sess_player = client.get(f"/api/sessions/{sess['id']}", headers=player_auth_headers)
+    assert r_sess_player.status_code == 200
+    assert r_sess_player.json()["confirmed_mission"] is None
+    assert r_sess_player.json()["confirmed_mission_id"] is None
+
+    # 4. Legacy invalid link_path & character_sheet_url normalize on read instead of 500
+    ship = ship_models.Ship(
+        campaign_id=campaign.id,
+        name="Legacy Hub",
+        town_locations=[
+            {"id": "legacy", "name": "Old", "description": "d", "link_path": "https://example.org"}
+        ],
+    )
+    db_session.add(ship)
+    char_obj = db_session.query(char_models.Character).filter_by(id=char_id).first()
+    char_obj.character_sheet_url = "javascript:alert(1)"
+    db_session.commit()
+
+    r_ship = client.get("/api/ship/", headers=player_auth_headers)
+    assert r_ship.status_code == 200
+    assert r_ship.json()["town_locations"][0]["link_path"] is None
+
+    r_char = client.get(f"/api/characters/{char_id}", headers=player_auth_headers)
+    assert r_char.status_code == 200
+    assert r_char.json()["character_sheet_url"] is None
+
+    # 5. Deterministic Cloud Run preview host accepted in proxy-callback
+    det_state = security.create_access_token(
+        data={
+            "type": "oauth_state",
+            "nonce": "n_det",
+            "callback": "https://dnd-frontend-pr-42-1234567890.us-central1.run.app/api/auth/discord/callback",
+        }
+    )
+    r_det = client.get(
+        f"/api/auth/discord/proxy-callback?code=abc&state={det_state}",
+        follow_redirects=False,
+    )
+    assert r_det.status_code in (302, 307)
+
+    # 6. Proxy secret supports comma-separated rotation & rejects non-ASCII cleanly
+    monkeypatch.setenv("PROXY_SHARED_SECRET", "old_secret,new_secret")
+    get_settings.cache_clear()
+    try:
+        assert client.get("/api/auth/dev-status", headers={"X-Proxy-Secret": "old_secret"}).status_code == 200
+        assert client.get("/api/auth/dev-status", headers={"X-Proxy-Secret": "new_secret"}).status_code == 200
+        assert client.get("/api/auth/dev-status", headers=[(b"x-proxy-secret", b"n\xf6n-ascii")]).status_code == 403
+    finally:
+        monkeypatch.delenv("PROXY_SHARED_SECRET", raising=False)
         get_settings.cache_clear()

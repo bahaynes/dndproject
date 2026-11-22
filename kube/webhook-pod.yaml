@@ -15,6 +15,7 @@ spec:
         runAsUser: 1000
         runAsGroup: 1000
         runAsNonRoot: true
+        allowPrivilegeEscalation: false
       ports:
         # Caddy is the sole entry point. Bind exclusively on loopback.
         - containerPort: 9000

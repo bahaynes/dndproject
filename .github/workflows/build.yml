@@ -99,13 +99,14 @@ jobs:
       REGISTRY: ghcr.io
       OWNER: ${{ github.repository_owner }}
       REPO: ${{ github.event.repository.name }}
+      HAS_DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN != '' }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Log in to Docker Hub
-        if: github.ref == 'refs/heads/main' && secrets.DOCKERHUB_TOKEN != ''
+        if: github.ref == 'refs/heads/main' && env.HAS_DOCKERHUB_TOKEN == 'true'
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}

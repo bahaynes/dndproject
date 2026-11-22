@@ -11,12 +11,24 @@ from .storage import get_layer_storage
 router = APIRouter()
 
 
+def _redact_hex_for_user(hex_out: schemas.Hex, is_admin: bool) -> schemas.Hex:
+    """Strip DM-only notes and hidden/retired linked missions for non-admin users."""
+    if not is_admin:
+        hex_out.notes = None
+        if hex_out.linked_mission and (
+            hex_out.linked_mission.is_retired or not hex_out.linked_mission.is_discoverable
+        ):
+            hex_out.linked_mission = None
+            hex_out.linked_mission_id = None
+    return hex_out
+
+
 def _serialize_map_for_user(db_map, is_admin: bool) -> schemas.HexMap:
-    """Serialize HexMap to schema and strip DM-only hex notes for non-admin users."""
+    """Serialize HexMap to schema and apply non-admin redaction."""
     map_out = schemas.HexMap.model_validate(db_map)
     if not is_admin:
         for hex_out in map_out.hexes:
-            hex_out.notes = None
+            _redact_hex_for_user(hex_out, is_admin=False)
     return map_out
 
 
@@ -71,7 +83,20 @@ def update_hex(
     db_map = crud.get_map(db, map_id=map_id)
     if not db_map or db_map.campaign_id != current_user.campaign_id:
         raise HTTPException(status_code=404, detail="Map not found")
-        
+
+    if hex_update.linked_mission_id is not None:
+        from ..missions import models as mission_models
+        db_mission = (
+            db.query(mission_models.Mission)
+            .filter(
+                mission_models.Mission.id == hex_update.linked_mission_id,
+                mission_models.Mission.campaign_id == current_user.campaign_id,
+            )
+            .first()
+        )
+        if not db_mission:
+            raise HTTPException(status_code=404, detail="Mission not found")
+
     return crud.update_hex(db, map_id=map_id, q=q, r=r, hex_update=hex_update)
 
 @router.post("/{map_id}/hexes/{q}/{r}/notes", response_model=schemas.Hex, tags=["Maps"])
@@ -102,7 +127,10 @@ def add_hex_note(
     )
     if error:
         raise HTTPException(status_code=400, detail=error)
-    return db_hex
+    return _redact_hex_for_user(
+        schemas.Hex.model_validate(db_hex),
+        is_admin=(current_user.role == "admin"),
+    )
 
 
 @router.post("/{map_id}/bake-earth", response_model=schemas.HexMap, tags=["Admin"])

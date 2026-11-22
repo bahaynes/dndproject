@@ -36,7 +36,10 @@ def require_debug_token(x_debug_token: Optional[str] = Header(None)):
     if not settings.DEBUG_TOKEN:
         # Hide the existence of debug endpoints when no token is configured.
         raise HTTPException(status_code=404, detail="Not found")
-    if not hmac.compare_digest(x_debug_token or "", settings.DEBUG_TOKEN):
+    if not hmac.compare_digest(
+        (x_debug_token or "").encode("utf-8"),
+        settings.DEBUG_TOKEN.encode("utf-8"),
+    ):
         raise HTTPException(status_code=403, detail="Forbidden")
 
 

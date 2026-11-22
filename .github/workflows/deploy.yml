@@ -123,17 +123,32 @@ jobs:
 
       - name: Determine Environment Variables
         id: env-vars
+        env:
+          CONFIGURED_PROXY_SECRET: ${{ secrets.PROXY_SHARED_SECRET }}
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             echo "APP_ENV=preview" >> $GITHUB_ENV
             echo "RATE_LIMIT_ENABLED=false" >> $GITHUB_ENV
-            echo "SERVICE_SUFFIX=-pr-${{ github.event.number }}" >> $GITHUB_ENV
+            SERVICE_SUFFIX="-pr-${{ github.event.number }}"
           else
             echo "APP_ENV=production" >> $GITHUB_ENV
             echo "RATE_LIMIT_ENABLED=true" >> $GITHUB_ENV
-            echo "SERVICE_SUFFIX=" >> $GITHUB_ENV
+            SERVICE_SUFFIX=""
           fi
-          PROXY_SHARED_SECRET=$(openssl rand -hex 32)
+          echo "SERVICE_SUFFIX=${SERVICE_SUFFIX}" >> $GITHUB_ENV
+
+          PROXY_SHARED_SECRET="$CONFIGURED_PROXY_SECRET"
+          if [ -z "$PROXY_SHARED_SECRET" ]; then
+            PROXY_SHARED_SECRET=$(gcloud run services describe "dnd-frontend${SERVICE_SUFFIX}" \
+              --region "${{ env.REGION }}" \
+              --project "${{ env.PROJECT_ID }}" \
+              --format="json" 2>/dev/null \
+              | jq -r '.spec.template.spec.containers[0].env[]? | select(.name=="PROXY_SHARED_SECRET") | .value' \
+              | head -n1 || true)
+          fi
+          if [ -z "$PROXY_SHARED_SECRET" ]; then
+            PROXY_SHARED_SECRET=$(openssl rand -hex 32)
+          fi
           echo "::add-mask::$PROXY_SHARED_SECRET"
           echo "PROXY_SHARED_SECRET=$PROXY_SHARED_SECRET" >> $GITHUB_ENV
 
@@ -279,6 +294,11 @@ jobs:
               json.dump(payload, f)
           PY_EOF
 
+            SECRETS_ARG="SECRET_KEY=dnd-secret-key:latest,DISCORD_CLIENT_ID=dnd-discord-client-id:latest,DISCORD_CLIENT_SECRET=dnd-discord-client-secret:latest,DISCORD_BOT_TOKEN=dnd-discord-bot-token:latest,ADMIN_DISCORD_IDS=dnd-admin-discord-ids:latest"
+            if gcloud secrets describe dnd-llm-api-key --project="${{ env.PROJECT_ID }}" >/dev/null 2>&1; then
+              SECRETS_ARG="${SECRETS_ARG},LLM_API_KEY=dnd-llm-api-key:latest"
+            fi
+
             gcloud run deploy dnd-backend${{ env.SERVICE_SUFFIX }} \
               --image ${{ env.BACKEND_IMAGE }} \
               --region ${{ env.REGION }} \
@@ -286,7 +306,7 @@ jobs:
               --allow-unauthenticated \
               --port 10000 \
               --env-vars-file "$ENV_FILE" \
-              --set-secrets="SECRET_KEY=dnd-secret-key:latest,DISCORD_CLIENT_ID=dnd-discord-client-id:latest,DISCORD_CLIENT_SECRET=dnd-discord-client-secret:latest,DISCORD_BOT_TOKEN=dnd-discord-bot-token:latest,ADMIN_DISCORD_IDS=dnd-admin-discord-ids:latest,LLM_API_KEY=dnd-llm-api-key:latest" \
+              --set-secrets="$SECRETS_ARG" \
               --format="value(status.url)" > backend_url.txt
           else
             EFFECTIVE_SECRET_KEY="$SECRET_KEY"
@@ -346,6 +366,9 @@ jobs:
           cat << CADDY_EOF > frontend/Caddyfile.cloudrun
           {
               # Cloud Run handles HTTPS externally
+              servers {
+                  trusted_proxies static private_ranges
+              }
           }
 
           :80 {

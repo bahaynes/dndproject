@@ -105,7 +105,7 @@ systemctl --user restart dnd-webhook.service
 
 ## Security notes
 
-- The container's port 9000 is bound to `hostIP: 127.0.0.1` — not reachable directly from the internet. (If Caddy runs in rootless `slirp4netns` and cannot reach `host.containers.internal:9000` over loopback, place `dnd-webhook` and `dnd-westmarches` on a shared rootless Podman network instead of removing `hostIP: 127.0.0.1`.)
+- The container's port 9000 is bound to `hostIP: 127.0.0.1` — not reachable directly from the internet. (If Caddy runs in rootless `slirp4netns` and cannot reach `host.containers.internal:9000` over loopback, place `dnd-webhook` and `dnd-westmarches` on a shared rootless Podman network AND update Caddy's `/webhook` upstream in `frontend/Caddyfile` to `dnd-webhook:9000` instead of `host.containers.internal:9000`, while keeping the loopback `hostIP: 127.0.0.1` binding.)
 - Only `~/.ssh/dnd-deploy` (a dedicated read-only GitHub Deploy Key) is mounted into `/home/appuser/.ssh`, rather than your full `~/.ssh` directory.
 - All traffic enters through Caddy over HTTPS, which terminates TLS before forwarding.
 - Requests with a missing or invalid `X-Hub-Signature-256` header are rejected by the `webhook` binary; `deploy.sh` is never called.
