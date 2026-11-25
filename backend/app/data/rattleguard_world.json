@@ -2271,7 +2271,7 @@
         {
           "q": 6,
           "r": -2,
-          "terrain": "plains",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -2370,7 +2370,7 @@
         {
           "q": 7,
           "r": -2,
-          "terrain": "plains",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -2381,7 +2381,7 @@
         {
           "q": 7,
           "r": -1,
-          "terrain": "plains",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -2512,22 +2512,6 @@
           "name": "The First Finger",
           "type": "river",
           "hexes": [
-            {
-              "q": 7,
-              "r": -1
-            },
-            {
-              "q": 7,
-              "r": -2
-            },
-            {
-              "q": 6,
-              "r": -2
-            },
-            {
-              "q": 5,
-              "r": -2
-            },
             {
               "q": 4,
               "r": -2
