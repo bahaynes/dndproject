@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 TERRARIUM_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+# Overpass answers the default httpx User-Agent with 406 Not Acceptable.
+HTTP_HEADERS = {"User-Agent": "map-layer-baker/1.0"}
 TILE_SIZE = 256
 MAX_OUTPUT_DIM = 1200
 MAX_FETCH_TILES = 64
@@ -179,7 +181,7 @@ async def _fetch_osm_natural_masks(
     )
 
     try:
-        async with httpx.AsyncClient(timeout=12.0) as client:
+        async with httpx.AsyncClient(timeout=12.0, headers=HTTP_HEADERS) as client:
             resp = await client.post(OVERPASS_URL, data={"data": query})
             resp.raise_for_status()
             elements = resp.json().get("elements", [])
