@@ -76,6 +76,7 @@
 	// Form
 	let editName = '';
 	let editMotd = '';
+	let editStartingGold = 0;
 
 	$: activePreset = presets.find((p) => p.slug === selectedPreset) ?? presets[0] ?? null;
 
@@ -93,6 +94,7 @@
 			settings = shipRes;
 			editName = settings!.name;
 			editMotd = settings!.motd ?? '';
+			editStartingGold = settings!.starting_gold ?? 0;
 			presets = Array.isArray(presetsRes) ? presetsRes : [];
 			if (presets.length > 0 && !presets.some((p) => p.slug === selectedPreset)) {
 				selectedPreset = presets[0].slug;
@@ -151,7 +153,8 @@
 				name: editName,
 				level: settings?.level ?? 1,
 				essence: settings?.essence ?? 0,
-				motd: editMotd || null
+				motd: editMotd || null,
+				starting_gold: editStartingGold ?? 0
 			});
 			saveMsg = 'Campaign settings saved.';
 		} catch (e) {
@@ -287,6 +290,23 @@
 					bind:value={editMotd}
 					placeholder="Announcement shown to all players on the Dashboard..."
 				></textarea>
+			</div>
+
+			<div>
+				<label
+					for="camp-starting-gold"
+					class="mb-1 block text-xs font-medium text-base-content/75"
+				>
+					Starting Gold (GP) for new characters
+				</label>
+				<input
+					id="camp-starting-gold"
+					type="number"
+					min="0"
+					step="1"
+					class="input input-bordered input-sm w-full"
+					bind:value={editStartingGold}
+				/>
 			</div>
 
 			{#if saveMsg}

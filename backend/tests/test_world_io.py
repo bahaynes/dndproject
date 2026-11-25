@@ -130,3 +130,61 @@ def test_import_replace_mode_preserves_sessions_and_inventory(client, admin_auth
     db_session.refresh(gs)
     assert gs.name == "Monday Session"
     assert gs.confirmed_mission_id is None
+
+
+def test_rattleguard_preset_seeds_map_with_routes_that_survive_export(client, admin_auth_headers, db_session, campaign):
+    r = client.post("/api/admin/seed?preset=rattleguard_world", headers=admin_auth_headers)
+    assert r.status_code == 200
+    assert r.json()["maps_created"] == 1
+
+    db_map = db_session.query(map_models.HexMap).filter_by(campaign_id=campaign.id).one()
+    assert {rt["id"] for rt in db_map.routes} == {"ridge-road", "bellwatch-spur", "switchbacks", "first-finger"}
+    ruin = next(h for h in db_map.hexes if h.linked_location_name == "Tarnhollow (ruin)")
+    assert ruin.linked_mission.name == "The Last Bell of Tarnhollow"
+
+    bundle = client.get("/api/admin/world/export", headers=admin_auth_headers).json()
+    assert bundle["maps"][0]["routes"] == db_map.routes
+
+    # A bundle without routes must not wipe existing ones on merge
+    bundle["maps"][0]["routes"] = []
+    admin_service.import_world(
+        db_session, campaign.id, admin_schemas.WorldBundle.model_validate(bundle), mode="merge"
+    )
+    db_session.refresh(db_map)
+    assert len(db_map.routes) == 4
+
+
+def test_starting_gold_follows_world_bundle_but_old_bundles_keep_it(client, admin_auth_headers, campaign, db_session):
+    client.post("/api/admin/seed?preset=rattleguard_world", headers=admin_auth_headers)
+    assert client.get("/api/ship/", headers=admin_auth_headers).json()["starting_gold"] == 1200
+
+    bundle = client.get("/api/admin/world/export", headers=admin_auth_headers).json()
+    assert bundle["hub"]["starting_gold"] == 1200
+
+    del bundle["hub"]["starting_gold"]
+    admin_service.import_world(
+        db_session, campaign.id, admin_schemas.WorldBundle.model_validate(bundle), mode="merge"
+    )
+    assert client.get("/api/ship/", headers=admin_auth_headers).json()["starting_gold"] == 1200
+
+
+def test_rattleguard_valley_is_open_to_cross_and_ringed_by_the_ridge_road():
+    world = admin_service.load_world_preset("rattleguard_world").maps[0]
+    hexes = {(h.q, h.r): h for h in world.hexes}
+    at = {h.linked_location_name: (h.q, h.r) for h in world.hexes if h.linked_location_name}
+
+    def hours(path):
+        return sum(map_models.HEX_STATE_HOURS[hexes[c].hex_state] for c in path)
+
+    # Straight across the floor: no mountains between the towns, and a day's march
+    assert at["Rattleguard"] == (0, 0)
+    assert at["Ironstep"] == (5, -5)
+    crossing = [(i, -i) for i in range(1, 6)]
+    assert all(hexes[c].terrain != "mountain" for c in crossing[:-1])
+    assert 8 <= hours(crossing) <= 10
+
+    # The ridge road stays above the Mist the whole way and takes about four days
+    road = [(c.q, c.r) for c in next(r for r in world.routes if r.id == "ridge-road").hexes]
+    assert road[0] == at["Highspire"] and road[-1] == at["Ironstep"]
+    assert all(hexes[c].terrain == "mountain" for c in road)
+    assert 28 <= hours(road[1:]) <= 36

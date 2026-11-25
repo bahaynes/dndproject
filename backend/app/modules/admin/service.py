@@ -100,6 +100,7 @@ def export_world(db: Session, campaign_id: int) -> schemas.WorldBundle:
         schemas.WorldHub(
             name=hub.name,
             motd=hub.motd,
+            starting_gold=hub.starting_gold,
             town_locations=[
                 schemas.TownLocationOut.model_validate(loc)
                 for loc in (hub.town_locations or [])
@@ -175,6 +176,7 @@ def export_world(db: Session, campaign_id: int) -> schemas.WorldBundle:
                 )
                 for h in sorted(mp.hexes, key=lambda x: (x.q, x.r))
             ],
+            routes=mp.routes or [],
         )
         for mp in maps
     ]
@@ -263,12 +265,16 @@ def import_world(
                 campaign_id=campaign_id,
                 name=bundle.hub.name,
                 motd=bundle.hub.motd,
+                starting_gold=bundle.hub.starting_gold or 0,
                 town_locations=locations_data,
             )
             db.add(hub)
         else:
             hub.name = bundle.hub.name
             hub.motd = bundle.hub.motd
+            # Older bundles have no starting_gold; keep the campaign's own value.
+            if bundle.hub.starting_gold is not None:
+                hub.starting_gold = bundle.hub.starting_gold
             hub.town_locations = locations_data
         db.flush()
 
@@ -400,6 +406,7 @@ def import_world(
                 height=map_in.height,
                 hex_size=map_in.hex_size,
                 default_terrain=map_in.default_terrain,
+                routes=[r.model_dump() for r in map_in.routes],
             )
             db.add(db_map)
             db.flush()
@@ -410,6 +417,9 @@ def import_world(
             db_map.height = map_in.height
             db_map.hex_size = map_in.hex_size
             db_map.default_terrain = map_in.default_terrain
+            # Bundles exported before routes existed carry none; don't wipe drawn roads.
+            if map_in.routes:
+                db_map.routes = [r.model_dump() for r in map_in.routes]
             result.maps_updated += 1
 
         hex_by_coord = {(h.q, h.r): h for h in db_map.hexes}

@@ -3,7 +3,8 @@
   "world_name": "Rattleguard & The High Fjords",
   "hub": {
     "name": "Rattleguard",
-    "motd": "You arrived in a majestic ridge city by spelljammer or portal, and promptly found out how expensive rent is when the Mist comes every night and everyone wants permanent safety. Down in the valleys, though, lie the magical crystals that power the rest of the verse—and someone has to collect them. Welcome to Rattleguard, a frontier town perched just below the mistline. Its warding braziers work, mostly. Spirits still take a few people each night, but the pay is good and the miners are friendly. You're with the Troublesome Company now—recruited when you ran out of coin and jobs up top. Pick a partner, pick a hex, and remember the only rule: be back behind the braziers before dark.\n\nFirst Night Checklist:\n1. Build a Level 3 character on D&D Beyond (your combat sheet & dice live there; your gold, loot, and gear live here) and register them under Characters.\n2. Open Town to visit the Troublesome Company Hall, Quartermaster, and Taproom before heading out.\n3. Open Maps to scout the fjord valleys and propose or join an expedition on Sessions.",
+    "motd": "You arrived in a majestic ridge city by spelljammer or portal, and promptly found out how expensive rent is when the Mist comes every night and everyone wants permanent safety. Down in the valleys, though, lie the magical crystals that power the rest of the verse—and someone has to collect them. Welcome to Rattleguard, a frontier town perched just below the mistline. Every night the whole town works to keep an unbroken ring of braziers burning. The ring holds, mostly. Spirits still take a few people, but the pay is good and the miners are friendly. The ruins down in the valley are the towns that stopped holding theirs. You're with the Troublesome Company now—recruited when you ran out of coin and jobs up top. Pick a partner, pick a hex, and remember the only rule: be back behind the braziers before dark.\n\nFirst Night Checklist:\n1. Build a Level 3 character on D&D Beyond (your combat sheet & dice live there; your gold, loot, and gear live here) and register them under Characters.\n2. Open Town to visit the Troublesome Company Hall, Quartermaster, and Taproom before heading out.\n3. Open Maps to scout the fjord valleys and propose or join an expedition on Sessions.",
+    "starting_gold": 1200,
     "town_locations": [
       {
         "id": "company-hall",
@@ -16,7 +17,7 @@
           "Turn in valley crystal crates for Company pay",
           "Leave notes for the next crew on the shared map"
         ],
-        "rumor": "Halver is quietly offering a bonus to anyone who checks why Waystation #4 missed its flare last night.",
+        "rumor": "Halver wants the great warding bell out of Tarnhollow before Rattleguard's own cracked one gives out.",
         "x": 50,
         "y": 46,
         "link_path": "/sessions"
@@ -26,13 +27,13 @@
         "name": "Bramwell's Quartermaster Shed",
         "npc": "Old Bramwell (Retired Quarryman)",
         "role": "Gear, Supplies & Salvage Appraisals",
-        "description": "Crammed floor-to-rafters with climbing rope, steel traps, oil flasks, and crates of brass canary cages. Bramwell doesn't believe in fixed catalogs—if you need something weird, ask nicely or bring him something weirder from the valley.",
+        "description": "Crammed floor-to-rafters with weapons, armor, climbing rope, steel traps, and oil flasks. Bramwell doesn't believe in fixed catalogs—if you need something weird, ask nicely or bring him something weirder from the valley.",
         "services": [
-          "Stock up on rope, traps, chalk, oil, and Spirit-Ward Canaries",
-          "Charter a Cartel river barge or book workshop bench time",
+          "Buy weapons, armor, and adventuring gear",
+          "Commission silvering or order something special",
           "Appraise pre-Mist salvage pulled out of the fjords"
         ],
-        "rumor": "Word is Bramwell only has three live canaries left until the Ironstep mule train makes it around the ridge.",
+        "rumor": "Bramwell pays double for tools with a Tarnhollow maker's mark. He won't say who he's buying them back for.",
         "x": 28,
         "y": 62,
         "link_path": "/store"
@@ -42,10 +43,10 @@
         "name": "The Brazier Gate & Bell Tower",
         "npc": "Sister Vaelen (Lamplighter Bell-Keeper)",
         "role": "Sunset Bells, Mist Watch & Gate Wards",
-        "description": "Rattleguard's fortified river-gate, crowned with iron braziers that roar from dusk until dawn. The Lamplighters chalk the thresholds each afternoon and ring the heavy brass bell thirty minutes before the Mist rises.",
+        "description": "Rattleguard's fortified river-gate, crowned with iron braziers that roar from dusk until dawn. Every able hand in town takes a turn on the night shift, because the Mist pours through any gap in the ring. The heavy brass bell rings thirty minutes before it rises.",
         "services": [
           "Check the evening bell schedule & valley Mist sightings",
-          "Pick up Warding Chalk and blessed brazier oil",
+          "Sign up for a night shift on the ring",
           "Report missing crews or breaches along the outer wall"
         ],
         "rumor": "Two miners swore the Mist pooled inside a dry limestone cellar at noon yesterday—Vaelen insists it was just a restless spirit.",
@@ -74,7 +75,7 @@
         "name": "The Highspire Cliff-Lift",
         "npc": "Warden Krell (Crystal Cartel)",
         "role": "Ridge Access & Cargo Tariffs",
-        "description": "A rattling iron cage slung on greased cables up the sheer 400-foot fjord wall to Highspire. It's the fastest way back above the mistline—if you have a Cartel pass or enough coin to make Warden Krell look the other way.",
+        "description": "A rattling iron cage slung on greased cables up the sheer 400-foot fjord wall to Highspire. It's the fastest way back above the mistline, and the Cartel prices it so nobody in Rattleguard rides it home every night—if you have a Cartel pass or enough coin to make Warden Krell look the other way.",
         "services": [
           "Ride up to Highspire for guild business or safe lodging",
           "Negotiate or bribe your way past Cartel cargo tariffs",
@@ -98,13 +99,13 @@
       "faction_name": "The Crystal Cartel",
       "level": 0,
       "color": "#3b82f6",
-      "description": "A global merchant syndicate that buys valley crystals, controls the cliff-lifts and river barges, and sells brim-coal brazier fuel at eye-watering markups."
+      "description": "A global merchant syndicate that buys valley crystals, runs the ridge-road caravans and cliff-lifts, and sells brim-coal at eye-watering markups to towns that can't let their ring go out."
     },
     {
       "faction_name": "The Lamplighters",
       "level": 0,
       "color": "#eab308",
-      "description": "The civic and religious order that tends the warding braziers and rings the Sunset Bells. They treat keeping the Mist at bay as sacred duty against the spirits below."
+      "description": "The civic and religious order that runs the night shifts, tends the brazier rings, and rings the Sunset Bells. They treat keeping the Mist at bay as sacred duty against the spirits below."
     },
     {
       "faction_name": "Highspire",
@@ -116,13 +117,13 @@
       "faction_name": "Ironstep",
       "level": 0,
       "color": "#ef4444",
-      "description": "An industrial quarry city-state on the eastern ridge, a full day's march across the valley floor (or four days by the high ridge-road). Always feuding with Highspire over crystal tariffs."
+      "description": "An industrial quarry city-state on the northeastern ridge. Caravans take four days to reach it by the ridge-road; only the desperate and the criminal sprint a full day straight across the valley floor. Always feuding with Highspire over crystal tariffs."
     },
     {
       "faction_name": "Crow's Ledge",
       "level": 0,
       "color": "#10b981",
-      "description": "A cliff-cave smugglers' city-state perched above the western fjord. No tariffs, no questions asked, and a thriving black market for anything salvaged below the mistline."
+      "description": "A cliff-cave smugglers' city-state perched on a high western peak the ridge-road never reaches. No tariffs, no questions asked, and a thriving black market for anything salvaged below the mistline. Its runners make their living on the valley sprints honest caravans won't risk."
     },
     {
       "faction_name": "Bellwatch",
@@ -133,22 +134,214 @@
   ],
   "items": [
     {
-      "name": "Warding Chalk (10 Sticks)",
-      "description": "Alchemically treated white chalk used to seal doorframes, window-sills, and cellar thresholds against the creeping Mist.",
+      "name": "Dagger",
+      "description": "Simple or martial weapon; see the Player's Handbook.",
+      "store_price": 2,
+      "store_quantity": -1
+    },
+    {
+      "name": "Quarterstaff",
+      "description": "Simple or martial weapon; see the Player's Handbook.",
       "store_price": 1,
-      "store_quantity": 6
+      "store_quantity": -1
     },
     {
-      "name": "Spirit-Ward Canary",
-      "description": "A small yellow canary in a brass cage. Miners swear it stops singing whenever valley spirits draw near—giving you one last warning to run for higher ground.",
-      "store_price": 2,
-      "store_quantity": 3
+      "name": "Spear",
+      "description": "Simple or martial weapon; see the Player's Handbook.",
+      "store_price": 1,
+      "store_quantity": -1
     },
     {
-      "name": "Brim-Coal Brazier Oil (Flask)",
-      "description": "Heavy mineral oil that burns hot and bright, pushing back the evening Mist around camp lanterns and river barges for up to 4 hours.",
+      "name": "Light Crossbow",
+      "description": "Simple or martial weapon; see the Player's Handbook.",
+      "store_price": 25,
+      "store_quantity": -1
+    },
+    {
+      "name": "Shortsword",
+      "description": "Simple or martial weapon; see the Player's Handbook.",
+      "store_price": 10,
+      "store_quantity": -1
+    },
+    {
+      "name": "Longsword",
+      "description": "Simple or martial weapon; see the Player's Handbook.",
+      "store_price": 15,
+      "store_quantity": -1
+    },
+    {
+      "name": "Rapier",
+      "description": "Simple or martial weapon; see the Player's Handbook.",
+      "store_price": 25,
+      "store_quantity": -1
+    },
+    {
+      "name": "Warhammer",
+      "description": "Simple or martial weapon; see the Player's Handbook.",
+      "store_price": 15,
+      "store_quantity": -1
+    },
+    {
+      "name": "Greatsword",
+      "description": "Simple or martial weapon; see the Player's Handbook.",
+      "store_price": 50,
+      "store_quantity": -1
+    },
+    {
+      "name": "Longbow",
+      "description": "Simple or martial weapon; see the Player's Handbook.",
+      "store_price": 50,
+      "store_quantity": -1
+    },
+    {
+      "name": "Arrows (20)",
+      "description": "Ammunition for a shortbow or longbow.",
+      "store_price": 1,
+      "store_quantity": -1
+    },
+    {
+      "name": "Crossbow Bolts (20)",
+      "description": "Ammunition for a crossbow.",
+      "store_price": 1,
+      "store_quantity": -1
+    },
+    {
+      "name": "Shield",
+      "description": "+2 AC.",
+      "store_price": 10,
+      "store_quantity": -1
+    },
+    {
+      "name": "Studded Leather Armor",
+      "description": "AC 12 + Dex modifier.",
+      "store_price": 45,
+      "store_quantity": -1
+    },
+    {
+      "name": "Chain Shirt",
+      "description": "AC 13 + Dex modifier (max 2).",
+      "store_price": 50,
+      "store_quantity": -1
+    },
+    {
+      "name": "Scale Mail",
+      "description": "AC 14 + Dex modifier (max 2); disadvantage on Stealth.",
+      "store_price": 50,
+      "store_quantity": -1
+    },
+    {
+      "name": "Chain Mail",
+      "description": "AC 16; Str 13; disadvantage on Stealth.",
+      "store_price": 75,
+      "store_quantity": -1
+    },
+    {
+      "name": "Splint Armor",
+      "description": "AC 17; Str 15; disadvantage on Stealth.",
+      "store_price": 200,
+      "store_quantity": -1
+    },
+    {
+      "name": "Breastplate",
+      "description": "AC 14 + Dex modifier (max 2).",
+      "store_price": 400,
+      "store_quantity": -1
+    },
+    {
+      "name": "Explorer's Pack",
+      "description": "Backpack, bedroll, oil, rations, rope, tinderbox, torches, and waterskin.",
+      "store_price": 10,
+      "store_quantity": -1
+    },
+    {
+      "name": "Torches (Bundle of 10)",
+      "description": "Bright light for 20 feet and dim light for 20 more, 1 hour each. A lone flame in the Mist buys minutes, not a night.",
+      "store_price": 1,
+      "store_quantity": -1
+    },
+    {
+      "name": "Oil (10 Flasks)",
+      "description": "Fuel for lanterns, or something to throw and set alight.",
+      "store_price": 1,
+      "store_quantity": -1
+    },
+    {
+      "name": "Hooded Lantern",
+      "description": "Bright light for 30 feet and dim light for 30 more; burns oil.",
+      "store_price": 5,
+      "store_quantity": -1
+    },
+    {
+      "name": "Rations (5 Days)",
+      "description": "Trail food for five days.",
+      "store_price": 3,
+      "store_quantity": -1
+    },
+    {
+      "name": "Crowbar",
+      "description": "Advantage on Strength checks where leverage helps.",
       "store_price": 2,
-      "store_quantity": 5
+      "store_quantity": -1
+    },
+    {
+      "name": "Grappling Hook",
+      "description": "Iron hook for rope and walls.",
+      "store_price": 2,
+      "store_quantity": -1
+    },
+    {
+      "name": "Block and Tackle",
+      "description": "Hoist far more than you could normally lift.",
+      "store_price": 1,
+      "store_quantity": -1
+    },
+    {
+      "name": "Caltrops",
+      "description": "Cover a 5-foot square to slow pursuers.",
+      "store_price": 1,
+      "store_quantity": -1
+    },
+    {
+      "name": "Holy Symbol",
+      "description": "Spellcasting focus for clerics and paladins.",
+      "store_price": 5,
+      "store_quantity": -1
+    },
+    {
+      "name": "Arcane Focus",
+      "description": "Spellcasting focus for sorcerers, warlocks, and wizards.",
+      "store_price": 10,
+      "store_quantity": -1
+    },
+    {
+      "name": "Component Pouch",
+      "description": "Material components without a listed cost.",
+      "store_price": 25,
+      "store_quantity": -1
+    },
+    {
+      "name": "Thieves' Tools",
+      "description": "Pick locks and disarm traps.",
+      "store_price": 25,
+      "store_quantity": -1
+    },
+    {
+      "name": "Healer's Kit",
+      "description": "Ten uses; stabilize a creature without a Medicine check.",
+      "store_price": 5,
+      "store_quantity": -1
+    },
+    {
+      "name": "Holy Water",
+      "description": "Harms fiends and undead on a hit.",
+      "store_price": 25,
+      "store_quantity": -1
+    },
+    {
+      "name": "Acid (Vial)",
+      "description": "Thrown vial of acid.",
+      "store_price": 25,
+      "store_quantity": -1
     },
     {
       "name": "Rope, Hempen (50 ft.)",
@@ -163,28 +356,10 @@
       "store_quantity": 6
     },
     {
-      "name": "Highspire Cliff-Lift Pass",
-      "description": "Single round-trip Cartel lift ticket up the sheer cliff face from Rattleguard to Highspire—skipping a half-day switchback climb.",
-      "store_price": 5,
-      "store_quantity": -1
-    },
-    {
-      "name": "Highspire Inn Voucher (1 Week)",
-      "description": "A quiet, Mist-free room above the ridge line with hot water and clean sheets—for adventurers tired of Rattleguard's bunkhouse.",
-      "store_price": 15,
-      "store_quantity": -1
-    },
-    {
       "name": "Climber's Kit",
       "description": "Pitons, boot tips, gloves, and harness for scaling steep fjord walls toward the high ridges.",
       "store_price": 25,
       "store_quantity": -1
-    },
-    {
-      "name": "Cartel River-Barge Charter",
-      "description": "One-day steam-barge passage down the main fjord channel with an armored prow brazier, cutting valley travel time in half.",
-      "store_price": 30,
-      "store_quantity": 2
     },
     {
       "name": "Alchemist's Fire (Flask)",
@@ -203,12 +378,6 @@
       "description": "Advantage on saving throws against poison for 1 hour.",
       "store_price": 50,
       "store_quantity": 4
-    },
-    {
-      "name": "Smithy & Alchemy Workshop Pass",
-      "description": "One week of private forge, crucible, and arcane bench access in Rattleguard for crafting, silvering, or scribing spells.",
-      "store_price": 50,
-      "store_quantity": 2
     },
     {
       "name": "Spell Scroll (1st Level)",
@@ -232,12 +401,6 @@
       "name": "Potion of Greater Healing",
       "description": "Restores 4d4 + 4 hit points when consumed as an action.",
       "store_price": 150,
-      "store_quantity": 2
-    },
-    {
-      "name": "Rattleguard Market Stall Lease",
-      "description": "A permanent covered stall near the main brazier square—trade salvaged goods, craft for the roster, or fence Crow's Ledge contraband.",
-      "store_price": 250,
       "store_quantity": 2
     },
     {
@@ -291,9 +454,9 @@
   ],
   "missions": [
     {
-      "name": "Relight Waystation #4",
-      "description": "Waystation #4—halfway across the main fjord toward Ironstep's cliff-lift—missed its evening signal flare last night. Get its brazier relit before the next convoy tries the day-crossing.",
-      "status": "Hidden",
+      "name": "The Last Bell of Tarnhollow",
+      "description": "Rattleguard's warding bell is cracked. When it goes, the night shift loses the one sound everyone on the ring can hear over the Mist.\n\nThere's a bell big enough to replace it hanging in **Tarnhollow**, a walled town up the valley that went dark years ago. Nobody knows why its ring failed. Walk in at dawn, get the bell down, and get it home. It's heavy, it's loud, and the valley notices noise.\n\n**Be back behind the braziers before dark. There is nowhere else to be.**",
+      "status": "Available",
       "tier": "Tier 1",
       "region": "First Finger Valley",
       "cooldown_days": 14,
@@ -311,13 +474,13 @@
       ]
     },
     {
-      "name": "The Sunken Chalk-Kiln",
-      "description": "Miners working a limestone quarry down-fjord broke into an old sealed kiln—and left in a hurry when their canaries went quiet at noon. Recover their abandoned crystal crates and survey ledger before a rival crew claims them.",
+      "name": "The Sunken Lime-Kiln",
+      "description": "Miners working a limestone quarry down-fjord broke into an old sealed kiln and saw Mist lying in the bottom of it at noon. They left in a hurry. Recover their abandoned crystal crates and survey ledger before a rival crew claims them.",
       "status": "Hidden",
       "tier": "Tier 1",
       "region": "First Finger Quarry",
       "cooldown_days": 14,
-      "is_discoverable": true,
+      "is_discoverable": false,
       "is_retired": false,
       "prerequisite_name": null,
       "rewards": [
@@ -337,7 +500,7 @@
       "tier": "Tier 1",
       "region": "Highspire Switchbacks",
       "cooldown_days": 14,
-      "is_discoverable": true,
+      "is_discoverable": false,
       "is_retired": false,
       "prerequisite_name": null,
       "rewards": [
@@ -357,7 +520,7 @@
       "tier": "Tier 1",
       "region": "Western Gorge",
       "cooldown_days": 14,
-      "is_discoverable": true,
+      "is_discoverable": false,
       "is_retired": false,
       "prerequisite_name": null,
       "rewards": [
@@ -371,5 +534,2576 @@
       ]
     }
   ],
-  "maps": []
+  "maps": [
+    {
+      "name": "The High Fjords",
+      "width": 17,
+      "height": 17,
+      "hex_size": 60,
+      "default_terrain": "forest",
+      "hexes": [
+        {
+          "q": -8,
+          "r": 0,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -8,
+          "r": 1,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -8,
+          "r": 2,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -8,
+          "r": 3,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -8,
+          "r": 4,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -8,
+          "r": 5,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -8,
+          "r": 6,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -8,
+          "r": 7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -8,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -7,
+          "r": -1,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -7,
+          "r": 0,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -7,
+          "r": 1,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -7,
+          "r": 2,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -7,
+          "r": 3,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -7,
+          "r": 4,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -7,
+          "r": 5,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -7,
+          "r": 6,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -7,
+          "r": 7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -7,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
+          "r": -2,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
+          "r": -1,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
+          "r": 0,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
+          "r": 1,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
+          "r": 2,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
+          "r": 3,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
+          "r": 4,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
+          "r": 5,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
+          "r": 6,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
+          "r": 7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -5,
+          "r": -3,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -5,
+          "r": -2,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -5,
+          "r": -1,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -5,
+          "r": 0,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -5,
+          "r": 1,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -5,
+          "r": 2,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -5,
+          "r": 3,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -5,
+          "r": 4,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -5,
+          "r": 5,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -5,
+          "r": 6,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -5,
+          "r": 7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -5,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": -4,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": -3,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": -2,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": -1,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "friendly",
+          "controlling_faction": "Crow's Ledge",
+          "linked_location_name": "Crow's Ledge",
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": 0,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": 1,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": 2,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": 3,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": 4,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": 5,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": 6,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": 7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -4,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": -5,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": -4,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": -3,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": -2,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": -1,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 0,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 1,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 2,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 3,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 4,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 5,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 6,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": -6,
+          "terrain": "plains",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": -5,
+          "terrain": "plains",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": -4,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": -3,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": -2,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": -1,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": "Western Gorge",
+          "linked_mission_name": "First Salvage on the Gilded Moth",
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": 0,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": 1,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": 2,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": 3,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": 4,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": 5,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": 6,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": 7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": -7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": -6,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": -5,
+          "terrain": "swamp",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": -4,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": -3,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": -2,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": -1,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": 0,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": 1,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": 2,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": 3,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": 4,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": 5,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": 6,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": 7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": -7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": -6,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": -5,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": -4,
+          "terrain": "swamp",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": -3,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": -2,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": -1,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": "First Finger Quarry",
+          "linked_mission_name": "The Sunken Lime-Kiln",
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": 0,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "claimed_developed",
+          "controlling_faction": "The Troublesome Company",
+          "linked_location_name": "Rattleguard",
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": 1,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "friendly",
+          "controlling_faction": "Highspire",
+          "linked_location_name": "Highspire",
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": 2,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": 3,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": 4,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": 5,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": 6,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": 7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": -7,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": -6,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": -5,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": -4,
+          "terrain": "swamp",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": -3,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": -2,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": -1,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": 0,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": 1,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": 2,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": 3,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": 4,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": 5,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": 6,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": 7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": -7,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": -6,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": -5,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": -4,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": -3,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": -2,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": -1,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": "Tarnhollow (ruin)",
+          "linked_mission_name": "The Last Bell of Tarnhollow",
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": 0,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": 1,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": 2,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": 3,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": 4,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": 5,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": 6,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": -7,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": -6,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": -5,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "friendly",
+          "controlling_faction": "Bellwatch",
+          "linked_location_name": "Bellwatch",
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": -4,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": -3,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": -2,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": -1,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": 0,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": 1,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": 2,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": 3,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": 4,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": 5,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": -7,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": -6,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": -5,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": -4,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": -3,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": -2,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": -1,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": 0,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": 1,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": 2,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": 3,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": 4,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -7,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -6,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -5,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "friendly",
+          "controlling_faction": "Ironstep",
+          "linked_location_name": "Ironstep",
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -4,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -3,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -2,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -1,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": 0,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": 1,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": 2,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": 3,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 6,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 6,
+          "r": -7,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 6,
+          "r": -6,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 6,
+          "r": -5,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 6,
+          "r": -4,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 6,
+          "r": -3,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 6,
+          "r": -2,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 6,
+          "r": -1,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 6,
+          "r": 0,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 6,
+          "r": 1,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 6,
+          "r": 2,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 7,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 7,
+          "r": -7,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 7,
+          "r": -6,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 7,
+          "r": -5,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 7,
+          "r": -4,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 7,
+          "r": -3,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 7,
+          "r": -2,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 7,
+          "r": -1,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 7,
+          "r": 0,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 7,
+          "r": 1,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 8,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 8,
+          "r": -7,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 8,
+          "r": -6,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 8,
+          "r": -5,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 8,
+          "r": -4,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 8,
+          "r": -3,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 8,
+          "r": -2,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 8,
+          "r": -1,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 8,
+          "r": 0,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        }
+      ],
+      "routes": [
+        {
+          "id": "ridge-road",
+          "name": "The Ridge Road",
+          "type": "road",
+          "hexes": [
+            {
+              "q": 0,
+              "r": 1
+            },
+            {
+              "q": 0,
+              "r": 2
+            },
+            {
+              "q": 1,
+              "r": 2
+            },
+            {
+              "q": 2,
+              "r": 2
+            },
+            {
+              "q": 3,
+              "r": 2
+            },
+            {
+              "q": 4,
+              "r": 2
+            },
+            {
+              "q": 5,
+              "r": 1
+            },
+            {
+              "q": 6,
+              "r": 1
+            },
+            {
+              "q": 7,
+              "r": 0
+            },
+            {
+              "q": 8,
+              "r": -1
+            },
+            {
+              "q": 8,
+              "r": -2
+            },
+            {
+              "q": 8,
+              "r": -3
+            },
+            {
+              "q": 8,
+              "r": -4
+            },
+            {
+              "q": 7,
+              "r": -4
+            },
+            {
+              "q": 7,
+              "r": -5
+            },
+            {
+              "q": 6,
+              "r": -5
+            },
+            {
+              "q": 5,
+              "r": -5
+            }
+          ]
+        },
+        {
+          "id": "bellwatch-spur",
+          "name": "Bellwatch Spur",
+          "type": "road",
+          "hexes": [
+            {
+              "q": 5,
+              "r": -5
+            },
+            {
+              "q": 4,
+              "r": -5
+            },
+            {
+              "q": 3,
+              "r": -5
+            }
+          ]
+        },
+        {
+          "id": "switchbacks",
+          "name": "Highspire Switchbacks",
+          "type": "trail",
+          "hexes": [
+            {
+              "q": 0,
+              "r": 0
+            },
+            {
+              "q": 0,
+              "r": 1
+            }
+          ]
+        },
+        {
+          "id": "first-finger",
+          "name": "The First Finger",
+          "type": "river",
+          "hexes": [
+            {
+              "q": 5,
+              "r": 0
+            },
+            {
+              "q": 5,
+              "r": -1
+            },
+            {
+              "q": 4,
+              "r": -1
+            },
+            {
+              "q": 4,
+              "r": -2
+            },
+            {
+              "q": 3,
+              "r": -2
+            },
+            {
+              "q": 3,
+              "r": -3
+            },
+            {
+              "q": 2,
+              "r": -3
+            },
+            {
+              "q": 1,
+              "r": -3
+            },
+            {
+              "q": 0,
+              "r": -3
+            },
+            {
+              "q": -1,
+              "r": -3
+            },
+            {
+              "q": -1,
+              "r": -4
+            },
+            {
+              "q": -2,
+              "r": -4
+            },
+            {
+              "q": -2,
+              "r": -5
+            },
+            {
+              "q": -2,
+              "r": -6
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }
