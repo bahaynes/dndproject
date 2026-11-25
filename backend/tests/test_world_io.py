@@ -166,3 +166,25 @@ def test_starting_gold_follows_world_bundle_but_old_bundles_keep_it(client, admi
         db_session, campaign.id, admin_schemas.WorldBundle.model_validate(bundle), mode="merge"
     )
     assert client.get("/api/ship/", headers=admin_auth_headers).json()["starting_gold"] == 1200
+
+
+def test_rattleguard_valley_is_open_to_cross_and_ringed_by_the_ridge_road():
+    world = admin_service.load_world_preset("rattleguard_world").maps[0]
+    hexes = {(h.q, h.r): h for h in world.hexes}
+    at = {h.linked_location_name: (h.q, h.r) for h in world.hexes if h.linked_location_name}
+
+    def hours(path):
+        return sum(map_models.HEX_STATE_HOURS[hexes[c].hex_state] for c in path)
+
+    # Straight across the floor: no mountains between the towns, and a day's march
+    assert at["Rattleguard"] == (0, 0)
+    assert at["Ironstep"] == (5, -5)
+    crossing = [(i, -i) for i in range(1, 6)]
+    assert all(hexes[c].terrain != "mountain" for c in crossing[:-1])
+    assert 8 <= hours(crossing) <= 10
+
+    # The ridge road stays above the Mist the whole way and takes about four days
+    road = [(c.q, c.r) for c in next(r for r in world.routes if r.id == "ridge-road").hexes]
+    assert road[0] == at["Highspire"] and road[-1] == at["Ironstep"]
+    assert all(hexes[c].terrain == "mountain" for c in road)
+    assert 28 <= hours(road[1:]) <= 36

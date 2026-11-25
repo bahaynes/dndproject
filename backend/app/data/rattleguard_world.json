@@ -117,13 +117,13 @@
       "faction_name": "Ironstep",
       "level": 0,
       "color": "#ef4444",
-      "description": "An industrial quarry city-state on the southern ridge. Caravans take four days to reach it by the ridge-road; only the desperate and the criminal sprint a full day straight across the valley floor. Always feuding with Highspire over crystal tariffs."
+      "description": "An industrial quarry city-state on the northeastern ridge. Caravans take four days to reach it by the ridge-road; only the desperate and the criminal sprint a full day straight across the valley floor. Always feuding with Highspire over crystal tariffs."
     },
     {
       "faction_name": "Crow's Ledge",
       "level": 0,
       "color": "#10b981",
-      "description": "A cliff-cave smugglers' city-state perched on a lone western peak the ridge-road never reaches. No tariffs, no questions asked, and a thriving black market for anything salvaged below the mistline. Its runners make their living on the valley sprints honest caravans won't risk."
+      "description": "A cliff-cave smugglers' city-state perched on a high western peak the ridge-road never reaches. No tariffs, no questions asked, and a thriving black market for anything salvaged below the mistline. Its runners make their living on the valley sprints honest caravans won't risk."
     },
     {
       "faction_name": "Bellwatch",
@@ -537,15 +537,15 @@
   "maps": [
     {
       "name": "The High Fjords",
-      "width": 15,
-      "height": 15,
+      "width": 17,
+      "height": 17,
       "hex_size": 60,
       "default_terrain": "forest",
       "hexes": [
         {
-          "q": -7,
+          "q": -8,
           "r": 0,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -554,7 +554,7 @@
           "notes": null
         },
         {
-          "q": -7,
+          "q": -8,
           "r": 1,
           "terrain": "forest",
           "is_discovered": false,
@@ -565,9 +565,9 @@
           "notes": null
         },
         {
-          "q": -7,
+          "q": -8,
           "r": 2,
-          "terrain": "water",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -576,7 +576,7 @@
           "notes": null
         },
         {
-          "q": -7,
+          "q": -8,
           "r": 3,
           "terrain": "forest",
           "is_discovered": false,
@@ -587,7 +587,7 @@
           "notes": null
         },
         {
-          "q": -7,
+          "q": -8,
           "r": 4,
           "terrain": "forest",
           "is_discovered": false,
@@ -598,7 +598,7 @@
           "notes": null
         },
         {
-          "q": -7,
+          "q": -8,
           "r": 5,
           "terrain": "forest",
           "is_discovered": false,
@@ -609,7 +609,7 @@
           "notes": null
         },
         {
-          "q": -7,
+          "q": -8,
           "r": 6,
           "terrain": "forest",
           "is_discovered": false,
@@ -620,9 +620,9 @@
           "notes": null
         },
         {
-          "q": -7,
+          "q": -8,
           "r": 7,
-          "terrain": "mountain",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -631,9 +631,20 @@
           "notes": null
         },
         {
-          "q": -6,
+          "q": -8,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -7,
           "r": -1,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -642,7 +653,7 @@
           "notes": null
         },
         {
-          "q": -6,
+          "q": -7,
           "r": 0,
           "terrain": "forest",
           "is_discovered": false,
@@ -653,9 +664,9 @@
           "notes": null
         },
         {
-          "q": -6,
+          "q": -7,
           "r": 1,
-          "terrain": "swamp",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -664,9 +675,9 @@
           "notes": null
         },
         {
-          "q": -6,
+          "q": -7,
           "r": 2,
-          "terrain": "water",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -675,7 +686,7 @@
           "notes": null
         },
         {
-          "q": -6,
+          "q": -7,
           "r": 3,
           "terrain": "forest",
           "is_discovered": false,
@@ -686,7 +697,7 @@
           "notes": null
         },
         {
-          "q": -6,
+          "q": -7,
           "r": 4,
           "terrain": "forest",
           "is_discovered": false,
@@ -697,9 +708,9 @@
           "notes": null
         },
         {
-          "q": -6,
+          "q": -7,
           "r": 5,
-          "terrain": "mountain",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -708,9 +719,9 @@
           "notes": null
         },
         {
-          "q": -6,
+          "q": -7,
           "r": 6,
-          "terrain": "mountain",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -719,7 +730,7 @@
           "notes": null
         },
         {
-          "q": -6,
+          "q": -7,
           "r": 7,
           "terrain": "forest",
           "is_discovered": false,
@@ -730,9 +741,20 @@
           "notes": null
         },
         {
-          "q": -5,
+          "q": -7,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
           "r": -2,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -741,7 +763,7 @@
           "notes": null
         },
         {
-          "q": -5,
+          "q": -6,
           "r": -1,
           "terrain": "forest",
           "is_discovered": false,
@@ -752,62 +774,62 @@
           "notes": null
         },
         {
-          "q": -5,
+          "q": -6,
           "r": 0,
-          "terrain": "forest",
-          "is_discovered": false,
-          "hex_state": "wilderness",
-          "controlling_faction": null,
-          "linked_location_name": null,
-          "linked_mission_name": null,
-          "notes": null
-        },
-        {
-          "q": -5,
-          "r": 1,
-          "terrain": "forest",
-          "is_discovered": false,
-          "hex_state": "wilderness",
-          "controlling_faction": null,
-          "linked_location_name": null,
-          "linked_mission_name": null,
-          "notes": null
-        },
-        {
-          "q": -5,
-          "r": 2,
-          "terrain": "water",
-          "is_discovered": false,
-          "hex_state": "wilderness",
-          "controlling_faction": null,
-          "linked_location_name": null,
-          "linked_mission_name": null,
-          "notes": null
-        },
-        {
-          "q": -5,
-          "r": 3,
-          "terrain": "swamp",
-          "is_discovered": false,
-          "hex_state": "wilderness",
-          "controlling_faction": null,
-          "linked_location_name": null,
-          "linked_mission_name": null,
-          "notes": null
-        },
-        {
-          "q": -5,
-          "r": 4,
           "terrain": "mountain",
-          "is_discovered": true,
-          "hex_state": "friendly",
-          "controlling_faction": "Crow's Ledge",
-          "linked_location_name": "Crow's Ledge",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
           "linked_mission_name": null,
           "notes": null
         },
         {
-          "q": -5,
+          "q": -6,
+          "r": 1,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
+          "r": 2,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
+          "r": 3,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
+          "r": 4,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -6,
           "r": 5,
           "terrain": "forest",
           "is_discovered": false,
@@ -818,7 +840,7 @@
           "notes": null
         },
         {
-          "q": -5,
+          "q": -6,
           "r": 6,
           "terrain": "forest",
           "is_discovered": false,
@@ -829,9 +851,9 @@
           "notes": null
         },
         {
-          "q": -5,
+          "q": -6,
           "r": 7,
-          "terrain": "mountain",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -840,7 +862,18 @@
           "notes": null
         },
         {
-          "q": -4,
+          "q": -6,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -5,
           "r": -3,
           "terrain": "forest",
           "is_discovered": false,
@@ -851,9 +884,9 @@
           "notes": null
         },
         {
-          "q": -4,
+          "q": -5,
           "r": -2,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -862,9 +895,9 @@
           "notes": null
         },
         {
-          "q": -4,
+          "q": -5,
           "r": -1,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -873,9 +906,9 @@
           "notes": null
         },
         {
-          "q": -4,
+          "q": -5,
           "r": 0,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -884,9 +917,9 @@
           "notes": null
         },
         {
-          "q": -4,
+          "q": -5,
           "r": 1,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -895,7 +928,7 @@
           "notes": null
         },
         {
-          "q": -4,
+          "q": -5,
           "r": 2,
           "terrain": "forest",
           "is_discovered": false,
@@ -906,9 +939,9 @@
           "notes": null
         },
         {
-          "q": -4,
+          "q": -5,
           "r": 3,
-          "terrain": "plains",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -917,7 +950,7 @@
           "notes": null
         },
         {
-          "q": -4,
+          "q": -5,
           "r": 4,
           "terrain": "forest",
           "is_discovered": false,
@@ -928,9 +961,9 @@
           "notes": null
         },
         {
-          "q": -4,
+          "q": -5,
           "r": 5,
-          "terrain": "mountain",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -939,9 +972,31 @@
           "notes": null
         },
         {
-          "q": -4,
+          "q": -5,
           "r": 6,
-          "terrain": "mountain",
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -5,
+          "r": 7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -5,
+          "r": 8,
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -951,17 +1006,6 @@
         },
         {
           "q": -4,
-          "r": 7,
-          "terrain": "mountain",
-          "is_discovered": false,
-          "hex_state": "wilderness",
-          "controlling_faction": null,
-          "linked_location_name": null,
-          "linked_mission_name": null,
-          "notes": null
-        },
-        {
-          "q": -3,
           "r": -4,
           "terrain": "forest",
           "is_discovered": false,
@@ -972,7 +1016,7 @@
           "notes": null
         },
         {
-          "q": -3,
+          "q": -4,
           "r": -3,
           "terrain": "forest",
           "is_discovered": false,
@@ -983,10 +1027,10 @@
           "notes": null
         },
         {
-          "q": -3,
+          "q": -4,
           "r": -2,
           "terrain": "forest",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -994,20 +1038,20 @@
           "notes": null
         },
         {
-          "q": -3,
+          "q": -4,
           "r": -1,
-          "terrain": "forest",
-          "is_discovered": false,
-          "hex_state": "wilderness",
-          "controlling_faction": null,
-          "linked_location_name": null,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "friendly",
+          "controlling_faction": "Crow's Ledge",
+          "linked_location_name": "Crow's Ledge",
           "linked_mission_name": null,
           "notes": null
         },
         {
-          "q": -3,
+          "q": -4,
           "r": 0,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1016,9 +1060,9 @@
           "notes": null
         },
         {
-          "q": -3,
+          "q": -4,
           "r": 1,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1027,7 +1071,7 @@
           "notes": null
         },
         {
-          "q": -3,
+          "q": -4,
           "r": 2,
           "terrain": "mountain",
           "is_discovered": false,
@@ -1038,18 +1082,18 @@
           "notes": null
         },
         {
-          "q": -3,
+          "q": -4,
           "r": 3,
-          "terrain": "plains",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
-          "linked_location_name": "Western Gorge",
-          "linked_mission_name": "First Salvage on the Gilded Moth",
+          "linked_location_name": null,
+          "linked_mission_name": null,
           "notes": null
         },
         {
-          "q": -3,
+          "q": -4,
           "r": 4,
           "terrain": "forest",
           "is_discovered": false,
@@ -1060,7 +1104,7 @@
           "notes": null
         },
         {
-          "q": -3,
+          "q": -4,
           "r": 5,
           "terrain": "forest",
           "is_discovered": false,
@@ -1071,9 +1115,9 @@
           "notes": null
         },
         {
-          "q": -3,
+          "q": -4,
           "r": 6,
-          "terrain": "mountain",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1082,7 +1126,7 @@
           "notes": null
         },
         {
-          "q": -3,
+          "q": -4,
           "r": 7,
           "terrain": "forest",
           "is_discovered": false,
@@ -1093,7 +1137,18 @@
           "notes": null
         },
         {
-          "q": -2,
+          "q": -4,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
           "r": -5,
           "terrain": "forest",
           "is_discovered": false,
@@ -1104,7 +1159,7 @@
           "notes": null
         },
         {
-          "q": -2,
+          "q": -3,
           "r": -4,
           "terrain": "forest",
           "is_discovered": false,
@@ -1115,8 +1170,129 @@
           "notes": null
         },
         {
-          "q": -2,
+          "q": -3,
           "r": -3,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": -2,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": -1,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 0,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 1,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 2,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 3,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 4,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 5,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 6,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -3,
+          "r": 8,
           "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
@@ -1127,9 +1303,53 @@
         },
         {
           "q": -2,
+          "r": -6,
+          "terrain": "plains",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": -5,
+          "terrain": "plains",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": -4,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": -3,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
           "r": -2,
           "terrain": "forest",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1143,14 +1363,14 @@
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
-          "linked_location_name": null,
-          "linked_mission_name": null,
+          "linked_location_name": "Western Gorge",
+          "linked_mission_name": "First Salvage on the Gilded Moth",
           "notes": null
         },
         {
           "q": -2,
           "r": 0,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1172,7 +1392,7 @@
         {
           "q": -2,
           "r": 2,
-          "terrain": "swamp",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1194,7 +1414,7 @@
         {
           "q": -2,
           "r": 4,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1216,7 +1436,7 @@
         {
           "q": -2,
           "r": 6,
-          "terrain": "mountain",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1227,6 +1447,28 @@
         {
           "q": -2,
           "r": 7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -2,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": -7,
           "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
@@ -1249,8 +1491,8 @@
         {
           "q": -1,
           "r": -5,
-          "terrain": "forest",
-          "is_discovered": false,
+          "terrain": "swamp",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1260,8 +1502,8 @@
         {
           "q": -1,
           "r": -4,
-          "terrain": "forest",
-          "is_discovered": false,
+          "terrain": "plains",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1271,8 +1513,8 @@
         {
           "q": -1,
           "r": -3,
-          "terrain": "forest",
-          "is_discovered": false,
+          "terrain": "plains",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1283,7 +1525,7 @@
           "q": -1,
           "r": -2,
           "terrain": "forest",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1294,7 +1536,7 @@
           "q": -1,
           "r": -1,
           "terrain": "forest",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1315,18 +1557,18 @@
         {
           "q": -1,
           "r": 1,
-          "terrain": "plains",
-          "is_discovered": true,
+          "terrain": "mountain",
+          "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
-          "linked_location_name": "First Finger Quarry",
-          "linked_mission_name": "The Sunken Lime-Kiln",
+          "linked_location_name": null,
+          "linked_mission_name": null,
           "notes": null
         },
         {
           "q": -1,
           "r": 2,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1370,7 +1612,7 @@
         {
           "q": -1,
           "r": 6,
-          "terrain": "mountain",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1382,6 +1624,28 @@
           "q": -1,
           "r": 7,
           "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": -1,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 0,
+          "r": -8,
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1392,7 +1656,7 @@
         {
           "q": 0,
           "r": -7,
-          "terrain": "swamp",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1403,7 +1667,7 @@
         {
           "q": 0,
           "r": -6,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1414,8 +1678,8 @@
         {
           "q": 0,
           "r": -5,
-          "terrain": "forest",
-          "is_discovered": false,
+          "terrain": "plains",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1425,8 +1689,8 @@
         {
           "q": 0,
           "r": -4,
-          "terrain": "forest",
-          "is_discovered": false,
+          "terrain": "swamp",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1436,8 +1700,8 @@
         {
           "q": 0,
           "r": -3,
-          "terrain": "forest",
-          "is_discovered": false,
+          "terrain": "plains",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1448,7 +1712,7 @@
           "q": 0,
           "r": -2,
           "terrain": "forest",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1458,12 +1722,12 @@
         {
           "q": 0,
           "r": -1,
-          "terrain": "mountain",
+          "terrain": "forest",
           "is_discovered": true,
-          "hex_state": "friendly",
-          "controlling_faction": "Highspire",
-          "linked_location_name": "Highspire",
-          "linked_mission_name": null,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": "First Finger Quarry",
+          "linked_mission_name": "The Sunken Lime-Kiln",
           "notes": null
         },
         {
@@ -1481,18 +1745,18 @@
           "q": 0,
           "r": 1,
           "terrain": "mountain",
-          "is_discovered": false,
-          "hex_state": "wilderness",
-          "controlling_faction": null,
-          "linked_location_name": null,
+          "is_discovered": true,
+          "hex_state": "friendly",
+          "controlling_faction": "Highspire",
+          "linked_location_name": "Highspire",
           "linked_mission_name": null,
           "notes": null
         },
         {
           "q": 0,
           "r": 2,
-          "terrain": "forest",
-          "is_discovered": false,
+          "terrain": "mountain",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1503,10 +1767,10 @@
           "q": 0,
           "r": 3,
           "terrain": "mountain",
-          "is_discovered": true,
-          "hex_state": "friendly",
-          "controlling_faction": "Ironstep",
-          "linked_location_name": "Ironstep",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
           "linked_mission_name": null,
           "notes": null
         },
@@ -1524,7 +1788,7 @@
         {
           "q": 0,
           "r": 5,
-          "terrain": "mountain",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1555,9 +1819,31 @@
           "notes": null
         },
         {
+          "q": 0,
+          "r": 8,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 1,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
           "q": 1,
           "r": -7,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1569,7 +1855,7 @@
           "q": 1,
           "r": -6,
           "terrain": "forest",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1579,8 +1865,8 @@
         {
           "q": 1,
           "r": -5,
-          "terrain": "forest",
-          "is_discovered": false,
+          "terrain": "plains",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1590,8 +1876,8 @@
         {
           "q": 1,
           "r": -4,
-          "terrain": "forest",
-          "is_discovered": false,
+          "terrain": "swamp",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1601,8 +1887,8 @@
         {
           "q": 1,
           "r": -3,
-          "terrain": "forest",
-          "is_discovered": false,
+          "terrain": "plains",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1612,7 +1898,7 @@
         {
           "q": 1,
           "r": -2,
-          "terrain": "mountain",
+          "terrain": "plains",
           "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1623,7 +1909,7 @@
         {
           "q": 1,
           "r": -1,
-          "terrain": "plains",
+          "terrain": "forest",
           "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1646,7 +1932,7 @@
           "q": 1,
           "r": 1,
           "terrain": "forest",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1709,9 +1995,31 @@
           "notes": null
         },
         {
+          "q": 1,
+          "r": 7,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 2,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
           "q": 2,
           "r": -7,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1723,7 +2031,7 @@
           "q": 2,
           "r": -6,
           "terrain": "forest",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1734,7 +2042,7 @@
           "q": 2,
           "r": -5,
           "terrain": "forest",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1745,7 +2053,7 @@
           "q": 2,
           "r": -4,
           "terrain": "forest",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1755,8 +2063,8 @@
         {
           "q": 2,
           "r": -3,
-          "terrain": "mountain",
-          "is_discovered": false,
+          "terrain": "plains",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1766,7 +2074,7 @@
         {
           "q": 2,
           "r": -2,
-          "terrain": "mountain",
+          "terrain": "plains",
           "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1777,7 +2085,7 @@
         {
           "q": 2,
           "r": -1,
-          "terrain": "plains",
+          "terrain": "forest",
           "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1788,8 +2096,8 @@
         {
           "q": 2,
           "r": 0,
-          "terrain": "mountain",
-          "is_discovered": false,
+          "terrain": "forest",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1799,7 +2107,7 @@
         {
           "q": 2,
           "r": 1,
-          "terrain": "mountain",
+          "terrain": "forest",
           "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1811,7 +2119,7 @@
           "q": 2,
           "r": 2,
           "terrain": "mountain",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1832,7 +2140,7 @@
         {
           "q": 2,
           "r": 4,
-          "terrain": "mountain",
+          "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1852,8 +2160,8 @@
           "notes": null
         },
         {
-          "q": 3,
-          "r": -7,
+          "q": 2,
+          "r": 6,
           "terrain": "forest",
           "is_discovered": false,
           "hex_state": "wilderness",
@@ -1864,8 +2172,30 @@
         },
         {
           "q": 3,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
+          "r": -7,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
           "r": -6,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1877,17 +2207,6 @@
           "q": 3,
           "r": -5,
           "terrain": "mountain",
-          "is_discovered": false,
-          "hex_state": "wilderness",
-          "controlling_faction": null,
-          "linked_location_name": null,
-          "linked_mission_name": null,
-          "notes": null
-        },
-        {
-          "q": 3,
-          "r": -4,
-          "terrain": "mountain",
           "is_discovered": true,
           "hex_state": "friendly",
           "controlling_faction": "Bellwatch",
@@ -1897,8 +2216,19 @@
         },
         {
           "q": 3,
+          "r": -4,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 3,
           "r": -3,
-          "terrain": "mountain",
+          "terrain": "plains",
           "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1910,7 +2240,7 @@
           "q": 3,
           "r": -2,
           "terrain": "plains",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1920,8 +2250,8 @@
         {
           "q": 3,
           "r": -1,
-          "terrain": "mountain",
-          "is_discovered": false,
+          "terrain": "plains",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1932,7 +2262,7 @@
           "q": 3,
           "r": 0,
           "terrain": "forest",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1942,7 +2272,7 @@
         {
           "q": 3,
           "r": 1,
-          "terrain": "mountain",
+          "terrain": "forest",
           "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1954,7 +2284,7 @@
           "q": 3,
           "r": 2,
           "terrain": "mountain",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -1984,9 +2314,31 @@
           "notes": null
         },
         {
+          "q": 3,
+          "r": 5,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
           "q": 4,
           "r": -7,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -1997,7 +2349,7 @@
         {
           "q": 4,
           "r": -6,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -2008,8 +2360,8 @@
         {
           "q": 4,
           "r": -5,
-          "terrain": "forest",
-          "is_discovered": false,
+          "terrain": "mountain",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -2019,8 +2371,8 @@
         {
           "q": 4,
           "r": -4,
-          "terrain": "mountain",
-          "is_discovered": false,
+          "terrain": "forest",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -2030,7 +2382,7 @@
         {
           "q": 4,
           "r": -3,
-          "terrain": "mountain",
+          "terrain": "plains",
           "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -2042,7 +2394,7 @@
           "q": 4,
           "r": -2,
           "terrain": "plains",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -2052,8 +2404,8 @@
         {
           "q": 4,
           "r": -1,
-          "terrain": "mountain",
-          "is_discovered": false,
+          "terrain": "plains",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -2063,7 +2415,7 @@
         {
           "q": 4,
           "r": 0,
-          "terrain": "mountain",
+          "terrain": "plains",
           "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -2075,7 +2427,7 @@
           "q": 4,
           "r": 1,
           "terrain": "mountain",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -2086,6 +2438,17 @@
           "q": 4,
           "r": 2,
           "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 4,
+          "r": 3,
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -2095,6 +2458,138 @@
         },
         {
           "q": 4,
+          "r": 4,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -7,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -6,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -5,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "friendly",
+          "controlling_faction": "Ironstep",
+          "linked_location_name": "Ironstep",
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -4,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -3,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -2,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": -1,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": 0,
+          "terrain": "plains",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": 1,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
+          "r": 2,
+          "terrain": "forest",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 5,
           "r": 3,
           "terrain": "forest",
           "is_discovered": false,
@@ -2105,7 +2600,18 @@
           "notes": null
         },
         {
-          "q": 5,
+          "q": 6,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 6,
           "r": -7,
           "terrain": "mountain",
           "is_discovered": false,
@@ -2116,9 +2622,9 @@
           "notes": null
         },
         {
-          "q": 5,
+          "q": 6,
           "r": -6,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -2127,20 +2633,9 @@
           "notes": null
         },
         {
-          "q": 5,
+          "q": 6,
           "r": -5,
           "terrain": "mountain",
-          "is_discovered": false,
-          "hex_state": "wilderness",
-          "controlling_faction": null,
-          "linked_location_name": null,
-          "linked_mission_name": null,
-          "notes": null
-        },
-        {
-          "q": 5,
-          "r": -4,
-          "terrain": "mountain",
           "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -2149,10 +2644,21 @@
           "notes": null
         },
         {
-          "q": 5,
+          "q": 6,
+          "r": -4,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 6,
           "r": -3,
           "terrain": "forest",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -2160,9 +2666,9 @@
           "notes": null
         },
         {
-          "q": 5,
+          "q": 6,
           "r": -2,
-          "terrain": "mountain",
+          "terrain": "forest",
           "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -2171,9 +2677,9 @@
           "notes": null
         },
         {
-          "q": 5,
+          "q": 6,
           "r": -1,
-          "terrain": "mountain",
+          "terrain": "forest",
           "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -2182,10 +2688,10 @@
           "notes": null
         },
         {
-          "q": 5,
+          "q": 6,
           "r": 0,
-          "terrain": "mountain",
-          "is_discovered": false,
+          "terrain": "forest",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -2193,10 +2699,10 @@
           "notes": null
         },
         {
-          "q": 5,
+          "q": 6,
           "r": 1,
           "terrain": "mountain",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -2204,7 +2710,7 @@
           "notes": null
         },
         {
-          "q": 5,
+          "q": 6,
           "r": 2,
           "terrain": "forest",
           "is_discovered": false,
@@ -2215,7 +2721,18 @@
           "notes": null
         },
         {
-          "q": 6,
+          "q": 7,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 7,
           "r": -7,
           "terrain": "mountain",
           "is_discovered": false,
@@ -2226,7 +2743,7 @@
           "notes": null
         },
         {
-          "q": 6,
+          "q": 7,
           "r": -6,
           "terrain": "mountain",
           "is_discovered": false,
@@ -2237,7 +2754,7 @@
           "notes": null
         },
         {
-          "q": 6,
+          "q": 7,
           "r": -5,
           "terrain": "mountain",
           "is_discovered": true,
@@ -2248,19 +2765,8 @@
           "notes": null
         },
         {
-          "q": 6,
+          "q": 7,
           "r": -4,
-          "terrain": "forest",
-          "is_discovered": false,
-          "hex_state": "wilderness",
-          "controlling_faction": null,
-          "linked_location_name": null,
-          "linked_mission_name": null,
-          "notes": null
-        },
-        {
-          "q": 6,
-          "r": -3,
           "terrain": "mountain",
           "is_discovered": true,
           "hex_state": "wilderness",
@@ -2270,21 +2776,21 @@
           "notes": null
         },
         {
-          "q": 6,
+          "q": 7,
+          "r": -3,
+          "terrain": "forest",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 7,
           "r": -2,
-          "terrain": "forest",
-          "is_discovered": false,
-          "hex_state": "wilderness",
-          "controlling_faction": null,
-          "linked_location_name": null,
-          "linked_mission_name": null,
-          "notes": null
-        },
-        {
-          "q": 6,
-          "r": -1,
           "terrain": "mountain",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -2292,10 +2798,10 @@
           "notes": null
         },
         {
-          "q": 6,
-          "r": 0,
+          "q": 7,
+          "r": -1,
           "terrain": "forest",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -2303,9 +2809,20 @@
           "notes": null
         },
         {
-          "q": 6,
+          "q": 7,
+          "r": 0,
+          "terrain": "mountain",
+          "is_discovered": true,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 7,
           "r": 1,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -2314,7 +2831,18 @@
           "notes": null
         },
         {
-          "q": 7,
+          "q": 8,
+          "r": -8,
+          "terrain": "mountain",
+          "is_discovered": false,
+          "hex_state": "wilderness",
+          "controlling_faction": null,
+          "linked_location_name": null,
+          "linked_mission_name": null,
+          "notes": null
+        },
+        {
+          "q": 8,
           "r": -7,
           "terrain": "mountain",
           "is_discovered": false,
@@ -2325,7 +2853,7 @@
           "notes": null
         },
         {
-          "q": 7,
+          "q": 8,
           "r": -6,
           "terrain": "mountain",
           "is_discovered": false,
@@ -2336,10 +2864,10 @@
           "notes": null
         },
         {
-          "q": 7,
+          "q": 8,
           "r": -5,
           "terrain": "mountain",
-          "is_discovered": true,
+          "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -2347,7 +2875,7 @@
           "notes": null
         },
         {
-          "q": 7,
+          "q": 8,
           "r": -4,
           "terrain": "mountain",
           "is_discovered": true,
@@ -2358,10 +2886,10 @@
           "notes": null
         },
         {
-          "q": 7,
+          "q": 8,
           "r": -3,
           "terrain": "mountain",
-          "is_discovered": false,
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -2369,10 +2897,10 @@
           "notes": null
         },
         {
-          "q": 7,
+          "q": 8,
           "r": -2,
-          "terrain": "forest",
-          "is_discovered": false,
+          "terrain": "mountain",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -2380,10 +2908,10 @@
           "notes": null
         },
         {
-          "q": 7,
+          "q": 8,
           "r": -1,
-          "terrain": "forest",
-          "is_discovered": false,
+          "terrain": "mountain",
+          "is_discovered": true,
           "hex_state": "wilderness",
           "controlling_faction": null,
           "linked_location_name": null,
@@ -2391,9 +2919,9 @@
           "notes": null
         },
         {
-          "q": 7,
+          "q": 8,
           "r": 0,
-          "terrain": "forest",
+          "terrain": "mountain",
           "is_discovered": false,
           "hex_state": "wilderness",
           "controlling_faction": null,
@@ -2410,71 +2938,71 @@
           "hexes": [
             {
               "q": 0,
-              "r": -1
-            },
-            {
-              "q": 1,
-              "r": -2
-            },
-            {
-              "q": 2,
-              "r": -2
-            },
-            {
-              "q": 3,
-              "r": -3
-            },
-            {
-              "q": 4,
-              "r": -3
-            },
-            {
-              "q": 5,
-              "r": -4
-            },
-            {
-              "q": 6,
-              "r": -5
-            },
-            {
-              "q": 7,
-              "r": -5
-            },
-            {
-              "q": 7,
-              "r": -4
-            },
-            {
-              "q": 6,
-              "r": -3
-            },
-            {
-              "q": 5,
-              "r": -2
-            },
-            {
-              "q": 5,
-              "r": -1
-            },
-            {
-              "q": 4,
-              "r": 0
-            },
-            {
-              "q": 3,
               "r": 1
             },
             {
-              "q": 2,
-              "r": 1
+              "q": 0,
+              "r": 2
             },
             {
               "q": 1,
               "r": 2
             },
             {
-              "q": 0,
-              "r": 3
+              "q": 2,
+              "r": 2
+            },
+            {
+              "q": 3,
+              "r": 2
+            },
+            {
+              "q": 4,
+              "r": 2
+            },
+            {
+              "q": 5,
+              "r": 1
+            },
+            {
+              "q": 6,
+              "r": 1
+            },
+            {
+              "q": 7,
+              "r": 0
+            },
+            {
+              "q": 8,
+              "r": -1
+            },
+            {
+              "q": 8,
+              "r": -2
+            },
+            {
+              "q": 8,
+              "r": -3
+            },
+            {
+              "q": 8,
+              "r": -4
+            },
+            {
+              "q": 7,
+              "r": -4
+            },
+            {
+              "q": 7,
+              "r": -5
+            },
+            {
+              "q": 6,
+              "r": -5
+            },
+            {
+              "q": 5,
+              "r": -5
             }
           ]
         },
@@ -2484,12 +3012,16 @@
           "type": "road",
           "hexes": [
             {
-              "q": 3,
-              "r": -3
+              "q": 5,
+              "r": -5
+            },
+            {
+              "q": 4,
+              "r": -5
             },
             {
               "q": 3,
-              "r": -4
+              "r": -5
             }
           ]
         },
@@ -2504,7 +3036,7 @@
             },
             {
               "q": 0,
-              "r": -1
+              "r": 1
             }
           ]
         },
@@ -2514,6 +3046,18 @@
           "type": "river",
           "hexes": [
             {
+              "q": 5,
+              "r": 0
+            },
+            {
+              "q": 5,
+              "r": -1
+            },
+            {
+              "q": 4,
+              "r": -1
+            },
+            {
               "q": 4,
               "r": -2
             },
@@ -2522,48 +3066,40 @@
               "r": -2
             },
             {
+              "q": 3,
+              "r": -3
+            },
+            {
               "q": 2,
-              "r": -1
+              "r": -3
             },
             {
               "q": 1,
-              "r": -1
+              "r": -3
             },
             {
               "q": 0,
-              "r": 0
+              "r": -3
             },
             {
               "q": -1,
-              "r": 1
+              "r": -3
+            },
+            {
+              "q": -1,
+              "r": -4
             },
             {
               "q": -2,
-              "r": 2
+              "r": -4
             },
             {
-              "q": -3,
-              "r": 3
+              "q": -2,
+              "r": -5
             },
             {
-              "q": -4,
-              "r": 3
-            },
-            {
-              "q": -5,
-              "r": 3
-            },
-            {
-              "q": -5,
-              "r": 2
-            },
-            {
-              "q": -6,
-              "r": 2
-            },
-            {
-              "q": -7,
-              "r": 2
+              "q": -2,
+              "r": -6
             }
           ]
         }
