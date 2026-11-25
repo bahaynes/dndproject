@@ -42,8 +42,8 @@ The High Fjords are a vertical frontier of steep-walled glacial valleys and broa
 
 ### The Ridge City-States
 * **Highspire:** Directly above Rattleguard via cliff-lift and switchbacks. Sky-docks, portals, old money, and the apartments you could no longer afford.
-* **Ironstep:** Industrial quarry city-state on the eastern ridge, four days away by ridge-road, or a full day's sprint across the valley. Always feuding with Highspire over crystal tariffs.
-* **Crow's Ledge:** Cliff-cave smugglers' port perched above the western fjord. Black-market gear, no tariffs, no questions asked.
+* **Ironstep:** Industrial quarry city-state on the southern ridge, four days away by ridge-road, or a full day's sprint across the valley. Always feuding with Highspire over crystal tariffs.
+* **Crow's Ledge:** Cliff-cave smugglers' port on a lone western peak the ridge-road never reaches. Black-market gear, no tariffs, no questions asked.
 * **Bellwatch:** Walled abbey city-state on the northern plateau housing pre-Mist archives and the Lamplighters' seminary.
 
 ---

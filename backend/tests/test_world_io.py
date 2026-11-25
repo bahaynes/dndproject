@@ -138,7 +138,7 @@ def test_rattleguard_preset_seeds_map_with_routes_that_survive_export(client, ad
     assert r.json()["maps_created"] == 1
 
     db_map = db_session.query(map_models.HexMap).filter_by(campaign_id=campaign.id).one()
-    assert {rt["id"] for rt in db_map.routes} == {"ridge-road", "crow-road", "switchbacks"}
+    assert {rt["id"] for rt in db_map.routes} == {"ridge-road", "bellwatch-spur", "switchbacks", "first-finger"}
     ruin = next(h for h in db_map.hexes if h.linked_location_name == "Tarnhollow (ruin)")
     assert ruin.linked_mission.name == "The Last Bell of Tarnhollow"
 
@@ -151,4 +151,4 @@ def test_rattleguard_preset_seeds_map_with_routes_that_survive_export(client, ad
         db_session, campaign.id, admin_schemas.WorldBundle.model_validate(bundle), mode="merge"
     )
     db_session.refresh(db_map)
-    assert len(db_map.routes) == 3
+    assert len(db_map.routes) == 4
