@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from ...config import get_settings
 from . import models, schemas
 
 
@@ -71,7 +72,9 @@ def create_character(db: Session, character: schemas.CharacterCreate, owner_id: 
     db.refresh(db_character)
 
     # Add stats
-    db_stats = models.CharacterStats(character_id=db_character.id, gold=0, xp=0)
+    db_stats = models.CharacterStats(
+        character_id=db_character.id, gold=get_settings().STARTING_GOLD, xp=0
+    )
     db.add(db_stats)
     db.commit()
     db.refresh(db_character)
