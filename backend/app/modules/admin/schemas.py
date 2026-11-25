@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal
+from ..maps.schemas import MapRoute
 from ..ship.schemas import TownLocation, TownLocationOut
 
 
@@ -72,6 +73,7 @@ class WorldMap(BaseModel):
     hex_size: int = 60
     default_terrain: str = "plains"
     hexes: List[WorldHex] = []
+    routes: List[MapRoute] = []
 
 
 class WorldMapImport(WorldMap):
