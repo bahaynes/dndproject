@@ -163,6 +163,7 @@ async def bake_earth_layers(
         if max_lat <= min_lat or max_lon <= min_lon:
             raise HTTPException(status_code=400, detail="max_lat/max_lon must be greater than min_lat/min_lon")
 
+    storage = get_layer_storage()
     try:
         result = await bake_earth_region(
             min_lat=min_lat,
@@ -171,13 +172,13 @@ async def bake_earth_layers(
             max_lon=max_lon,
             hex_coords=hex_coords,
             hex_size=hex_size,
+            cache=storage,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Failed to bake Earth region: {exc}") from exc
 
-    storage = get_layer_storage()
     topo_key = storage.put_bytes(
         f"campaigns/{db_map.campaign_id}/maps/{db_map.id}/topo.png",
         result.topo_png,
@@ -211,6 +212,7 @@ async def bake_earth_layers(
 
     db.commit()
     db.refresh(db_map)
+    db_map.bake_warnings = result.warnings  # response only, not a column
     return db_map
 
 

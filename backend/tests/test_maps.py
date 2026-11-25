@@ -276,6 +276,7 @@ def test_bake_earth_from_center_pin_and_travel_scale(client, campaign, admin_aut
         layer_bounds={"min_x": -510.0, "min_y": -571.5, "max_x": 510.0, "max_y": 571.5},
         hex_terrains={(0, 0): "plains"},
         zoom=9,
+        warnings=["Rivers are missing"],
     )
     monkeypatch.setattr(maps_router, "bake_earth_region", AsyncMock(return_value=fake_result))
 
@@ -289,6 +290,9 @@ def test_bake_earth_from_center_pin_and_travel_scale(client, campaign, admin_aut
     assert sr["center_lat"] == 64.1466
     assert sr["center_lon"] == -21.9426
     assert sr["travel_scale"] == "frontier"
+    assert res.json()["bake_warnings"] == ["Rivers are missing"]
+    fetched = client.get(f"/api/maps/{m['id']}", headers=admin_auth_headers).json()
+    assert fetched["bake_warnings"] == []
 
 
 def test_update_map_routes(client, campaign, admin_auth_headers, player_auth_headers):
