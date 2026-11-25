@@ -16,6 +16,9 @@ class Ship(Base):
     level = Column(Integer, default=1, nullable=False)
     essence = Column(Integer, default=0, nullable=False)
 
+    # Gold (GP) given to each newly created character in this campaign
+    starting_gold = Column(Integer, default=0, server_default="0", nullable=False)
+
     motd = Column(String, nullable=True)  # Message of the day / GM announcement
     town_locations = Column(JSON, nullable=True)  # List of TownLocation dicts for /town map
 

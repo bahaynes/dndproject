@@ -49,9 +49,6 @@ class Settings(BaseSettings):
     # In-process sliding-window rate limiter on auth and bake-earth endpoints
     RATE_LIMIT_ENABLED: bool = False
 
-    # Gold (GP) given to each newly created character
-    STARTING_GOLD: int = 0
-
     # LLM Service (OpenRouter)
     LLM_API_KEY: str = ""
     LLM_API_BASE: str = "https://openrouter.ai/api/v1"

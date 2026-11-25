@@ -7,6 +7,7 @@ from ..ship.schemas import TownLocation, TownLocationOut
 class WorldHub(BaseModel):
     name: str
     motd: Optional[str] = None
+    starting_gold: Optional[int] = Field(default=None, ge=0)
     town_locations: List[TownLocationOut] = []
 
 

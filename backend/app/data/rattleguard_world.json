@@ -4,6 +4,7 @@
   "hub": {
     "name": "Rattleguard",
     "motd": "You arrived in a majestic ridge city by spelljammer or portal, and promptly found out how expensive rent is when the Mist comes every night and everyone wants permanent safety. Down in the valleys, though, lie the magical crystals that power the rest of the verse—and someone has to collect them. Welcome to Rattleguard, a frontier town perched just below the mistline. Every night the whole town works to keep an unbroken ring of braziers burning. The ring holds, mostly. Spirits still take a few people, but the pay is good and the miners are friendly. The ruins down in the valley are the towns that stopped holding theirs. You're with the Troublesome Company now—recruited when you ran out of coin and jobs up top. Pick a partner, pick a hex, and remember the only rule: be back behind the braziers before dark.\n\nFirst Night Checklist:\n1. Build a Level 3 character on D&D Beyond (your combat sheet & dice live there; your gold, loot, and gear live here) and register them under Characters.\n2. Open Town to visit the Troublesome Company Hall, Quartermaster, and Taproom before heading out.\n3. Open Maps to scout the fjord valleys and propose or join an expedition on Sessions.",
+    "starting_gold": 1200,
     "town_locations": [
       {
         "id": "company-hall",

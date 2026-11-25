@@ -137,10 +137,16 @@ def test_delete_active_character_clears_active_id(client, db_session, campaign):
     assert user.active_character_id is None
 
 
-def test_create_character_grants_configured_starting_gold(client, campaign, player_auth_headers, monkeypatch):
-    from app.config import get_settings
+def test_create_character_grants_campaign_starting_gold(
+    client, db_session, campaign, player_auth_headers, admin_auth_headers
+):
+    first = client.post("/api/characters/", json={"name": "Early Hero"}, headers=player_auth_headers)
+    assert first.json()["stats"]["gold"] == 0
 
-    monkeypatch.setattr(get_settings(), "STARTING_GOLD", 1200)
+    res = client.put("/api/ship/", json={"starting_gold": 1200}, headers=admin_auth_headers)
+    assert res.json()["starting_gold"] == 1200
+    assert client.put("/api/ship/", json={"starting_gold": 5}, headers=player_auth_headers).status_code == 403
+    assert client.put("/api/ship/", json={"starting_gold": -1}, headers=admin_auth_headers).status_code == 422
+
     res = client.post("/api/characters/", json={"name": "Geared Hero"}, headers=player_auth_headers)
-    assert res.status_code == 200
     assert res.json()["stats"]["gold"] == 1200

@@ -67,6 +67,7 @@ export interface Ship {
     level: number;
     essence: number;
     motd?: string;
+    starting_gold?: number;
     town_locations?: TownLocation[];
     status: 'nominal' | 'low' | 'critical';
     long_rest_cost: number;

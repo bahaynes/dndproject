@@ -152,3 +152,17 @@ def test_rattleguard_preset_seeds_map_with_routes_that_survive_export(client, ad
     )
     db_session.refresh(db_map)
     assert len(db_map.routes) == 4
+
+
+def test_starting_gold_follows_world_bundle_but_old_bundles_keep_it(client, admin_auth_headers, campaign, db_session):
+    client.post("/api/admin/seed?preset=rattleguard_world", headers=admin_auth_headers)
+    assert client.get("/api/ship/", headers=admin_auth_headers).json()["starting_gold"] == 1200
+
+    bundle = client.get("/api/admin/world/export", headers=admin_auth_headers).json()
+    assert bundle["hub"]["starting_gold"] == 1200
+
+    del bundle["hub"]["starting_gold"]
+    admin_service.import_world(
+        db_session, campaign.id, admin_schemas.WorldBundle.model_validate(bundle), mode="merge"
+    )
+    assert client.get("/api/ship/", headers=admin_auth_headers).json()["starting_gold"] == 1200

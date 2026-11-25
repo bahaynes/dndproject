@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from ...config import get_settings
+from ..ship import models as ship_models
 from . import models, schemas
 
 
@@ -72,8 +72,9 @@ def create_character(db: Session, character: schemas.CharacterCreate, owner_id: 
     db.refresh(db_character)
 
     # Add stats
+    hub = db.query(ship_models.Ship).filter_by(campaign_id=campaign_id).first()
     db_stats = models.CharacterStats(
-        character_id=db_character.id, gold=get_settings().STARTING_GOLD, xp=0
+        character_id=db_character.id, gold=hub.starting_gold if hub else 0, xp=0
     )
     db.add(db_stats)
     db.commit()

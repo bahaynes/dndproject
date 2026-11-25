@@ -100,6 +100,7 @@ def export_world(db: Session, campaign_id: int) -> schemas.WorldBundle:
         schemas.WorldHub(
             name=hub.name,
             motd=hub.motd,
+            starting_gold=hub.starting_gold,
             town_locations=[
                 schemas.TownLocationOut.model_validate(loc)
                 for loc in (hub.town_locations or [])
@@ -264,12 +265,16 @@ def import_world(
                 campaign_id=campaign_id,
                 name=bundle.hub.name,
                 motd=bundle.hub.motd,
+                starting_gold=bundle.hub.starting_gold or 0,
                 town_locations=locations_data,
             )
             db.add(hub)
         else:
             hub.name = bundle.hub.name
             hub.motd = bundle.hub.motd
+            # Older bundles have no starting_gold; keep the campaign's own value.
+            if bundle.hub.starting_gold is not None:
+                hub.starting_gold = bundle.hub.starting_gold
             hub.town_locations = locations_data
         db.flush()
 

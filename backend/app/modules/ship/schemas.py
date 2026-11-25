@@ -57,6 +57,7 @@ class ShipBase(BaseModel):
     level: int = 1
     essence: int = 0
     motd: Optional[str] = None
+    starting_gold: int = 0
     town_locations: list[TownLocation] = Field(default_factory=list)
 
     @field_validator("town_locations", mode="before")
@@ -70,6 +71,7 @@ class ShipUpdate(BaseModel):
     level: Optional[int] = None
     essence: Optional[int] = None
     motd: Optional[str] = None
+    starting_gold: Optional[int] = Field(default=None, ge=0)
     town_locations: Optional[list[TownLocation]] = None
 
 
