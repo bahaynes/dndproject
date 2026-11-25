@@ -132,6 +132,8 @@ async def login_via_discord(
         "response_type": "code",
         "scope": scope,
         "state": state_str,
+        # Skip Discord's approval screen for users who already authorized the app.
+        "prompt": "none",
     })
     discord_auth_url = f"https://discord.com/api/oauth2/authorize?{query}"
 

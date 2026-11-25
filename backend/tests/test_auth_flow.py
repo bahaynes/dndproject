@@ -67,6 +67,7 @@ class TestDiscordLoginRedirect:
         r = client.get("/api/auth/discord/login", follow_redirects=False)
         assert r.status_code in (302, 307)
         assert "discord.com/api/oauth2/authorize" in r.headers["location"]
+        assert "prompt=none" in r.headers["location"]
 
     def test_redirect_contains_effective_redirect_uri(self, client):
         from urllib.parse import parse_qs, urlparse
