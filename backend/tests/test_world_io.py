@@ -130,3 +130,25 @@ def test_import_replace_mode_preserves_sessions_and_inventory(client, admin_auth
     db_session.refresh(gs)
     assert gs.name == "Monday Session"
     assert gs.confirmed_mission_id is None
+
+
+def test_rattleguard_preset_seeds_map_with_routes_that_survive_export(client, admin_auth_headers, db_session, campaign):
+    r = client.post("/api/admin/seed?preset=rattleguard_world", headers=admin_auth_headers)
+    assert r.status_code == 200
+    assert r.json()["maps_created"] == 1
+
+    db_map = db_session.query(map_models.HexMap).filter_by(campaign_id=campaign.id).one()
+    assert {rt["id"] for rt in db_map.routes} == {"ridge-road", "crow-road", "switchbacks"}
+    ruin = next(h for h in db_map.hexes if h.linked_location_name == "Tarnhollow (ruin)")
+    assert ruin.linked_mission.name == "The Last Bell of Tarnhollow"
+
+    bundle = client.get("/api/admin/world/export", headers=admin_auth_headers).json()
+    assert bundle["maps"][0]["routes"] == db_map.routes
+
+    # A bundle without routes must not wipe existing ones on merge
+    bundle["maps"][0]["routes"] = []
+    admin_service.import_world(
+        db_session, campaign.id, admin_schemas.WorldBundle.model_validate(bundle), mode="merge"
+    )
+    db_session.refresh(db_map)
+    assert len(db_map.routes) == 3
