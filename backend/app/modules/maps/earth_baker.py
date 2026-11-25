@@ -3,22 +3,36 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import io
+import json
 import logging
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Iterable, Optional, Tuple
 
 import httpx
 import numpy as np
 from PIL import Image, ImageDraw
 
+from .storage import MapLayerStorage
+
 logger = logging.getLogger(__name__)
 
 TERRARIUM_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png"
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
-# Overpass answers the default httpx User-Agent with 406 Not Acceptable.
-HTTP_HEADERS = {"User-Agent": "map-layer-baker/1.0"}
+# Overpass policy asks for a User-Agent that uniquely identifies the app.
+HTTP_HEADERS = {
+    "User-Agent": (
+        "dnd-westmarches-hub/1.0 (+https://westmarches.bahaynes.com; "
+        "https://github.com/bahaynes/dndproject)"
+    )
+}
+OVERPASS_QUERY_TIMEOUT_S = 20  # the whole bake runs inside one web request
+OVERPASS_MAX_ATTEMPTS = 2
+OVERPASS_RETRY_PAUSE_S = 30.0  # pause the Overpass wiki recommends before a new request
+# Busy or rate-limited. 406 is left out: it can mean a block, so we do not ask again.
+OVERPASS_RETRY_STATUSES = {429, 502, 503, 504}
 TILE_SIZE = 256
 MAX_OUTPUT_DIM = 1200
 MAX_FETCH_TILES = 64
@@ -39,6 +53,7 @@ class BakedMapResult:
     layer_bounds: dict[str, float]
     hex_terrains: dict[tuple[int, int], str]
     zoom: int
+    warnings: list[str] = field(default_factory=list)
 
 
 def compute_hex_layer_bounds(hex_coords: Iterable[tuple[int, int]], hex_size: int) -> dict[str, float]:
@@ -157,6 +172,67 @@ async def _fetch_terrarium_grid(
     return elev
 
 
+class OverpassUnavailable(Exception):
+    """Overpass could not answer a natural-feature query."""
+
+
+async def _query_overpass(query: str) -> list[dict]:
+    """Run one Overpass query, pausing and retrying when the server is busy."""
+    async with httpx.AsyncClient(timeout=OVERPASS_QUERY_TIMEOUT_S + 5, headers=HTTP_HEADERS) as client:
+        for attempt in range(1, OVERPASS_MAX_ATTEMPTS + 1):
+            try:
+                resp = await client.post(OVERPASS_URL, data={"data": query})
+            except httpx.HTTPError as exc:
+                raise OverpassUnavailable(f"{type(exc).__name__}") from exc
+            if resp.status_code in OVERPASS_RETRY_STATUSES and attempt < OVERPASS_MAX_ATTEMPTS:
+                await asyncio.sleep(OVERPASS_RETRY_PAUSE_S)
+                continue
+            if resp.status_code != 200:
+                raise OverpassUnavailable(f"HTTP {resp.status_code}")
+            try:
+                payload = resp.json()
+            except ValueError as exc:
+                raise OverpassUnavailable("unreadable response") from exc
+            # Overpass reports its own timeouts and memory limits as a 200 with a remark.
+            if "error" in str(payload.get("remark", "")).lower():
+                raise OverpassUnavailable("query ran out of time or memory")
+            return payload.get("elements", [])
+    raise OverpassUnavailable("no response")
+
+
+def _join_rings(segments: list[list[tuple[float, float]]]) -> list[list[tuple[float, float]]]:
+    """Join relation member ways end to end into closed rings; incomplete rings are dropped."""
+    pending = [list(seg) for seg in segments if len(seg) >= 2]
+    rings: list[list[tuple[float, float]]] = []
+    while pending:
+        ring = pending.pop()
+        while ring[0] != ring[-1]:
+            for idx, seg in enumerate(pending):
+                if seg[0] == ring[-1]:
+                    ring.extend(seg[1:])
+                elif seg[-1] == ring[-1]:
+                    ring.extend(reversed(seg[:-1]))
+                else:
+                    continue
+                pending.pop(idx)
+                break
+            else:
+                break
+        if ring[0] == ring[-1] and len(ring) >= 4:
+            rings.append(ring)
+    return rings
+
+
+def _member_rings(element: dict, role: str) -> list[list[tuple[float, float]]]:
+    return _join_rings(
+        [
+            [(pt["lat"], pt["lon"]) for pt in (m.get("geometry") or []) if pt]
+            for m in element.get("members", [])
+            if m.get("type") == "way" and (m.get("role") or "outer") == role
+        ]
+    )
+
+
 async def _fetch_osm_natural_masks(
     min_lat: float,
     min_lon: float,
@@ -164,61 +240,88 @@ async def _fetch_osm_natural_masks(
     max_lon: float,
     width_px: int,
     height_px: int,
-) -> dict[str, np.ndarray]:
-    """Best-effort query to Overpass API for natural water, rivers, woods, and wetlands."""
-    masks = {
-        "water": np.zeros((height_px, width_px), dtype=bool),
-        "wood": np.zeros((height_px, width_px), dtype=bool),
-        "wetland": np.zeros((height_px, width_px), dtype=bool),
-    }
-
+    cache: Optional[MapLayerStorage] = None,
+) -> tuple[dict[str, np.ndarray], list[str]]:
+    """Return water/wood/wetland masks from Overpass, plus warnings when they are unavailable."""
+    bbox = f"({min_lat:.5f},{min_lon:.5f},{max_lat:.5f},{max_lon:.5f})"
     query = (
-        f"[out:json][timeout:10];"
+        f"[out:json][timeout:{OVERPASS_QUERY_TIMEOUT_S}];"
         f"("
-        f'way["natural"~"^(water|wood|wetland)$"]({min_lat},{min_lon},{max_lat},{max_lon});'
-        f'way["waterway"~"^(river|stream)$"]({min_lat},{min_lon},{max_lat},{max_lon});'
+        f'way["natural"~"^(water|wood|wetland)$"]{bbox};'
+        f'relation["type"="multipolygon"]["natural"~"^(water|wood|wetland)$"]{bbox};'
+        f'way["waterway"~"^(river|stream)$"]{bbox};'
         f");out geom;"
     )
 
-    try:
-        async with httpx.AsyncClient(timeout=12.0, headers=HTTP_HEADERS) as client:
-            resp = await client.post(OVERPASS_URL, data={"data": query})
-            resp.raise_for_status()
-            elements = resp.json().get("elements", [])
-    except Exception as exc:
-        logger.warning("Overpass natural-feature fetch skipped: %s", exc)
-        return masks
+    imgs = {k: Image.new("L", (width_px, height_px), 0) for k in ("water", "wood", "wetland")}
+    warnings: list[str] = []
+    cache_key = f"overpass/{hashlib.sha256(query.encode()).hexdigest()}.json"
+    elements: Optional[list[dict]] = None
+
+    if cache is not None:
+        try:
+            cached = cache.get_bytes(cache_key)
+            elements = json.loads(cached) if cached else None
+        except Exception as exc:
+            logger.warning("Ignoring unreadable Overpass cache entry: %s", exc)
+
+    if elements is None:
+        try:
+            elements = await _query_overpass(query)
+        except OverpassUnavailable as exc:
+            logger.warning("Overpass natural-feature fetch failed: %s", exc)
+            warnings.append(
+                f"Rivers, forests and wetlands are missing: OpenStreetMap's Overpass server did not answer ({exc}). "
+                "Try baking again later."
+            )
+            elements = []
+        else:
+            if cache is not None:
+                try:
+                    cache.put_bytes(cache_key, json.dumps(elements).encode(), content_type="application/json")
+                except Exception as exc:
+                    logger.warning("Could not cache Overpass response: %s", exc)
 
     gx0, gy1 = _lat_lon_to_global_px(min_lat, min_lon, 12)
     gx1, gy0 = _lat_lon_to_global_px(max_lat, max_lon, 12)
     span_x = max(1e-6, gx1 - gx0)
     span_y = max(1e-6, gy1 - gy0)
 
-    imgs = {k: Image.new("L", (width_px, height_px), 0) for k in masks}
+    def _px(coords: Iterable[tuple[float, float]]) -> list[tuple[float, float]]:
+        out = []
+        for lat, lon in coords:
+            px, py = _lat_lon_to_global_px(lat, lon, 12)
+            out.append(((px - gx0) / span_x * width_px, (py - gy0) / span_y * height_px))
+        return out
+
     draws = {k: ImageDraw.Draw(img) for k, img in imgs.items()}
 
     for el in elements:
-        geom = el.get("geometry") or []
-        if len(geom) < 2:
-            continue
         tags = el.get("tags") or {}
-        pts = []
-        for pt in geom:
-            px, py = _lat_lon_to_global_px(pt["lat"], pt["lon"], 12)
-            ix = (px - gx0) / span_x * width_px
-            iy = (py - gy0) / span_y * height_px
-            pts.append((ix, iy))
-
         nat = tags.get("natural", "")
-        waterway = tags.get("waterway", "")
-        if waterway in ("river", "stream"):
+
+        if el.get("type") == "relation":
+            if nat not in imgs:
+                continue
+            # Each relation gets its own layer so its holes do not erase neighbouring features.
+            layer = Image.new("L", (width_px, height_px), 0)
+            layer_draw = ImageDraw.Draw(layer)
+            for ring in _member_rings(el, "outer"):
+                layer_draw.polygon(_px(ring), fill=255)
+            for ring in _member_rings(el, "inner"):
+                layer_draw.polygon(_px(ring), fill=0)
+            imgs[nat].paste(255, mask=layer)
+            continue
+
+        pts = _px((pt["lat"], pt["lon"]) for pt in (el.get("geometry") or []) if pt)
+        if len(pts) < 2:
+            continue
+        if tags.get("waterway", "") in ("river", "stream"):
             draws["water"].line(pts, fill=255, width=max(2, width_px // 400))
-        elif nat in ("water", "wood", "wetland") and len(pts) >= 3:
+        elif nat in imgs and len(pts) >= 3:
             draws[nat].polygon(pts, fill=255)
 
-    for k, img in imgs.items():
-        masks[k] = np.asarray(img, dtype=np.uint8) > 0
-    return masks
+    return {k: np.asarray(img, dtype=np.uint8) > 0 for k, img in imgs.items()}, warnings
 
 
 def _compute_hillshade(elev: np.ndarray, azimuth_deg: float = 315.0, altitude_deg: float = 45.0) -> tuple[np.ndarray, np.ndarray]:
@@ -361,6 +464,7 @@ async def bake_earth_region(
     max_lon: float,
     hex_coords: list[tuple[int, int]],
     hex_size: int,
+    cache: Optional[MapLayerStorage] = None,
 ) -> BakedMapResult:
     """Fetch real-Earth DEM + natural features and bake Topo & Satellite PNG layers."""
     bounds = compute_hex_layer_bounds(hex_coords, hex_size)
@@ -379,7 +483,9 @@ async def bake_earth_region(
     elev_img = Image.fromarray(raw_elev, mode="F").resize((out_w, out_h), resample=Image.Resampling.BILINEAR)
     elev = np.asarray(elev_img, dtype=np.float32)
 
-    masks = await _fetch_osm_natural_masks(min_lat, min_lon, max_lat, max_lon, out_w, out_h)
+    masks, warnings = await _fetch_osm_natural_masks(
+        min_lat, min_lon, max_lat, max_lon, out_w, out_h, cache=cache
+    )
     topo_png, sat_png = render_topo_and_satellite(elev, masks)
     terrains = classify_hex_terrains(elev, masks, hex_coords, hex_size, bounds)
 
@@ -389,4 +495,5 @@ async def bake_earth_region(
         layer_bounds=bounds,
         hex_terrains=terrains,
         zoom=zoom,
+        warnings=warnings,
     )

@@ -115,6 +115,7 @@ class HexMap(HexMapBase):
     source_region: Optional[Dict[str, Any]] = None
     routes: List[MapRoute] = []
     hexes: List[Hex] = []
+    bake_warnings: List[str] = []  # set only on the bake-earth response
 
     @field_validator('routes', mode='before')
     @classmethod

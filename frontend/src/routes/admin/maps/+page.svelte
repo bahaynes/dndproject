@@ -47,6 +47,7 @@
 			max_lon?: number;
 		} | null;
 		routes?: MapRoute[];
+		bake_warnings?: string[];
 		hexes: HexData[];
 	}
 
@@ -62,6 +63,7 @@
 	let bakeOpen = false;
 	let baking = false;
 	let bakeError = '';
+	let bakeWarnings: string[] = [];
 	let autoSeedTerrain = true;
 	let pinInput = `${EARTH_REGION_PRESETS[0].center_lat}, ${EARTH_REGION_PRESETS[0].center_lon}`;
 	let travelScale: TravelScale = 'frontier';
@@ -135,6 +137,7 @@
 		}
 		baking = true;
 		bakeError = '';
+		bakeWarnings = [];
 		try {
 			const updated: MapData = await api('POST', `/maps/${activeMap.id}/bake-earth`, {
 				center_lat: parsed.lat,
@@ -142,6 +145,7 @@
 				travel_scale: travelScale,
 				auto_seed_terrain: autoSeedTerrain
 			});
+			bakeWarnings = updated.bake_warnings ?? [];
 			activeMap = updated;
 			maps = maps.map((m) => (m.id === updated.id ? updated : m));
 			layerMode = 'topo';
@@ -586,6 +590,9 @@
 					{#if bakeError}
 						<p class="text-error text-[11px]">{bakeError}</p>
 					{/if}
+					{#each bakeWarnings as warning}
+						<p class="text-warning text-[11px]">{warning}</p>
+					{/each}
 					<button class="btn btn-primary btn-xs" disabled={baking} on:click={bakeEarthLayers}>
 						{baking ? 'Baking DEM + OSM...' : 'Bake Topo & Satellite'}
 					</button>
