@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## ⚠️ Auth is load-bearing: change it deliberately
+## ⚠️ Auth is a protected area: Read before touching
 
 Auth is intentionally simple; keep it that way. Changing it is fine when the task needs it, including bug and security fixes. When you do:
 - Say in the PR which part of the contract below changes, and why.
