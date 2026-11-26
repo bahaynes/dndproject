@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import HexCell from './HexCell.svelte';
-	import type { HexCoord } from '../utils/hexMath';
+	import { computeMapViewBox, type HexCoord } from '../utils/hexMath';
 	import { routeToSvgPath, type MapRoute, type RouteCoord } from '../utils/mapLayers';
 
 	interface HexData {
@@ -84,31 +84,123 @@
 		new Set(hexes.map((h) => h.controlling_faction).filter((f): f is string => Boolean(f)))
 	).sort();
 
-	let viewBox = { x: -500, y: -500, w: 2000, h: 1200 };
+	const DRAG_THRESHOLD_PX = 5;
+
+	let viewBox = { x: -500, y: -300, w: 1000, h: 600 };
 	let isDragging = false;
+	let hasDragged = false;
+	let suppressNextClick = false;
+	let downPos = { x: 0, y: 0 };
 	let startPan = { x: 0, y: 0 };
 	let lastPinchDist: number | null = null;
 	let svgElement: SVGSVGElement;
+	let lastAutoFitKey = '';
+
+	function getContainerAspectRatio(): number {
+		if (svgElement && svgElement.clientWidth > 0 && svgElement.clientHeight > 0) {
+			return svgElement.clientWidth / svgElement.clientHeight;
+		}
+		return 16 / 9;
+	}
+
+	function getFitViewBox() {
+		return computeMapViewBox(hexes, hexSize, layerBounds, getContainerAspectRatio());
+	}
+
+	export function resetView() {
+		viewBox = getFitViewBox();
+	}
+
+	onMount(() => {
+		resetView();
+	});
+
+	$: autoFitKey = `${hexes.length}:${hexSize}:${layerBounds ? `${layerBounds.min_x},${layerBounds.min_y},${layerBounds.max_x},${layerBounds.max_y}` : ''}`;
+	$: if (autoFitKey !== lastAutoFitKey && (hexes.length > 0 || layerBounds)) {
+		lastAutoFitKey = autoFitKey;
+		viewBox = getFitViewBox();
+	}
+
+	function zoomAtClientPoint(scaleFactor: number, clientX: number, clientY: number) {
+		if (!svgElement) return;
+		const rect = svgElement.getBoundingClientRect();
+		if (rect.width <= 0 || rect.height <= 0) return;
+
+		const fit = getFitViewBox();
+		const minW = Math.max(hexSize * 3.5, 180);
+		const maxW = Math.max(8000, fit.w * 4);
+
+		const targetW = Math.min(maxW, Math.max(minW, viewBox.w * scaleFactor));
+		const actualScale = targetW / viewBox.w;
+		const targetH = viewBox.h * actualScale;
+
+		const relX = (clientX - rect.left) / rect.width;
+		const relY = (clientY - rect.top) / rect.height;
+		const vx = viewBox.x + relX * viewBox.w;
+		const vy = viewBox.y + relY * viewBox.h;
+
+		viewBox = {
+			x: vx - relX * targetW,
+			y: vy - relY * targetH,
+			w: targetW,
+			h: targetH
+		};
+	}
+
+	function zoomByCenter(scaleFactor: number) {
+		if (!svgElement) return;
+		const rect = svgElement.getBoundingClientRect();
+		zoomAtClientPoint(scaleFactor, rect.left + rect.width / 2, rect.top + rect.height / 2);
+	}
 
 	function handleMouseDown(e: MouseEvent) {
 		if (e.button !== 0 && e.button !== 1) return; // Left or Middle click
 		isDragging = true;
+		hasDragged = false;
+		suppressNextClick = false;
+		downPos = { x: e.clientX, y: e.clientY };
 		startPan = { x: e.clientX, y: e.clientY };
 	}
 
 	function handleMouseMove(e: MouseEvent) {
-		if (!isDragging) return;
-		const dx = (e.clientX - startPan.x) * (viewBox.w / svgElement.clientWidth);
-		const dy = (e.clientY - startPan.y) * (viewBox.h / svgElement.clientHeight);
+		if (!isDragging || !svgElement) return;
+		if (!hasDragged) {
+			const moved = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
+			if (moved <= DRAG_THRESHOLD_PX) return;
+			hasDragged = true;
+			suppressNextClick = true;
+		}
+		const rect = svgElement.getBoundingClientRect();
+		if (rect.width <= 0 || rect.height <= 0) return;
+		const dx = (e.clientX - startPan.x) * (viewBox.w / rect.width);
+		const dy = (e.clientY - startPan.y) * (viewBox.h / rect.height);
 
-		viewBox.x -= dx;
-		viewBox.y -= dy;
+		viewBox = {
+			...viewBox,
+			x: viewBox.x - dx,
+			y: viewBox.y - dy
+		};
 
 		startPan = { x: e.clientX, y: e.clientY };
 	}
 
 	function handleMouseUp() {
+		if (hasDragged) {
+			suppressNextClick = true;
+			setTimeout(() => {
+				suppressNextClick = false;
+			}, 0);
+		}
 		isDragging = false;
+		hasDragged = false;
+	}
+
+	function handleSvgClickCapture(e: MouseEvent) {
+		if (suppressNextClick) {
+			e.stopPropagation();
+			e.preventDefault();
+			suppressNextClick = false;
+		}
 	}
 
 	function getTouchDist(t1: Touch, t2: Touch): number {
@@ -118,7 +210,9 @@
 	function handleTouchStart(e: TouchEvent) {
 		if (e.touches.length === 1) {
 			isDragging = true;
+			hasDragged = false;
 			lastPinchDist = null;
+			downPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
 			startPan = { x: e.touches[0].clientX, y: e.touches[0].clientY };
 		} else if (e.touches.length === 2) {
 			isDragging = false;
@@ -128,27 +222,35 @@
 
 	function handleTouchMove(e: TouchEvent) {
 		if (!svgElement) return;
+		const rect = svgElement.getBoundingClientRect();
+		if (rect.width <= 0 || rect.height <= 0) return;
+
 		if (e.touches.length === 1 && isDragging) {
 			e.preventDefault();
-			const dx = (e.touches[0].clientX - startPan.x) * (viewBox.w / svgElement.clientWidth);
-			const dy = (e.touches[0].clientY - startPan.y) * (viewBox.h / svgElement.clientHeight);
-			viewBox.x -= dx;
-			viewBox.y -= dy;
+			if (!hasDragged) {
+				const moved = Math.hypot(
+					e.touches[0].clientX - downPos.x,
+					e.touches[0].clientY - downPos.y
+				);
+				if (moved <= DRAG_THRESHOLD_PX) return;
+				hasDragged = true;
+			}
+			const dx = (e.touches[0].clientX - startPan.x) * (viewBox.w / rect.width);
+			const dy = (e.touches[0].clientY - startPan.y) * (viewBox.h / rect.height);
+			viewBox = {
+				...viewBox,
+				x: viewBox.x - dx,
+				y: viewBox.y - dy
+			};
 			startPan = { x: e.touches[0].clientX, y: e.touches[0].clientY };
 		} else if (e.touches.length === 2 && lastPinchDist !== null) {
 			e.preventDefault();
 			const dist = getTouchDist(e.touches[0], e.touches[1]);
 			if (dist > 0) {
 				const scaleFactor = lastPinchDist / dist;
-				const rect = svgElement.getBoundingClientRect();
-				const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-				const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-				const vx = viewBox.x + (cx / svgElement.clientWidth) * viewBox.w;
-				const vy = viewBox.y + (cy / svgElement.clientHeight) * viewBox.h;
-				viewBox.w *= scaleFactor;
-				viewBox.h *= scaleFactor;
-				viewBox.x = vx - (cx / svgElement.clientWidth) * viewBox.w;
-				viewBox.y = vy - (cy / svgElement.clientHeight) * viewBox.h;
+				const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+				const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+				zoomAtClientPoint(scaleFactor, cx, cy);
 				lastPinchDist = dist;
 			}
 		}
@@ -156,37 +258,27 @@
 
 	function handleTouchEnd() {
 		isDragging = false;
+		hasDragged = false;
 		lastPinchDist = null;
 	}
 
 	function handleWheel(e: WheelEvent) {
 		e.preventDefault();
-		const scaleFactor = e.deltaY > 0 ? 1.1 : 0.9;
-
-		const mouseX = e.offsetX;
-		const mouseY = e.offsetY;
-
-		// Calculate mouse position relative to viewBox
-		const vx = viewBox.x + (mouseX / svgElement.clientWidth) * viewBox.w;
-		const vy = viewBox.y + (mouseY / svgElement.clientHeight) * viewBox.h;
-
-		viewBox.w *= scaleFactor;
-		viewBox.h *= scaleFactor;
-
-		// Maintain mouse position
-		viewBox.x = vx - (mouseX / svgElement.clientWidth) * viewBox.w;
-		viewBox.y = vy - (mouseY / svgElement.clientHeight) * viewBox.h;
+		const scaleFactor = e.deltaY > 0 ? 1.12 : 0.89;
+		zoomAtClientPoint(scaleFactor, e.clientX, e.clientY);
 	}
 </script>
 
 <div
 	class="border-base-300 bg-base-100 relative h-full w-full overflow-hidden rounded-xl border shadow-inner"
 >
+	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
 	<svg
 		bind:this={svgElement}
 		class="h-full w-full cursor-move touch-none bg-base-300"
 		viewBox="{viewBox.x} {viewBox.y} {viewBox.w} {viewBox.h}"
 		role="application"
+		on:click|capture={handleSvgClickCapture}
 		on:mousedown={handleMouseDown}
 		on:mousemove={handleMouseMove}
 		on:mouseup={handleMouseUp}
@@ -320,10 +412,39 @@
 		{/if}
 	</svg>
 
-	<div
-		class="bg-base-300/80 pointer-events-none absolute bottom-4 right-4 rounded p-2 text-xs opacity-50"
-	>
-		Scroll to Zoom • Drag to Pan
+	<div class="absolute bottom-4 right-4 flex items-center gap-1.5">
+		<div class="bg-base-300/80 pointer-events-none hidden rounded px-2 py-1 text-xs opacity-60 sm:block">
+			Scroll to Zoom • Drag to Pan
+		</div>
+		<div class="join border-base-content/10 bg-base-100/90 border shadow backdrop-blur">
+			<button
+				type="button"
+				class="btn btn-xs btn-ghost join-item"
+				title="Zoom In"
+				aria-label="Zoom in"
+				on:click={() => zoomByCenter(0.8)}
+			>
+				+
+			</button>
+			<button
+				type="button"
+				class="btn btn-xs btn-ghost join-item"
+				title="Zoom Out"
+				aria-label="Zoom out"
+				on:click={() => zoomByCenter(1.25)}
+			>
+				−
+			</button>
+			<button
+				type="button"
+				class="btn btn-xs btn-ghost join-item"
+				title="Reset / Fit Map"
+				aria-label="Fit map to view"
+				on:click={resetView}
+			>
+				Fit
+			</button>
+		</div>
 	</div>
 
 	{#if showLegend}
