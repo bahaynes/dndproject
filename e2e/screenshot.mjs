@@ -1,20 +1,26 @@
 /**
  * Quick visual check script — takes screenshots of key pages.
- * Usage: node screenshot.mjs
- * Output: /tmp/screenshots/
+ * Usage: DEV_LOGIN_SECRET=... node screenshot.mjs
+ * Env:   BASE_URL (default http://localhost:5173), BACKEND_URL (default http://localhost:8000)
+ * Output: /tmp/dnd-screenshots/
  */
 import { chromium } from 'playwright';
 import { mkdirSync } from 'fs';
 
-const FRONTEND = 'http://localhost:5173';
-const BACKEND  = 'http://localhost:8000';
+const FRONTEND = process.env.BASE_URL ?? 'http://localhost:5173';
+const BACKEND  = process.env.BACKEND_URL ?? 'http://localhost:8000';
+const DEV_LOGIN_SECRET = process.env.DEV_LOGIN_SECRET ?? '';
+if (!DEV_LOGIN_SECRET) {
+  console.error('DEV_LOGIN_SECRET is not set.');
+  process.exit(1);
+}
 const OUT      = '/tmp/dnd-screenshots';
 mkdirSync(OUT, { recursive: true });
 
 async function getToken(role) {
   const r = await fetch(`${BACKEND}/api/auth/dev-token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Dev-Login-Secret': DEV_LOGIN_SECRET },
     body: JSON.stringify({
       discord_id: `screenshot_${role}_001`,
       username: role === 'admin' ? 'Screenshot Admin' : 'Screenshot Player',

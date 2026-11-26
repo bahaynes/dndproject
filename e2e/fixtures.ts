@@ -1,6 +1,7 @@
 import { test as base, type Browser, type BrowserContext, type Page } from '@playwright/test';
 
 const BACKEND_URL = process.env.BACKEND_URL ?? 'http://localhost:8000';
+const DEV_LOGIN_SECRET = process.env.DEV_LOGIN_SECRET ?? '';
 
 // Fixed identifiers so test data is idempotent across runs
 const E2E_CAMPAIGN_GUILD_ID = 'e2e-test-guild-001';
@@ -19,9 +20,15 @@ interface DevTokenResponse {
  * for a test user, creating the campaign and user if they don't exist.
  */
 async function getDevToken(role: AuthRole): Promise<DevTokenResponse> {
+  if (!DEV_LOGIN_SECRET) {
+    throw new Error(
+      'DEV_LOGIN_SECRET is not set. Export it (run_e2e.sh reads it from .env), ' +
+        'or for a PR preview: gcloud secrets versions access latest --secret=dnd-dev-login-secret',
+    );
+  }
   const response = await fetch(`${BACKEND_URL}/api/auth/dev-token`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Dev-Login-Secret': DEV_LOGIN_SECRET },
     body: JSON.stringify({
       discord_id: `e2e_${role}_001`,
       username: role === 'admin' ? 'E2E Admin' : 'E2E Player',
@@ -36,7 +43,8 @@ async function getDevToken(role: AuthRole): Promise<DevTokenResponse> {
     throw new Error(
       `dev-token request failed (${response.status}): ${body}\n` +
         'Is the pod running? ./kube/dev.sh\n' +
-        'Is APP_ENV set to "production"? (dev-token is disabled in production)',
+        'Is APP_ENV set to "production"? (dev-token is disabled in production)\n' +
+        'A 404 also means DEV_LOGIN_SECRET does not match the server.',
     );
   }
 
