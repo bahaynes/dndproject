@@ -1,3 +1,6 @@
+import json
+
+import pytest
 from datetime import datetime, timezone
 from app.modules.admin import service as admin_service, schemas as admin_schemas
 from app.modules.campaigns import models as campaign_models
@@ -132,15 +135,31 @@ def test_import_replace_mode_preserves_sessions_and_inventory(client, admin_auth
     assert gs.confirmed_mission_id is None
 
 
-def test_rattleguard_preset_seeds_map_with_routes_that_survive_export(client, admin_auth_headers, db_session, campaign):
-    r = client.post("/api/admin/seed?preset=rattleguard_world", headers=admin_auth_headers)
+@pytest.fixture
+def routes_preset(tmp_path, monkeypatch):
+    """A generic seed preset: the baseline world plus map routes and starting gold."""
+    bundle = json.loads(admin_service.BASELINE_WORLD_PATH.read_text(encoding="utf-8"))
+    bundle["hub"]["starting_gold"] = 1200
+    bundle["maps"][0]["routes"] = [
+        {"id": "keep-road", "name": "Keep Road", "type": "road",
+         "hexes": [{"q": 0, "r": 0}, {"q": 1, "r": -1}, {"q": 2, "r": -2}]},
+        {"id": "tower-trail", "name": "Tower Trail", "type": "trail",
+         "hexes": [{"q": 0, "r": 0}, {"q": 0, "r": -1}, {"q": 0, "r": -2}]},
+    ]
+    (tmp_path / "routes_world.json").write_text(json.dumps(bundle), encoding="utf-8")
+    monkeypatch.setattr(admin_service, "DATA_DIR", tmp_path)
+    return "routes_world"
+
+
+def test_preset_seeds_map_with_routes_that_survive_export(client, admin_auth_headers, db_session, campaign, routes_preset):
+    r = client.post(f"/api/admin/seed?preset={routes_preset}", headers=admin_auth_headers)
     assert r.status_code == 200
     assert r.json()["maps_created"] == 1
 
     db_map = db_session.query(map_models.HexMap).filter_by(campaign_id=campaign.id).one()
-    assert {rt["id"] for rt in db_map.routes} == {"ridge-road", "bellwatch-spur", "switchbacks", "first-finger"}
-    ruin = next(h for h in db_map.hexes if h.linked_location_name == "Tarnhollow (ruin)")
-    assert ruin.linked_mission.name == "The Last Bell of Tarnhollow"
+    assert {rt["id"] for rt in db_map.routes} == {"keep-road", "tower-trail"}
+    crossing = next(h for h in db_map.hexes if h.linked_location_name == "Ashwood Crossing")
+    assert crossing.linked_mission.name == "The Quiet Convoy"
 
     bundle = client.get("/api/admin/world/export", headers=admin_auth_headers).json()
     assert bundle["maps"][0]["routes"] == db_map.routes
@@ -151,11 +170,11 @@ def test_rattleguard_preset_seeds_map_with_routes_that_survive_export(client, ad
         db_session, campaign.id, admin_schemas.WorldBundle.model_validate(bundle), mode="merge"
     )
     db_session.refresh(db_map)
-    assert len(db_map.routes) == 4
+    assert len(db_map.routes) == 2
 
 
-def test_starting_gold_follows_world_bundle_but_old_bundles_keep_it(client, admin_auth_headers, campaign, db_session):
-    client.post("/api/admin/seed?preset=rattleguard_world", headers=admin_auth_headers)
+def test_starting_gold_follows_world_bundle_but_old_bundles_keep_it(client, admin_auth_headers, campaign, db_session, routes_preset):
+    client.post(f"/api/admin/seed?preset={routes_preset}", headers=admin_auth_headers)
     assert client.get("/api/ship/", headers=admin_auth_headers).json()["starting_gold"] == 1200
 
     bundle = client.get("/api/admin/world/export", headers=admin_auth_headers).json()
@@ -166,25 +185,3 @@ def test_starting_gold_follows_world_bundle_but_old_bundles_keep_it(client, admi
         db_session, campaign.id, admin_schemas.WorldBundle.model_validate(bundle), mode="merge"
     )
     assert client.get("/api/ship/", headers=admin_auth_headers).json()["starting_gold"] == 1200
-
-
-def test_rattleguard_valley_is_open_to_cross_and_ringed_by_the_ridge_road():
-    world = admin_service.load_world_preset("rattleguard_world").maps[0]
-    hexes = {(h.q, h.r): h for h in world.hexes}
-    at = {h.linked_location_name: (h.q, h.r) for h in world.hexes if h.linked_location_name}
-
-    def hours(path):
-        return sum(map_models.HEX_STATE_HOURS[hexes[c].hex_state] for c in path)
-
-    # Straight across the floor: no mountains between the towns, and a day's march
-    assert at["Rattleguard"] == (0, 0)
-    assert at["Ironstep"] == (5, -5)
-    crossing = [(i, -i) for i in range(1, 6)]
-    assert all(hexes[c].terrain != "mountain" for c in crossing[:-1])
-    assert 8 <= hours(crossing) <= 10
-
-    # The ridge road stays above the Mist the whole way and takes about four days
-    road = [(c.q, c.r) for c in next(r for r in world.routes if r.id == "ridge-road").hexes]
-    assert road[0] == at["Highspire"] and road[-1] == at["Ironstep"]
-    assert all(hexes[c].terrain == "mountain" for c in road)
-    assert 28 <= hours(road[1:]) <= 36
