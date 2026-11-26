@@ -81,9 +81,11 @@
 </script>
 
 <div class="flex min-h-[calc(100vh-64px)] items-center justify-center bg-base-100">
-	<div class="mx-auto w-full max-w-5xl px-6 py-24 text-center xl:max-w-screen-xl 2xl:max-w-screen-2xl">
+	<div
+		class="mx-auto w-full max-w-5xl px-6 py-24 text-center xl:max-w-screen-xl 2xl:max-w-screen-2xl"
+	>
 		<h1
-			class="mb-8 font-[var(--font-cinzel)] text-6xl leading-tight font-bold text-primary md:text-8xl 2xl:text-9xl"
+			class="mb-8 text-6xl leading-tight font-[var(--font-cinzel)] font-bold text-primary md:text-8xl 2xl:text-9xl"
 		>
 			The Board<br />Awaits.
 		</h1>
@@ -99,7 +101,7 @@
 			<a
 				href="{API_BASE_URL}/auth/discord/login"
 				data-sveltekit-reload
-				class="btn btn-lg gap-3 px-14 font-bold text-white shadow-2xl"
+				class="btn gap-3 px-14 font-bold text-white shadow-2xl btn-lg"
 				style="background-color: #5865F2; border-color: #5865F2;"
 			>
 				<svg
@@ -114,7 +116,7 @@
 				</svg>
 				Login with Discord
 			</a>
-			<a href="/docs" class="btn btn-lg btn-outline">How It Works</a>
+			<a href="/docs" class="btn btn-outline btn-lg">How It Works</a>
 		</div>
 
 		{#if isDev}
@@ -123,7 +125,7 @@
 					Dev Login (No Discord Required)
 				</p>
 				{#if devError}
-					<div role="alert" class="alert alert-error mb-3 py-2 text-left text-sm">
+					<div role="alert" class="mb-3 alert py-2 text-left text-sm alert-error">
 						{devError}
 					</div>
 				{/if}
@@ -145,7 +147,7 @@
 							autocomplete="current-password"
 							placeholder="Dev login secret"
 							bind:value={devSecret}
-							class="input input-bordered input-sm w-full"
+							class="input-bordered input input-sm w-full"
 						/>
 					</label>
 					<div class="grid grid-cols-2 gap-3">
@@ -161,7 +163,7 @@
 							type="submit"
 							disabled={devLoading || !devSecret}
 							on:click={() => (devRole = 'admin')}
-							class="btn btn-outline btn-secondary btn-sm"
+							class="btn btn-outline btn-sm btn-secondary"
 						>
 							Dev DM (Admin)
 						</button>

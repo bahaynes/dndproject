@@ -87,7 +87,9 @@ describe('Login Page', () => {
 			expect(goto).toHaveBeenCalledWith('/dashboard');
 		});
 
-		const devTokenCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/auth/dev-token'));
+		const devTokenCall = fetchMock.mock.calls.find(([url]) =>
+			String(url).endsWith('/auth/dev-token')
+		);
 		expect(devTokenCall?.[1]?.headers).toMatchObject({ 'X-Dev-Login-Secret': 'the-dev-secret' });
 		for (const [, value] of setItem.mock.calls) {
 			expect(String(value)).not.toContain('the-dev-secret');
@@ -102,7 +104,11 @@ describe('Login Page', () => {
 					return Promise.resolve({ ok: true, json: async () => ({ dev_login_enabled: true }) });
 				}
 				if (url.endsWith('/auth/dev-token')) {
-					return Promise.resolve({ ok: false, status: 404, json: async () => ({ detail: 'Not found' }) });
+					return Promise.resolve({
+						ok: false,
+						status: 404,
+						json: async () => ({ detail: 'Not found' })
+					});
 				}
 				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
 			})
