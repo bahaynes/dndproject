@@ -8,7 +8,7 @@ from urllib.parse import urlencode, urlparse
 
 import httpx
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from pydantic import BaseModel
@@ -30,7 +30,19 @@ _PR_CALLBACK_HOST_RE = re.compile(
 
 
 def _dev_login_allowed(settings) -> bool:
-    return bool(settings.ENABLE_DEV_TOKEN and settings.APP_ENV != "production")
+    return bool(
+        settings.ENABLE_DEV_TOKEN
+        and settings.APP_ENV != "production"
+        and len(settings.DEV_LOGIN_SECRET.strip()) >= 32
+    )
+
+
+def _dev_login_secret_ok(settings, provided: Optional[str]) -> bool:
+    if not provided:
+        return False
+    return hmac.compare_digest(
+        provided.encode("utf-8"), settings.DEV_LOGIN_SECRET.strip().encode("utf-8")
+    )
 
 
 def _is_safe_return_to(return_to: str, settings) -> bool:
@@ -401,14 +413,20 @@ async def dev_status():
 async def dev_token(
     request: DevTokenRequest,
     db: Session = Depends(get_db),
+    x_dev_login_secret: Optional[str] = Header(default=None, alias="X-Dev-Login-Secret"),
 ):
     """
     Dev-only endpoint for e2e testing. Returns a valid campaign-scoped JWT,
     creating the campaign and user in the database if they don't exist.
-    Disabled (404) unless ENABLE_DEV_TOKEN=true and APP_ENV != production.
+    Disabled (404) unless ENABLE_DEV_TOKEN=true, APP_ENV != production, and the
+    X-Dev-Login-Secret header matches DEV_LOGIN_SECRET. A wrong or missing secret
+    also gets 404, so the endpoint's existence isn't confirmed.
     """
     settings = get_settings()
     if not _dev_login_allowed(settings):
+        raise HTTPException(status_code=404, detail="Not found")
+    if not _dev_login_secret_ok(settings, x_dev_login_secret):
+        logger.warning("Dev login rejected: missing or wrong secret")
         raise HTTPException(status_code=404, detail="Not found")
 
     from ..campaigns import schemas as campaign_schemas

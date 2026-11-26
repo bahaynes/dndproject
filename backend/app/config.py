@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     # Environment name — set to "production" to disable dev-only endpoints like /api/auth/dev-token.
     APP_ENV: str = "development"
     ENABLE_DEV_TOKEN: bool = False
+    # Required (>= 32 chars) whenever ENABLE_DEV_TOKEN is true; sent as X-Dev-Login-Secret.
+    DEV_LOGIN_SECRET: str = ""
 
     # Additional comma-separated CORS origins beyond FRONTEND_URL
     CORS_ORIGINS: str = ""
@@ -90,6 +92,13 @@ class Settings(BaseSettings):
             if self.ENABLE_DEV_TOKEN:
                 logger.critical("ENABLE_DEV_TOKEN cannot be enabled when APP_ENV=production.")
                 raise ValueError("ENABLE_DEV_TOKEN cannot be true when APP_ENV=production.")
+
+        # Dev login always needs its shared secret — fail closed
+        if self.ENABLE_DEV_TOKEN and len(self.DEV_LOGIN_SECRET.strip()) < 32:
+            logger.critical("ENABLE_DEV_TOKEN is true but DEV_LOGIN_SECRET is missing or too short.")
+            raise ValueError(
+                "DEV_LOGIN_SECRET must be set (>= 32 characters) when ENABLE_DEV_TOKEN=true."
+            )
 
         # Insecure default secret key (non-production warning)
         if self.SECRET_KEY == _DEFAULT_SECRET_KEY:
