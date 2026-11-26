@@ -44,7 +44,7 @@ Both branches of the deploy step need changes. `USE_GCP_SECRET_MANAGER` picks be
 
 ### Getting the preview secret
 
-- `gcloud secrets versions access latest --secret=dnd-dev-login-secret --project=<project>` puts it in `DEV_LOGIN_SECRET` for one shell or one Playwright run.
+- `export DEV_LOGIN_SECRET="$(gcloud secrets versions access latest --secret=dnd-dev-login-secret --project=<project>)"` sets it for one shell; `run_e2e.sh` then targets the preview when `BASE_URL`/`BACKEND_URL` are also exported.
 - Don't write the **preview** secret into `.env` or any tracked file.
 
 ### E2E and Playwright
@@ -68,7 +68,7 @@ Both branches of the deploy step need changes. `USE_GCP_SECRET_MANAGER` picks be
 2. Give the Cloud Run backend's service account `roles/secretmanager.secretAccessor` on that secret, the same as the existing `dnd-*` secrets.
 3. If the env-var deploy path is in use, also add `DEV_LOGIN_SECRET` as a GitHub Actions secret.
 
-**Rotation:** add a new secret version and redeploy open previews. The old value stops working on each preview once it redeploys. One secret covers every preview, so a leak opens all of them until rotation.
+**Rotation:** add a new secret version (Secret Manager path) and, if the env-var path is in use (`USE_GCP_SECRET_MANAGER=false`), update the GitHub `DEV_LOGIN_SECRET` to the same new value first; then redeploy open previews. The old value stops working on each preview once it redeploys. One secret covers every preview, so a leak opens all of them until rotation.
 
 ## Build order (one commit each)
 

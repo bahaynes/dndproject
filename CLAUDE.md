@@ -57,13 +57,13 @@ cd backend && uv run pytest tests/        # Backend only
 cd backend && uv run pytest tests/test_main.py  # Single test file
 cd frontend && pnpm test:ci               # Frontend only (non-interactive)
 
-# E2E functional tests (requires local pod running via ./kube/dev.sh):
+# E2E functional tests (local pod via ./kube/dev.sh, or a PR preview; see below):
 ./run_e2e.sh                             # All e2e tests
 ./run_e2e.sh --headed                    # Watch in browser
 ./run_e2e.sh tests/smoke.spec.ts         # Single file
 ```
 
-E2E tests live in `e2e/` and use Playwright against the running pod. Auth is handled via the dev-only `POST /api/auth/dev-token` endpoint: it needs `ENABLE_DEV_TOKEN=true`, `APP_ENV` other than `production`, and an `X-Dev-Login-Secret` header matching `DEV_LOGIN_SECRET` (set it in `.env`; `run_e2e.sh` reads it from there). To run against a PR preview, set `BASE_URL` and `BACKEND_URL` to the preview and get the secret with `gcloud secrets versions access latest --secret=dnd-dev-login-secret`.
+E2E tests live in `e2e/` and use Playwright against the running pod. Auth is handled via the dev-only `POST /api/auth/dev-token` endpoint: it needs `ENABLE_DEV_TOKEN=true`, `APP_ENV` other than `production`, and an `X-Dev-Login-Secret` header matching `DEV_LOGIN_SECRET` (set it in `.env`; `run_e2e.sh` reads it from there). To run against a PR preview, export `BASE_URL` and `BACKEND_URL` pointing at the preview and `export DEV_LOGIN_SECRET="$(gcloud secrets versions access latest --secret=dnd-dev-login-secret --project=<project>)"`, then run `./run_e2e.sh` as usual (it checks those URLs instead of localhost and skips `.env`).
 
 First-time e2e setup:
 ```bash

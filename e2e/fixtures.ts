@@ -23,7 +23,7 @@ async function getDevToken(role: AuthRole): Promise<DevTokenResponse> {
   if (!DEV_LOGIN_SECRET) {
     throw new Error(
       'DEV_LOGIN_SECRET is not set. Export it (run_e2e.sh reads it from .env), ' +
-        'or for a PR preview: gcloud secrets versions access latest --secret=dnd-dev-login-secret',
+        'or for a PR preview: export DEV_LOGIN_SECRET="$(gcloud secrets versions access latest --secret=dnd-dev-login-secret)"',
     );
   }
   const response = await fetch(`${BACKEND_URL}/api/auth/dev-token`, {

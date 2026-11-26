@@ -29,6 +29,9 @@ async function getToken(role) {
       campaign_name: 'Meridian Crew',
     }),
   });
+  if (!r.ok) {
+    throw new Error(`dev-token failed for ${role}: HTTP ${r.status} (wrong DEV_LOGIN_SECRET or dev login off?)`);
+  }
   const data = await r.json();
   return data.access_token;
 }
