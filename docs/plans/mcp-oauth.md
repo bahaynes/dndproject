@@ -1,6 +1,6 @@
 # Plan: MCP server with OAuth
 
-Status: **draft; protected-auth section approved by Ben 2026-11-26.** Nothing here is built.
+Status: **draft; protected-auth section approved by Ben 2026-11-26; questions 1–5 decided; lifetime numbers and question 6 still open.** Nothing here is built.
 
 ## Goal
 
@@ -55,19 +55,25 @@ Public origin: `https://westmarches.bahaynes.com`. The frontend Caddy (`Caddyfil
 
 ### 2. Authorization server
 
+**Library: Authlib** (*decided 2026-11-26*). The MCP SDK's own authorization server (`auth_server_provider=`) is out: its docs say it "predates the AS/RS separation that the MCP authorization spec is built around. New servers should not reach for it." The SDK stays as the resource server only. Python has no FastAPI-blessed authorization server, so we use the most widely used maintained one: Authlib (BSD licence, frequent releases).
+
+- **Adapter.** Authlib ships server integrations only for Flask and Django. We write a small FastAPI adapter: a subclass of its framework-agnostic `AuthorizationServer` that turns a Starlette request into an Authlib request and an Authlib response into a Starlette response. Its Flask integration is the model to copy. Keep the adapter in its own module with its own tests.
+- **Authlib provides:** the authorization-code and refresh-token grants, PKCE (`CodeChallenge`, with PKCE required for every client; check that it can be held to S256 only, or reject `plain` ourselves), RFC 7009 revocation, RFC 8414 metadata and RFC 9207 `iss` (`IssuerParameter`).
+- **We still write:** CIMD client loading (Authlib's client lookup calls our function, which fetches and validates the document), the `resource` binding (RFC 8707: Authlib's server doesn't cover it, so we check `resource` at authorize and token and store it on the code and grant), refresh rotation with reuse detection (in the grant's storage hooks), the Discord leg, the consent page and the campaign role check.
+- **Version:** pin the latest stable 1.x release on PyPI (not a beta) when building, and check the changelog for the PKCE API. `CodeChallenge(required=True)` is deprecated in favour of overriding `is_code_challenge_required`.
+
 **`GET /.well-known/oauth-authorization-server`** returns `issuer`, `authorization_endpoint`, `token_endpoint`, `revocation_endpoint`, `response_types_supported: ["code"]`, `grant_types_supported: ["authorization_code", "refresh_token"]`, `code_challenge_methods_supported: ["S256"]` (clients refuse to continue without it), `token_endpoint_auth_methods_supported: ["none"]`, `scopes_supported`, `client_id_metadata_document_supported: true`, and `authorization_response_iss_parameter_supported: true`.
 
 **`GET /api/oauth/authorize`**
 
 1. Validate the client:
-   - **CIMD** (the preferred route): `client_id` is an HTTPS URL. Fetch it (with timeout, size cap and a short cache), require its `client_id` to equal the URL exactly, and require `redirect_uri` to be in its `redirect_uris`.
-   - Or a registered client, if `/register` exists.
+   - **CIMD only** (*decided 2026-11-26*; no `/register`): `client_id` is an HTTPS URL. Fetch it (with timeout, size cap and a short cache), require its `client_id` to equal the URL exactly, and require `redirect_uri` to be in its `redirect_uris`. Refuse URLs that resolve to private, loopback or link-local addresses (SSRF), and don't follow redirects to them.
    - `redirect_uri` must be HTTPS or `http://localhost`/`127.0.0.1`.
    - If the client or the redirect URI is invalid, show an error page and **do not redirect**.
 2. Require `code_challenge` with `code_challenge_method=S256`, require `resource == <origin>/api/mcp`, and check the requested `scope` against `scopes_supported`.
 3. Store a pending authorization row keyed by a random ID, then send the user through Discord login (step 4).
 4. **Discord leg:** a new `/api/oauth/discord/start` and `/api/oauth/discord/callback`, separate from the frontend's `/api/auth/discord/*`. They use the same Discord application with its own `state` and nonce cookie. Discord gives identity (`identify`, plus `guilds` to list campaigns).
-   - Needs a second redirect URI in the Discord developer portal (Ben), or routing through the existing `proxy-callback` pattern.
+   - **Second redirect URI** (*decided 2026-11-26*), not `proxy-callback`: Ben adds `https://westmarches.bahaynes.com/api/oauth/discord/callback` (and `http://localhost:8000/api/oauth/discord/callback` for local dev) in the Discord developer portal. `_is_allowed_proxy_callback` stays unchanged. As a result, MCP login doesn't work on PR previews; preview testing goes through Playwright and dev login instead.
 5. **Consent page**, server-rendered HTML from the backend (not SvelteKit, so the frontend auth contract stays untouched). It shows:
    - the client name and the **redirect hostname** (the spec requires it), with an extra warning when the redirect is localhost;
    - a campaign picker, listing only campaigns where the shared role check says `admin`;
@@ -87,7 +93,7 @@ Public origin: `https://westmarches.bahaynes.com`. The frontend Caddy (`Caddyfil
 
 ### 3. Data (Alembic migration)
 
-- `oauth_clients`: client_id, kind (`cimd` or `registered`), name, redirect_uris, metadata fetched-at.
+- `oauth_clients`: a cache of fetched CIMD documents: client_id (the URL), name, redirect_uris, fetched_at.
 - `oauth_pending_authorizations`: id, client_id, redirect_uri, state, code_challenge, resource, scopes, user_id (null until login), campaign_id, expires_at.
 - `oauth_codes`: code hash, grant fields, expires_at, used_at.
 - `oauth_grants`: id, user_id, campaign_id, client_id, scopes, created_at, revoked_at. One row per connection, which a "connected apps" list can show and revoke.
@@ -132,7 +138,7 @@ Tools call the existing service functions, not the HTTP routes, so validation an
 
 1. Refactor the guild-role check into a service function; existing tests unchanged.
 2. Migration and models for the OAuth tables, plus `missions.foundry_module`.
-3. AS metadata, `/authorize` (client validation, PKCE, pending row), Discord leg, consent page, code issue.
+3. Authlib FastAPI adapter, with tests. Then AS metadata, `/authorize` (CIMD client loading, PKCE, `resource`, pending row), Discord leg, consent page, code issue.
 4. `/token` (code and refresh with rotation and reuse detection) and `/revoke`.
 5. Mount `MCPServer` with the verifier, `transport_security` and stateless mode; Caddy `.well-known` routing; read tools.
 6. Write tools, the admin re-check, and the forced-hidden rule.
@@ -153,10 +159,11 @@ Tools call the existing service functions, not the HTTP routes, so validation an
 ## Open questions for Ben
 
 1. **Token lifetimes.** *Decided (2026-11-26):* longer access tokens (revocation is already checked per request via the grant row). Lifetimes are settings; the numbers are still Ben's to pick.
-2. **Client registration.** *Decided (2026-11-26):* CIMD only. No `/register`. Clients that only do DCR are unsupported.
-3. **Discord redirect.** Ben leans towards reusing `proxy-callback`, so PR previews get a working MCP. Not final.
+2. **Client registration.** *Decided (2026-11-26):* CIMD only. No `/register`. Clients that only do DCR are unsupported. Still confirm with a logging stub that current Claude Code and claude.ai send a CIMD `client_id`; if one of them doesn't, it can't connect.
+3. **Discord redirect.** *Decided (2026-11-26):* a second redirect URI. MCP login won't work on PR previews.
 4. **Players.** *Decided (2026-11-26):* GMs only. `board:read` for players can come later as an additive change.
-5. **Library vs hand-rolled.** The SDK's built-in authorization-server helper (`auth_server_provider=`) is discouraged for new servers. Use a maintained OAuth library for the grant and PKCE handling, or hand-write these few endpoints with tests? Proposal: check whether Authlib's server components fit FastAPI cleanly; if not, hand-write.
+5. **Library.** *Decided (2026-11-26):* Authlib, with a small FastAPI adapter (see section 2).
+6. **Concurrent refresh.** Several Cloud Run instances can get two refreshes with the same token at once, and reuse detection would then revoke the grant. Allow a short grace window for the token just replaced (how long is Ben's call), or accept the occasional forced re-login?
 
 ## References
 
