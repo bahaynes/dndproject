@@ -140,4 +140,8 @@ make docs-build
 
 ## License
 
-MIT
+Copyright (C) 2025-2026 Ben Haynes.
+
+This project is licensed under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later). See [LICENSE](LICENSE).
+
+In short: you may use, modify and host it, but if you run a modified version as a service for other people, you must make your modified source available to them under the same license.
