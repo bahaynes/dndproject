@@ -74,8 +74,8 @@ class Settings(BaseSettings):
     MCP_REFRESH_REUSE_GRACE_SECONDS: int = 0
     # Defaults to <PUBLIC_ORIGIN>/api/oauth/discord/callback; must be registered in the Discord portal.
     MCP_DISCORD_REDIRECT_URI: str = ""
-    # Extra Host header values accepted at /api/mcp (comma-separated), e.g. the Cloud Run *.run.app host
-    # that Caddy sets. The PUBLIC_ORIGIN host and localhost are always allowed.
+    # Extra Host header values accepted at /api/mcp (comma-separated; "*.run.app" matches any subdomain),
+    # e.g. the Cloud Run host that Caddy sets. The PUBLIC_ORIGIN host and localhost are always allowed.
     MCP_ALLOWED_HOSTS: str = ""
     # Dev/test only: let client ID metadata documents live on http:// or private addresses.
     MCP_CIMD_ALLOW_INSECURE: bool = False
@@ -96,15 +96,16 @@ class Settings(BaseSettings):
 
     @property
     def mcp_enabled(self) -> bool:
-        """Production needs MCP_TOKEN_SECRET; elsewhere a derived dev key stands in."""
-        return bool(self.MCP_TOKEN_SECRET) or self.APP_ENV != "production"
+        """Needs MCP_TOKEN_SECRET, except in local development where a derived dev key stands in.
+        PR previews stay off: MCP login can't work there (no registered Discord redirect)."""
+        return bool(self.MCP_TOKEN_SECRET) or self.APP_ENV == "development"
 
     @property
     def mcp_token_secret(self) -> str:
         """The MCP signing key. Outside production an unset key falls back to a derived dev key."""
         if self.MCP_TOKEN_SECRET:
             return self.MCP_TOKEN_SECRET
-        if self.APP_ENV == "production":
+        if self.APP_ENV != "development":
             raise RuntimeError("MCP is disabled: MCP_TOKEN_SECRET is unset")
         return "mcp-dev-only:" + self.SECRET_KEY
 

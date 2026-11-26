@@ -1,3 +1,4 @@
+import contextlib
 import hmac
 import time
 import uuid
@@ -5,6 +6,7 @@ from collections import defaultdict, deque
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.routing import Route
 
 # Configure structured JSON logging before any other app imports so that
 # module-level startup code (e.g. Settings validation) uses the JSON formatter.
@@ -40,10 +42,20 @@ from .modules.debug import router as debug_router
 from .modules.ship import router as ship_router
 from .modules.ledger import router as ledger_router
 from .modules.oauth import router as oauth_router
+from .modules.mcp import server as mcp_server
 
 _settings = get_settings()
 
+
+@contextlib.asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # The MCP session manager must run for the app's lifetime; a mounted sub-app's lifespan never runs.
+    async with mcp_server.endpoint.run():
+        yield
+
+
 app = FastAPI(
+    lifespan=lifespan,
     docs_url=None if _settings.APP_ENV == "production" else "/docs",
     redoc_url=None if _settings.APP_ENV == "production" else "/redoc",
     openapi_url=None if _settings.APP_ENV == "production" else "/openapi.json",
@@ -200,3 +212,6 @@ app.include_router(ship_router.router, prefix="/api/ship")
 app.include_router(ledger_router.router, prefix="/api/ledger")
 app.include_router(oauth_router.router, prefix="/api/oauth")
 app.include_router(oauth_router.well_known_router)
+# MCP resource server (streamable HTTP, all methods). A plain Route, not a Mount, so /api/mcp
+# itself matches without a trailing-slash redirect.
+app.router.routes.append(Route("/api/mcp", endpoint=mcp_server.endpoint))
