@@ -1,13 +1,14 @@
 """Server-rendered pages for the MCP authorization flow.
 
 These live in the backend, not SvelteKit, so the frontend auth contract is untouched.
-Actions are plain links carrying the pending ID and its CSRF value: the site CSP has
-``form-action 'self'``, which in Chrome also blocks a form's redirect to Discord or to
-the client, while link navigation is not affected.
+Decisions are same-origin POST forms carrying the pending ID and its CSRF value. The site
+CSP has ``form-action 'self'``, which in Chrome also blocks a form's redirect to Discord or
+to the client, so the POST answers with a continuation page (same origin) that navigates
+there itself. That navigation is a plain GET and never resubmits the decision.
 """
 from html import escape
 from typing import Iterable
-from urllib.parse import urlencode, urlparse
+from urllib.parse import urlparse
 
 from starlette.responses import HTMLResponse
 
@@ -30,10 +31,11 @@ ul { padding-left:1.2rem; }
 code { overflow-wrap:anywhere; }
 .warn { background:var(--warn-bg); color:var(--warn); border-radius:6px; padding:.6rem .8rem; margin:1rem 0; }
 .actions { display:flex; flex-wrap:wrap; gap:.75rem; margin-top:1.25rem; }
-a.btn { display:inline-block; padding:.6rem 1rem; border-radius:6px; text-decoration:none; border:1px solid var(--line);
+form { margin:0; }
+.btn { display:inline-block; font:inherit; cursor:pointer; background:none; padding:.6rem 1rem; border-radius:6px; text-decoration:none; border:1px solid var(--line);
         color:var(--fg); }
-a.btn.primary { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
-.campaigns a.btn { display:block; margin:.5rem 0; }
+.btn.primary { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
+.campaigns .btn { display:block; width:100%; text-align:left; margin:.5rem 0; }
 """
 
 _HEADERS = {
@@ -70,6 +72,24 @@ def _redirect_notice(redirect_uri: str) -> str:
     return html
 
 
+def _form(action: str, fields: dict, label: str, primary: bool = False) -> str:
+    inputs = "".join(
+        f"<input type=\"hidden\" name=\"{escape(k)}\" value=\"{escape(str(v))}\">" for k, v in fields.items()
+    )
+    css = "btn primary" if primary else "btn"
+    return f"<form method=\"post\" action=\"{escape(action)}\">{inputs}<button class=\"{css}\" type=\"submit\">{escape(label)}</button></form>"
+
+
+def continue_page(location: str) -> HTMLResponse:
+    """Navigates to ``location`` (Discord or the client) after a POST, without resubmitting it."""
+    return _page(
+        "Continuing",
+        f"<meta http-equiv=\"refresh\" content=\"0;url={escape(location)}\">"
+        "<h1>Continuing…</h1>"
+        f"<p><a class=\"btn primary\" href=\"{escape(location)}\">Continue</a></p>",
+    )
+
+
 def error_page(message: str, status_code: int = 400) -> HTMLResponse:
     return _page(
         "Can't connect",
@@ -81,8 +101,7 @@ def error_page(message: str, status_code: int = 400) -> HTMLResponse:
 
 def client_consent_page(*, pending_id: str, csrf: str, client_name: str, client_id: str,
                         redirect_uri: str, scopes: list[str]) -> HTMLResponse:
-    approve = "/api/oauth/consent?" + urlencode({"pending": pending_id, "csrf": csrf, "decision": "approve"})
-    deny = "/api/oauth/consent?" + urlencode({"pending": pending_id, "csrf": csrf, "decision": "deny"})
+    fields = {"pending": pending_id, "csrf": csrf}
     body = (
         f"<h1>Connect {escape(client_name)} to West Marches?</h1>"
         f"<p class=\"muted\">App ID: <code>{escape(client_id)}</code></p>"
@@ -92,29 +111,29 @@ def client_consent_page(*, pending_id: str, csrf: str, client_name: str, client_
         "<p class=\"muted\">Next you sign in with Discord and pick the campaign. Only campaigns where you are a GM "
         "can be connected.</p>"
         "<div class=\"actions\">"
-        f"<a class=\"btn primary\" href=\"{escape(approve)}\">Continue with Discord</a>"
-        f"<a class=\"btn\" href=\"{escape(deny)}\">Cancel</a>"
-        "</div>"
+        + _form("/api/oauth/consent", {**fields, "decision": "approve"}, "Continue with Discord", primary=True)
+        + _form("/api/oauth/consent", {**fields, "decision": "deny"}, "Cancel")
+        + "</div>"
     )
     return _page("Connect an app", body)
 
 
 def campaign_picker_page(*, pending_id: str, csrf: str, client_name: str, redirect_uri: str,
                          username: str, scopes: list[str], campaigns: list) -> HTMLResponse:
-    links = "".join(
-        "<a class=\"btn primary\" href=\""
-        + escape("/api/oauth/approve?" + urlencode({"pending": pending_id, "csrf": csrf, "campaign_id": c.id}))
-        + f"\">Connect {escape(c.name)}</a>"
+    fields = {"pending": pending_id, "csrf": csrf}
+    buttons = "".join(
+        _form("/api/oauth/approve", {**fields, "campaign_id": c.id}, f"Connect {c.name}", primary=True)
         for c in campaigns
     )
-    deny = "/api/oauth/approve?" + urlencode({"pending": pending_id, "csrf": csrf, "decision": "deny"})
     body = (
         f"<h1>Which campaign should {escape(client_name)} use?</h1>"
         f"<p class=\"muted\">Signed in as {escape(username)}.</p>"
         f"<p>{escape(client_name)} will be able to:</p>"
         f"{_scope_list(scopes)}"
         f"{_redirect_notice(redirect_uri)}"
-        f"<div class=\"campaigns\">{links}</div>"
-        f"<div class=\"actions\"><a class=\"btn\" href=\"{escape(deny)}\">Cancel</a></div>"
+        f"<div class=\"campaigns\">{buttons}</div>"
+        "<div class=\"actions\">"
+        + _form("/api/oauth/approve", {**fields, "decision": "deny"}, "Cancel")
+        + "</div>"
     )
     return _page("Pick a campaign", body)

@@ -16,6 +16,7 @@ import httpx
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
+from starlette.responses import Response
 from sqlalchemy.orm import Session
 
 from ...config import get_settings
@@ -38,6 +39,7 @@ def require_mcp_enabled():
 router = APIRouter(dependencies=[Depends(require_mcp_enabled)])
 well_known_router = APIRouter(dependencies=[Depends(require_mcp_enabled)])
 
+# One cookie per attempt ("mcp_discord_nonce_<slot>"), so parallel connections don't clobber each other.
 _DISCORD_NONCE_COOKIE = "mcp_discord_nonce"
 _CONSENT_COOKIE_MAX_CLIENTS = 20
 _CONSENT_COOKIE_DAYS = 365
@@ -116,6 +118,19 @@ def _to_response(result: AuthlibResponse):
     return result.to_starlette()
 
 
+def _as_continuation(response: Response) -> Response:
+    """For POST handlers: a 302 off-site becomes a same-origin page that navigates there.
+    The site CSP's form-action 'self' would block the redirect itself in Chrome."""
+    location = response.headers.get("location")
+    if response.status_code not in (302, 303) or not location:
+        return response
+    page = pages.continue_page(location)
+    for key, value in response.raw_headers:
+        if key.lower() == b"set-cookie":
+            page.raw_headers.append((key, value))
+    return page
+
+
 def _cleanup(db: Session) -> None:
     now = utcnow()
     db.query(models.OAuthPendingAuthorization).filter(models.OAuthPendingAuthorization.expires_at < now).delete(
@@ -162,10 +177,12 @@ def _pending_oauth2_request(pending: models.OAuthPendingAuthorization):
 def _redirect_to_discord(pending: models.OAuthPendingAuthorization) -> RedirectResponse:
     settings = get_settings()
     nonce = secrets.token_urlsafe(32)
+    slot = secrets.token_hex(8)
     state = jwt.encode(
         {
             "typ": "mcp_discord_state",
             "pending": pending.id,
+            "slot": slot,
             "nonce": nonce,
             "exp": datetime.datetime.now(datetime.timezone.utc) + timedelta(minutes=10),
         },
@@ -183,7 +200,7 @@ def _redirect_to_discord(pending: models.OAuthPendingAuthorization) -> RedirectR
     })
     response = RedirectResponse(f"https://discord.com/api/oauth2/authorize?{query}", status_code=302)
     response.set_cookie(
-        _DISCORD_NONCE_COOKIE, nonce, max_age=600, httponly=True, secure=_is_prod(), samesite="lax", path="/api/oauth",
+        f"{_DISCORD_NONCE_COOKIE}_{slot}", nonce, max_age=600, httponly=True, secure=_is_prod(), samesite="lax", path="/api/oauth",
     )
     return response
 
@@ -255,7 +272,7 @@ def _remember_consent(db: Session, pending: models.OAuthPendingAuthorization, ca
         db.add(consent)
     consent.scopes = scope_string(split_scopes(consent.scopes or "") + split_scopes(pending.scopes))
     consent.created_at = utcnow()
-    db.commit()
+    # No commit: _issue_code commits it together with the code, or rolls it back.
 
 
 def _issue_code(db: Session, pending: models.OAuthPendingAuthorization, campaign) -> object:
@@ -270,13 +287,30 @@ def _issue_code(db: Session, pending: models.OAuthPendingAuthorization, campaign
         .first()
     )
     if user is None:
+        db.rollback()
         return pages.error_page("You are not a GM of that campaign.", 403)
     server = build_server(db)
     request = _pending_oauth2_request(pending)
     grant = server.get_consent_grant(request)
-    result = server.create_authorization_response(request, grant_user=user, grant=grant)
-    db.delete(pending)
-    db.commit()
+    # Claim the pending row and create the code in one transaction: of two overlapping
+    # submissions only one deletes the row, and the other issues nothing.
+    claimed = (
+        db.query(models.OAuthPendingAuthorization)
+        .filter(
+            models.OAuthPendingAuthorization.id == pending.id,
+            models.OAuthPendingAuthorization.expires_at > utcnow(),
+        )
+        .delete(synchronize_session=False)
+    )
+    if claimed != 1:
+        db.rollback()
+        return pages.error_page("This sign-in link has expired.")
+    try:
+        result = server.create_authorization_response(request, grant_user=user, grant=grant)
+        db.commit()
+    except Exception:
+        db.rollback()  # the pending row is back, so the user can retry
+        raise
     return _to_response(result)
 
 
@@ -308,8 +342,9 @@ async def authorize(request: Request, db: Session = Depends(get_db)):
 
     oauth_request = await read_oauth2_request(request, settings.public_origin)
     if oauth_request.payload.data.get("scope") is None:
-        # No scope requested: default to read-only.
-        args = [*oauth_request.args.items(), ("scope", "board:read")]
+        # No scope requested: default to read-only. multi_items keeps repeated parameters
+        # (e.g. two resources) visible to validation.
+        args = [*request.query_params.multi_items(), ("scope", "board:read")]
         oauth_request = build_request("GET", oauth_request.uri, oauth_request.headers, args, [])
     server = build_server(db)
     try:
@@ -355,22 +390,27 @@ async def authorize(request: Request, db: Session = Depends(get_db)):
     )
 
 
-@router.get("/consent", tags=["MCP OAuth"])
-async def client_consent(request: Request, pending: str = "", csrf: str = "", decision: str = "",
-                         db: Session = Depends(get_db)):
-    """The user's answer on the client consent page, before Discord is involved."""
-    row = _load_pending(db, pending, csrf)
+async def _form_fields(request: Request, *names: str) -> dict:
+    form = await request.form()
+    return {n: v if isinstance(v := form.get(n), str) else "" for n in names}
+
+
+@router.post("/consent", tags=["MCP OAuth"])
+async def client_consent(request: Request, db: Session = Depends(get_db)):
+    """The user's answer on the client consent page (a same-origin POST), before Discord is involved."""
+    f = await _form_fields(request, "pending", "csrf", "decision")
+    row = _load_pending(db, f["pending"], f["csrf"])
     if row is None:
         return pages.error_page("This sign-in link has expired.")
-    if decision != "approve":
+    if f["decision"] != "approve":
         db.delete(row)
         db.commit()
-        return _client_redirect(row.redirect_uri, {"error": "access_denied", "state": row.state})
+        return _as_continuation(_client_redirect(row.redirect_uri, {"error": "access_denied", "state": row.state}))
     row.client_consented = True
     db.commit()
     response = _redirect_to_discord(row)
     _set_consent_cookie(response, request, row.client_id)
-    return response
+    return _as_continuation(response)
 
 
 @router.get("/discord/callback", tags=["MCP OAuth"])
@@ -382,12 +422,14 @@ async def discord_callback(request: Request, code: Optional[str] = None, state: 
         data = jwt.decode(state or "", settings.mcp_token_secret, algorithms=["HS256"])
     except jwt.PyJWTError:
         return pages.error_page("The Discord sign-in expired or was tampered with.")
-    cookie_nonce = request.cookies.get(_DISCORD_NONCE_COOKIE) or ""
+    nonce_cookie = f"{_DISCORD_NONCE_COOKIE}_{data.get('slot', '')}"
+    cookie_nonce = request.cookies.get(nonce_cookie) or ""
     if data.get("typ") != "mcp_discord_state" or not hmac.compare_digest(str(data.get("nonce", "")), cookie_nonce):
         return pages.error_page("The Discord sign-in did not start in this browser.")
 
     pending = db.get(models.OAuthPendingAuthorization, data.get("pending"))
-    if pending is None or pending.expires_at <= utcnow() or not pending.client_consented:
+    # discord_id set means this callback already ran: a replay.
+    if pending is None or pending.expires_at <= utcnow() or not pending.client_consented or pending.discord_id:
         return pages.error_page("This sign-in link has expired.")
 
     if error or not code:
@@ -395,28 +437,34 @@ async def discord_callback(request: Request, code: Optional[str] = None, state: 
         db.commit()
         return _client_redirect(pending.redirect_uri, {"error": "access_denied", "state": pending.state})
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        token_response = await client.post(
-            "https://discord.com/api/oauth2/token",
-            data={
-                "client_id": settings.DISCORD_CLIENT_ID,
-                "client_secret": settings.DISCORD_CLIENT_SECRET,
-                "grant_type": "authorization_code",
-                "code": code,
-                "redirect_uri": settings.mcp_discord_redirect_uri,
-            },
-            headers={"Content-Type": "application/x-www-form-urlencoded"},
-        )
-        if token_response.status_code != 200:
-            logger.error("MCP Discord token exchange failed", extra={"status_code": token_response.status_code})
-            return pages.error_page("Discord sign-in failed.", 502)
-        user_response = await client.get(
-            "https://discord.com/api/users/@me",
-            headers={"Authorization": f"Bearer {token_response.json().get('access_token')}"},
-        )
-    if user_response.status_code != 200:
-        return pages.error_page("Discord sign-in failed.", 502)
-    discord_user = user_response.json()
+    # The Discord code may already be spent, so reloading this page can't help: restart from the app.
+    discord_failed = "Discord sign-in failed. Start the connection again from the app."
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            token_response = await client.post(
+                "https://discord.com/api/oauth2/token",
+                data={
+                    "client_id": settings.DISCORD_CLIENT_ID,
+                    "client_secret": settings.DISCORD_CLIENT_SECRET,
+                    "grant_type": "authorization_code",
+                    "code": code,
+                    "redirect_uri": settings.mcp_discord_redirect_uri,
+                },
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+            if token_response.status_code != 200:
+                logger.error("MCP Discord token exchange failed", extra={"status_code": token_response.status_code})
+                return pages.error_page(discord_failed, 502)
+            user_response = await client.get(
+                "https://discord.com/api/users/@me",
+                headers={"Authorization": f"Bearer {token_response.json().get('access_token')}"},
+            )
+        if user_response.status_code != 200:
+            return pages.error_page(discord_failed, 502)
+        discord_user = user_response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.error("MCP Discord sign-in request failed", extra={"error": str(exc)})
+        return pages.error_page(discord_failed, 502)
 
     pending.discord_id = str(discord_user.get("id"))
     pending.discord_username = discord_user.get("global_name") or discord_user.get("username") or "you"
@@ -446,28 +494,35 @@ async def discord_callback(request: Request, code: Optional[str] = None, state: 
             scopes=split_scopes(pending.scopes),
             campaigns=campaigns,
         )
-    response.delete_cookie(_DISCORD_NONCE_COOKIE, path="/api/oauth")
+    response.delete_cookie(nonce_cookie, path="/api/oauth")
     return response
 
 
-@router.get("/approve", tags=["MCP OAuth"])
-async def approve(pending: str = "", csrf: str = "", campaign_id: Optional[int] = None, decision: str = "",
-                  db: Session = Depends(get_db)):
-    """The user picked a campaign (or cancelled). Issues the authorization code."""
-    row = _load_pending(db, pending, csrf)
+@router.post("/approve", tags=["MCP OAuth"])
+async def approve(request: Request, db: Session = Depends(get_db)):
+    """The user picked a campaign or cancelled (a same-origin POST). Issues the authorization code."""
+    f = await _form_fields(request, "pending", "csrf", "campaign_id", "decision")
+    row = _load_pending(db, f["pending"], f["csrf"])
     if row is None or not row.discord_id:
         return pages.error_page("This sign-in link has expired.")
-    if decision == "deny" or campaign_id is None:
+    try:
+        campaign_id: Optional[int] = int(f["campaign_id"]) if f["campaign_id"] else None
+    except ValueError:
+        campaign_id = None
+    if f["decision"] == "deny" or campaign_id is None:
         db.delete(row)
         db.commit()
-        return _client_redirect(row.redirect_uri, {"error": "access_denied", "state": row.state})
+        return _as_continuation(_client_redirect(row.redirect_uri, {"error": "access_denied", "state": row.state}))
 
     campaigns = await eligible_campaigns(db, row.discord_id)
     campaign = next((c for c in campaigns if c.id == campaign_id), None)
     if campaign is None:
         return pages.error_page("You are not a GM of that campaign.", 403)
+    if row.expires_at <= utcnow():
+        return pages.error_page("This sign-in link has expired.")
+    # The role lookup above can take a while; _issue_code claims the row only if it is still unexpired.
     _remember_consent(db, row, campaign.id)
-    return _issue_code(db, row, campaign)
+    return _as_continuation(_issue_code(db, row, campaign))
 
 
 # ---------------------------------------------------------------------------

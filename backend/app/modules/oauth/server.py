@@ -84,8 +84,9 @@ class CimdClient(ClientMixin):
 class CodeView:
     """Authorization code row as Authlib's AuthorizationCodeMixin."""
 
-    def __init__(self, row: models.OAuthCode):
+    def __init__(self, row: models.OAuthCode, reused: bool = False):
         self.row = row
+        self.reused = reused
         self.code_challenge = row.code_challenge
         self.code_challenge_method = row.code_challenge_method
 
@@ -99,9 +100,10 @@ class CodeView:
 class RefreshView:
     """Refresh token row (plus its grant) as Authlib's TokenMixin."""
 
-    def __init__(self, row: models.OAuthRefreshToken, grant: models.OAuthGrant):
+    def __init__(self, row: models.OAuthRefreshToken, grant: models.OAuthGrant, reused: bool = False):
         self.row = row
         self.grant = grant
+        self.reused = reused
 
     def check_client(self, client):
         return self.grant.client_id == client.get_client_id()
@@ -254,22 +256,28 @@ class McpAuthorizationCodeGrant(AuthorizationCodeGrant):
             created_at=now,
             expires_at=now + datetime.timedelta(seconds=settings.MCP_AUTH_CODE_SECONDS),
         ))
-        self.db.commit()
+        # No commit: the caller claims the pending authorization in the same transaction.
+        self.db.flush()
 
     def query_authorization_code(self, code, client):
         row = self.db.get(models.OAuthCode, hash_secret(code))
         if row is None or row.client_id != client.get_client_id():
             return None
         if row.used_at is not None:
-            # A code is single-use. A second use means it leaked: kill what it issued.
-            revoke_grant(self.db, row.grant_id, "authorization code reused")
-            return None
+            # Revoked in validate_token_request, once redirect_uri and PKCE have passed.
+            return CodeView(row, reused=True)
         if row.expires_at <= utcnow():
             return None
         return CodeView(row)
 
     def validate_token_request(self):
-        super().validate_token_request()
+        super().validate_token_request()  # includes redirect_uri and the PKCE hook
+        view: CodeView = self.request.authorization_code
+        if view.reused:
+            # A code is single-use. A second valid use means it leaked: kill what it issued.
+            # Someone holding only the code (no verifier) couldn't have redeemed it, so they can't revoke.
+            revoke_grant(self.db, view.row.grant_id, "authorization code reused")
+            raise InvalidGrantError("Invalid 'code' in request.")
         resource = _check_resource(self.request)
         if resource != self.request.authorization_code.row.resource:
             raise InvalidTargetError("'resource' does not match the authorization request.")
@@ -330,17 +338,23 @@ class McpRefreshTokenGrant(RefreshTokenGrant):
         if grant is None or grant.revoked_at is not None:
             return None
         if row.used_at is not None:
-            grace = get_settings().MCP_REFRESH_REUSE_GRACE_SECONDS
-            if grace > 0 and row.used_at > utcnow() - datetime.timedelta(seconds=grace):
-                return None  # concurrent refresh: refuse this one, keep the grant
-            revoke_grant(self.db, grant.id, "refresh token reused")
-            return None
+            # Handled in validate_token_request, after Authlib has compared the client.
+            return RefreshView(row, grant, reused=True)
         if row.expires_at <= utcnow():
             return None
         return RefreshView(row, grant)
 
     def validate_token_request(self):
-        super().validate_token_request()
+        super().validate_token_request()  # a client mismatch fails here, without revoking
+        view: RefreshView = self.request.refresh_token
+        if view.reused:
+            grace = get_settings().MCP_REFRESH_REUSE_GRACE_SECONDS
+            if not (grace > 0 and view.row.used_at > utcnow() - datetime.timedelta(seconds=grace)):
+                revoke_grant(self.db, view.grant.id, "refresh token reused")
+            # Inside the grace window: a concurrent refresh. Refuse this one, keep the grant.
+            raise InvalidGrantError()
+        if len(self.request.payload.datalist.get("resource", [])) > 1:
+            raise InvalidTargetError("Only one 'resource' is supported.")
         resource = self.request.payload.data.get("resource")
         if resource is not None and resource != self.request.refresh_token.grant.resource:
             raise InvalidTargetError("'resource' does not match the grant.")

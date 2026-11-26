@@ -38,11 +38,13 @@ class StaticOAuth2Request(OAuth2Request):
         super().__init__(method=method, uri=uri, headers=headers)
         self._args = dict(args)
         self._form = dict(form)
+        # POST (token, revoke): parameters come from the body only, so the URL can't add or
+        # override any. GET (authorize): the query string.
+        values = form if method.upper() == "POST" else args
         datalist = defaultdict(list)
-        for key, value in [*args, *form]:
+        for key, value in values:
             datalist[key].append(value)
-        data = {**self._args, **self._form}
-        self.payload = StaticPayload(data, datalist)
+        self.payload = StaticPayload(dict(values), datalist)
 
     @property
     def args(self):
