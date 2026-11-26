@@ -21,6 +21,10 @@ describe('legal pages', () => {
 		expect(screen.getByRole('link', { name: 'Terms of Service' }).getAttribute('href')).toBe(
 			'/terms'
 		);
+		expect(screen.getByRole('link', { name: 'email admin@bahaynes.com' })).toHaveAttribute(
+			'href',
+			'mailto:admin@bahaynes.com'
+		);
 	});
 
 	test('terms page shows date and links to privacy', () => {
