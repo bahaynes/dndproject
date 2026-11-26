@@ -1,6 +1,6 @@
 # Plan: MCP server with OAuth
 
-Status: **draft; protected-auth section approved by Ben 2026-11-26; questions 1–5 decided; lifetime numbers and question 6 still open.** Nothing here is built.
+Status: **built on `feat/mcp-server` (2026-11-26); not deployed.** Lifetime numbers and question 6 are still Ben's: both are settings with placeholder defaults (see "As built").
 
 **Unblocked (2026-11-26):** the privacy policy (#163) and terms of service (#164) pages shipped in #165. The MCP connector sends campaign data to whatever app a GM connects; `/privacy` now discloses this under "Connected apps".
 
@@ -135,6 +135,38 @@ Tools call the existing service functions, not the HTTP routes, so validation an
 
 - Claude Code: `claude mcp add --transport http westmarches https://westmarches.bahaynes.com/api/mcp`, or an entry in foundry-oneshots `.mcp.json`. The first call opens the browser login.
 - claude.ai: add a custom connector with the same URL.
+
+## As built (2026-11-26)
+
+Code: `backend/app/modules/oauth/` (authorization server), `backend/app/modules/mcp/server.py` (MCP server), `backend/app/modules/campaigns/discord_roles.py` (shared role check), migration `0011_add_mcp_oauth`.
+
+**Where it differs from the plan above**
+
+- **MCP is off unless `MCP_TOKEN_SECRET` is set** (503 on `/api/mcp`, `/api/oauth/*` and `/.well-known/oauth-*`). Local development uses a key derived from `SECRET_KEY` instead. A secret that is set but weak (under 32 characters, or equal to `SECRET_KEY`) still stops a production start. The plan said "required in production". Off-when-unset means deploying this before the secret exists can't take the site down, and PR previews stay off, which they have to (no Discord redirect is registered for them).
+- **Host/Origin checking is in our gate, not the SDK's `transport_security`.** The SDK list can't express `*.run.app`, and the backend's run.app host is only known after deploy. `MCP_ALLOWED_HOSTS` takes `*.suffix` patterns; deploy sets `*.run.app`.
+- **Our own gate in front of the SDK** answers 401 with `resource_metadata` *and* `scope` (the SDK sends only `resource_metadata`), and 403 `insufficient_scope` for a write tool on a read-only token. The SDK can't do the latter: scope there is per endpoint, not per tool. The SDK's bearer middleware still runs behind the gate.
+- **PRM is served by FastAPI, not the SDK**, so `scopes_supported` lists both scopes. The SDK copies `required_scopes` there, which is only `board:read`.
+- **Discord scope is `identify` only.** The campaign picker lists campaigns where the user has an active `admin` row *and* the live Discord role check says GM. `guilds` isn't needed for that.
+- **Consent order:** client consent page (no identity yet) → Discord → campaign picker. A signed `__Host-mcp_consent` cookie remembers clients this browser approved, so the first page is skipped next time. Remembered consent (per Discord user, client and campaign) skips the picker when it covers the requested scopes.
+- **Links, not forms**, on the consent pages. The site CSP has `form-action 'self'`, and Chrome also applies it to the redirect after a form submit (to Discord or to the client). The links carry the pending ID plus a random CSRF value.
+- **The access-token verifier also checks that the user is still an active GM.** A demotion takes effect on the next request, not at token expiry.
+- **Admin missions page now lists hidden missions** (with a Hidden badge and the Foundry module). Before, it asked for visible ones only, so MCP drafts would never show up for a GM to publish.
+- **No `/register`**, as decided. No scripted e2e against the dev pod yet (Podman isn't on this machine). Instead, the official MCP SDK client (OAuth with CIMD) was run against a local uvicorn: discovery, PKCE, `resource`, `iss`, tool calls and a read→write step-up all worked. The Discord leg was simulated in that run and is covered by mocked unit tests.
+
+**Settings** (all in `app/config.py`): `PUBLIC_ORIGIN`, `MCP_TOKEN_SECRET`, `MCP_ACCESS_TOKEN_MINUTES` (placeholder 60), `MCP_REFRESH_TOKEN_DAYS` (placeholder 30), `MCP_AUTH_CODE_SECONDS` (300), `MCP_PENDING_AUTH_SECONDS` (600), `MCP_REFRESH_REUSE_GRACE_SECONDS` (0 = any reuse revokes; question 6), `MCP_DISCORD_REDIRECT_URI` (default `<PUBLIC_ORIGIN>/api/oauth/discord/callback`), `MCP_ALLOWED_HOSTS`, `MCP_CIMD_ALLOW_INSECURE` (dev only).
+
+**Before it works in production (Ben)**
+
+1. Discord developer portal: add the redirect `https://westmarches.bahaynes.com/api/oauth/discord/callback` (and `http://localhost:8000/api/oauth/discord/callback` for local dev).
+2. Create the secret: `openssl rand -hex 32` into GitHub secret `MCP_TOKEN_SECRET`, or Secret Manager `dnd-mcp-token-secret` when `USE_GCP_SECRET_MANAGER=true`.
+3. Pick the lifetimes and the grace window (or keep the defaults).
+4. Connect once from Claude Code (`claude mcp add --transport http westmarches https://westmarches.bahaynes.com/api/mcp`) and from claude.ai. Loki then shows `MCP authorize request` with the `client_id` each one sent (question 2). A client that doesn't send a CIMD URL gets the "must be an https:// URL" page.
+
+**Known limits**
+
+- The CIMD SSRF check resolves the host, then httpx resolves it again to connect. A DNS-rebinding race between the two isn't closed.
+- A write on a read-only connection makes the client re-authorize for `board:write`. That's spec step-up and worked with the SDK client, but it means a second trip through the picker. Asking for `board:write` up front avoids it.
+- `foundry_module` is in the mission JSON for players too (no UI shows it to them).
 
 ## Build order (one commit each)
 

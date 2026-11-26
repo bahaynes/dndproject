@@ -294,9 +294,12 @@ async def authorize(request: Request, db: Session = Depends(get_db)):
 
     client_id = request.query_params.get("client_id")
     redirect_uri = request.query_params.get("redirect_uri")
+    # Logged so we can see which clients send a CIMD URL (plan question 2) and which don't.
+    logger.info("MCP authorize request", extra={"client_id": client_id, "redirect_uri": redirect_uri})
     try:
         client_row = await cimd.load_client(db, client_id)
     except cimd.CimdError as exc:
+        logger.warning("MCP authorize refused client", extra={"client_id": client_id, "reason": str(exc)})
         return pages.error_page(str(exc))
     if not redirect_uri or redirect_uri not in (client_row.redirect_uris or []):
         return pages.error_page("The app's redirect address is not listed in its metadata document.")
