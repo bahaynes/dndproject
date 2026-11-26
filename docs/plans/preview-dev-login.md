@@ -1,6 +1,6 @@
 # Plan: dev login on PR previews, gated by a shared secret
 
-Status: **draft, awaiting Ben's review.** Nothing here is built. This is a separate MR from the MCP OAuth work (`docs/plans/mcp-oauth.md` on `plan/mcp-oauth`).
+Status: **approved by Ben 2026-11-26; built on `feat/preview-dev-login`.** This is a separate MR from the MCP OAuth work (`docs/plans/mcp-oauth.md` on `plan/mcp-oauth`).
 
 ## Goal
 
@@ -50,7 +50,7 @@ Both branches of the deploy step need changes. `USE_GCP_SECRET_MANAGER` picks be
 ### E2E and Playwright
 
 - `e2e/fixtures.ts` `getDevToken` and `e2e/screenshot.mjs` `getToken`: read `DEV_LOGIN_SECRET` from the environment and send it as `X-Dev-Login-Secret`. If it's unset, fail at once with a message naming the variable, not a bare 404.
-- Both have hard-coded `localhost` URLs today (`BACKEND_URL`, `FRONTEND`, `BACKEND`). Make them overridable by env (`E2E_FRONTEND_URL`, `E2E_BACKEND_URL`) so the same scripts can target a preview. On a preview the backend is reached through the frontend's `/api` proxy.
+- Both have hard-coded `localhost` URLs today (`BACKEND_URL`, `FRONTEND`, `BACKEND`). Make them overridable by env (`BASE_URL`, `BACKEND_URL`, the names the Playwright config already uses) so the same scripts can target a preview. On a preview the backend is reached through the frontend's `/api` proxy.
 - The fixtures already put the token into the browser without using the button, so Playwright doesn't depend on the button design.
 - The screenshot script's campaign name stays as it is. This change only touches how the token is obtained.
 
@@ -93,11 +93,11 @@ Commits 1, 2 and 4 must land together in the MR: after commit 1 alone, the local
 
 ## This touches the protected auth area
 
-`CLAUDE.md` marks auth as protected. This plan changes `/dev-token`, `/dev-status`, `config.py` validation and the login page's dev button. It does not touch the Discord flow, `auth.ts`, `localStorage` token handling or `get_current_active_user`. **Ben must approve before any code is written.**
+`CLAUDE.md` marks auth as protected. This plan changes `/dev-token`, `/dev-status`, `config.py` validation and the login page's dev button. It does not touch the Discord flow, `auth.ts`, `localStorage` token handling or `get_current_active_user`. *Approved by Ben, 2026-11-26.*
 
 ## Decisions (2026-11-26)
 
 1. **Button:** a password field, pasted or filled by the browser's password manager.
 2. **Local pod:** the secret is required there too, set in `.env`.
 
-No open questions remain beyond approving the protected-auth section.
+No open questions remain.
