@@ -2,6 +2,8 @@
 
 Status: **draft; protected-auth section approved by Ben 2026-11-26; questions 1–5 decided; lifetime numbers and question 6 still open.** Nothing here is built.
 
+**Blocked on:** the privacy policy (#163) and terms of service (#164) pages. The MCP connector sends campaign data to whatever app a GM connects, and that has to be disclosed before it ships.
+
 ## Goal
 
 Let Claude (Claude Code, and claude.ai as a connector) read and edit a campaign's board through a proper remote MCP server. A GM adds one URL, logs in with Discord in a browser, approves the connection, and Claude can then:
