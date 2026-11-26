@@ -45,7 +45,7 @@ logger = logging.getLogger("app.mcp")
 
 MAX_BODY_BYTES = 4 * 1024 * 1024
 WRITE_TOOLS = {"create_mission", "update_mission", "set_mission_module"}
-MODULE_ID_RE = re.compile(r"^oneshot-[a-z0-9][a-z0-9-]{0,98}$")
+MODULE_ID_RE = re.compile(r"oneshot-[a-z0-9][a-z0-9-]{0,98}")  # use fullmatch
 
 
 # ---------------------------------------------------------------------------
@@ -156,7 +156,7 @@ def _check_prerequisite(db: Session, prerequisite_id: Optional[int], campaign_id
 def _check_module_id(module_id: Optional[str]) -> Optional[str]:
     if module_id is None or module_id == "":
         return None
-    if not MODULE_ID_RE.match(module_id):
+    if not MODULE_ID_RE.fullmatch(module_id):
         raise ToolError("module_id must look like 'oneshot-<slug>' (lowercase letters, digits, hyphens).")
     return module_id
 
@@ -194,10 +194,9 @@ def list_missions(status: Optional[str] = None, include_retired: bool = False) -
     _, campaign_id = _principal()
     with open_db() as db:
         missions = mission_service.get_missions(
-            db, campaign_id=campaign_id, limit=500, include_retired=include_retired, include_hidden=True
+            db, campaign_id=campaign_id, limit=500, include_retired=include_retired, include_hidden=True,
+            status=status or None,
         )
-        if status:
-            missions = [m for m in missions if (m.status or "").lower() == status.lower()]
         return [_mission_out(m) for m in missions]
 
 
@@ -212,17 +211,9 @@ def get_mission(mission_id: int) -> dict:
 @mcp.tool(annotations=_READ)
 def list_sessions(upcoming_only: bool = False) -> list[dict]:
     """List game sessions with the characters signed up for each."""
-    import datetime
-
     _, campaign_id = _principal()
     with open_db() as db:
-        sessions = session_service.get_game_sessions(db, campaign_id=campaign_id, limit=500)
-        if upcoming_only:
-            now = datetime.datetime.utcnow()
-            sessions = [
-                s for s in sessions
-                if s.status not in ("Completed", "Cancelled") and (s.session_date is None or s.session_date >= now)
-            ]
+        sessions = session_service.get_game_sessions(db, campaign_id=campaign_id, limit=500, upcoming_only=upcoming_only)
         return [session_schemas.GameSession.model_validate(s).model_dump(mode="json") for s in sessions]
 
 
@@ -270,11 +261,7 @@ def create_mission(
             is_discoverable=False,  # forced hidden
             is_retired=False,
         )
-        mission = mission_service.create_mission(db, payload, campaign_id=campaign_id)
-        if module_id:
-            mission.foundry_module = module_id
-            db.commit()
-            db.refresh(mission)
+        mission = mission_service.create_mission(db, payload, campaign_id=campaign_id, foundry_module=module_id)
         logger.info("MCP created mission", extra={"mission_id": mission.id, "campaign_id": campaign_id})
         return _mission_out(mission)
 
@@ -472,17 +459,18 @@ class McpEndpoint:
             return
 
         # Buffer the body so a write tool called with a read-only token gets a real 403 to step up on.
-        body = b""
+        buffer = bytearray()
         more = True
         while more:
             message = await receive()
             if message["type"] == "http.disconnect":
                 return
-            body += message.get("body", b"")
+            buffer += message.get("body", b"")
             more = message.get("more_body", False)
-            if len(body) > MAX_BODY_BYTES:
+            if len(buffer) > MAX_BODY_BYTES:
                 await _send_json(send, 413, {"error": "request_too_large"})
                 return
+        body = bytes(buffer)
 
         if SCOPE_WRITE not in access.scopes and _called_tools(body) & WRITE_TOOLS:
             await _send_json(

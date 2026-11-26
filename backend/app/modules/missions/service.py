@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 import datetime
 from . import models, schemas
 from ..items import service as item_service
@@ -13,7 +13,7 @@ def get_mission(db: Session, mission_id: int, campaign_id: int = None):
 
 def get_missions(db: Session, campaign_id: int, skip: int = 0, limit: int = 100, 
                  tier: str = None, region: str = None, 
-                 include_retired: bool = False, include_hidden: bool = False):
+                 include_retired: bool = False, include_hidden: bool = False, status: str = None):
     query = db.query(models.Mission).filter(models.Mission.campaign_id == campaign_id)
     
     if not include_retired:
@@ -27,8 +27,11 @@ def get_missions(db: Session, campaign_id: int, skip: int = 0, limit: int = 100,
         
     if region:
         query = query.filter(models.Mission.region == region)
-        
-    return query.offset(skip).limit(limit).all()
+
+    if status:
+        query = query.filter(func.lower(models.Mission.status) == status.lower())
+
+    return query.order_by(models.Mission.id).offset(skip).limit(limit).all()
 
 def is_mission_selectable(mission: models.Mission):
     if mission.is_retired:
@@ -42,7 +45,7 @@ def is_mission_selectable(mission: models.Mission):
             
     return True, None
 
-def create_mission(db: Session, mission: schemas.MissionCreate, campaign_id: int):
+def create_mission(db: Session, mission: schemas.MissionCreate, campaign_id: int, foundry_module: str = None):
     db_mission = models.Mission(
         name=mission.name,
         description=mission.description,
@@ -53,7 +56,8 @@ def create_mission(db: Session, mission: schemas.MissionCreate, campaign_id: int
         cooldown_days=mission.cooldown_days,
         is_retired=mission.is_retired,
         is_discoverable=mission.is_discoverable,
-        prerequisite_id=mission.prerequisite_id
+        prerequisite_id=mission.prerequisite_id,
+        foundry_module=foundry_module,
     )
     db.add(db_mission)
     db.flush()

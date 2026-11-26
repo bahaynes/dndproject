@@ -211,11 +211,47 @@ class TestReadTools:
         result = _call(mcp_client, token, "get_mission", mission_id=foreign.id)
         assert result["isError"] is True
 
-    def test_list_sessions_items_factions(self, mcp_client, db_session, gm):
+    def test_list_sessions_items_factions_are_campaign_scoped(self, mcp_client, db_session, gm, campaign):
+        from app.modules.campaigns import models as campaign_models
+        from app.modules.factions import models as faction_models
+        from app.modules.items import models as item_models
+        from app.modules.sessions import models as session_models
+        other = campaign_models.Campaign(name="Other", discord_guild_id="other_guild_4")
+        db_session.add(other)
+        db_session.commit()
+        later = datetime.datetime.utcnow() + datetime.timedelta(days=3)
+        for cid, tag in ((campaign.id, "Mine"), (other.id, "Theirs")):
+            db_session.add_all([
+                session_models.GameSession(name=f"{tag} session", session_date=later, campaign_id=cid),
+                item_models.Item(name=f"{tag} item", campaign_id=cid),
+                faction_models.FactionReputation(faction_name=f"{tag} faction", campaign_id=cid),
+            ])
+        db_session.commit()
         token, _ = _token(db_session, gm)
-        assert _ok(_call(mcp_client, token, "list_sessions", upcoming_only=True)) == []
-        assert _ok(_call(mcp_client, token, "list_items")) == []
-        assert isinstance(_ok(_call(mcp_client, token, "list_factions")), list)
+        assert [s["name"] for s in _ok(_call(mcp_client, token, "list_sessions"))] == ["Mine session"]
+        assert [i["name"] for i in _ok(_call(mcp_client, token, "list_items"))] == ["Mine item"]
+        assert [f["faction_name"] for f in _ok(_call(mcp_client, token, "list_factions"))] == ["Mine faction"]
+
+    def test_filters_apply_before_the_row_limit(self, mcp_client, db_session, gm, campaign):
+        from app.modules.sessions import models as session_models
+        with patch.object(mcp_server.mission_service, "get_missions", wraps=mcp_server.mission_service.get_missions) as spy:
+            _mission(db_session, campaign.id, name="Done", status="Completed")
+            _mission(db_session, campaign.id, name="Open", status="Available")
+            token, _ = _token(db_session, gm)
+            names = [m["name"] for m in _ok(_call(mcp_client, token, "list_missions", status="completed"))]
+        assert names == ["Done"]
+        assert spy.call_args.kwargs["status"] == "completed"
+        past = datetime.datetime.utcnow() - datetime.timedelta(days=3)
+        future = datetime.datetime.utcnow() + datetime.timedelta(days=3)
+        db_session.add_all([
+            session_models.GameSession(name="Past", session_date=past, campaign_id=campaign.id),
+            session_models.GameSession(name="Next", session_date=future, campaign_id=campaign.id),
+            session_models.GameSession(name="Called off", session_date=future, status="Cancelled",
+                                       campaign_id=campaign.id),
+        ])
+        db_session.commit()
+        upcoming = [s["name"] for s in _ok(_call(mcp_client, token, "list_sessions", upcoming_only=True))]
+        assert upcoming == ["Next"]
 
 
 class TestWriteTools:
@@ -259,6 +295,9 @@ class TestWriteTools:
         token, _ = _token(db_session, gm)
         bad = _call(mcp_client, token, "set_mission_module", mission_id=mission.id, module_id="../../etc")
         assert bad["isError"] is True
+        newline = _call(mcp_client, token, "set_mission_module", mission_id=mission.id, module_id="oneshot-x\n")
+        assert newline["isError"] is True
+        _ok(_call(mcp_client, token, "set_mission_module", mission_id=mission.id, module_id=""))
         _ok(_call(mcp_client, token, "set_mission_module", mission_id=mission.id, module_id="oneshot-gilded-moth"))
         r = mcp_client.get(f"/api/missions/{mission.id}", headers=admin_auth_headers)
         assert r.json()["foundry_module"] == "oneshot-gilded-moth"
