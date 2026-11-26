@@ -30,4 +30,15 @@ test.describe('Smoke', () => {
     // Use the nav Login button specifically (not the "Login with Discord" button on the login page)
     await expect(page.locator('nav').getByRole('link', { name: 'Login' })).toBeVisible();
   });
+  for (const [path, heading] of [
+    ['/privacy', 'Privacy Policy'],
+    ['/terms', 'Terms of Service'],
+  ]) {
+    test(`${path} loads without login and is linked from the footer`, async ({ page }) => {
+      await page.goto('/');
+      await page.locator('footer').getByRole('link', { name: heading }).click();
+      await expect(page).toHaveURL(new RegExp(`${path}$`));
+      await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
+    });
+  }
 });

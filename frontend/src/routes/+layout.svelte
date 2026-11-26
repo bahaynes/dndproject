@@ -231,4 +231,10 @@
 	<main class="flex-grow">
 		<slot />
 	</main>
+
+	<footer class="border-t border-base-content/10 py-4 text-center text-xs text-base-content/55">
+		<a href="/privacy" class="hover:text-base-content hover:underline">Privacy Policy</a>
+		<span class="mx-2" aria-hidden="true">·</span>
+		<a href="/terms" class="hover:text-base-content hover:underline">Terms of Service</a>
+	</footer>
 </div>
