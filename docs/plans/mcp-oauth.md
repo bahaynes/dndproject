@@ -148,7 +148,7 @@ Code: `backend/app/modules/oauth/` (authorization server), `backend/app/modules/
 - **PRM is served by FastAPI, not the SDK**, so `scopes_supported` lists both scopes. The SDK copies `required_scopes` there, which is only `board:read`.
 - **Discord scope is `identify` only.** The campaign picker lists campaigns where the user has an active `admin` row *and* the live Discord role check says GM. `guilds` isn't needed for that.
 - **Consent order:** client consent page (no identity yet) → Discord → campaign picker. A signed `__Host-mcp_consent` cookie remembers clients this browser approved, so the first page is skipped next time. Remembered consent (per Discord user, client and campaign) skips the picker when it covers the requested scopes.
-- **Links, not forms**, on the consent pages. The site CSP has `form-action 'self'`, and Chrome also applies it to the redirect after a form submit (to Discord or to the client). The links carry the pending ID plus a random CSRF value.
+- **Same-origin POST forms, then a continuation page.** The consent and campaign-picker decisions are POSTs carrying the pending ID plus a random CSRF value. The site CSP has `form-action 'self'`, and Chrome also applies it to the redirect after a form submit (to Discord or to the client), so each POST answers with a same-origin page that navigates there itself (meta refresh plus a link). That navigation is a GET and never resubmits the decision. Claiming the pending row and creating the code happen in one transaction, so a double submit issues one code.
 - **The access-token verifier also checks that the user is still an active GM.** A demotion takes effect on the next request, not at token expiry.
 - **Admin missions page now lists hidden missions** (with a Hidden badge and the Foundry module). Before, it asked for visible ones only, so MCP drafts would never show up for a GM to publish.
 - **No `/register`**, as decided. No scripted e2e against the dev pod yet (Podman isn't on this machine). Instead, the official MCP SDK client (OAuth with CIMD) was run against a local uvicorn: discovery, PKCE, `resource`, `iss`, tool calls and a read→write step-up all worked. The Discord leg was simulated in that run and is covered by mocked unit tests.
@@ -159,12 +159,12 @@ Code: `backend/app/modules/oauth/` (authorization server), `backend/app/modules/
 
 1. Discord developer portal: add the redirect `https://westmarches.bahaynes.com/api/oauth/discord/callback` (and `http://localhost:8000/api/oauth/discord/callback` for local dev).
 2. Create the secret: `openssl rand -hex 32` into GitHub secret `MCP_TOKEN_SECRET`, or Secret Manager `dnd-mcp-token-secret` when `USE_GCP_SECRET_MANAGER=true`.
-3. Pick the lifetimes and the grace window (or keep the defaults).
-4. Connect once from Claude Code (`claude mcp add --transport http westmarches https://westmarches.bahaynes.com/api/mcp`) and from claude.ai. Loki then shows `MCP authorize request` with the `client_id` each one sent (question 2). A client that doesn't send a CIMD URL gets the "must be an https:// URL" page.
+3. Deploy: push to `main`. The secret only reaches the running Cloud Run revision through that deploy; until then MCP stays off (503).
+4. Pick the lifetimes and the grace window (or keep the defaults).
+5. Connect once from Claude Code (`claude mcp add --transport http westmarches https://westmarches.bahaynes.com/api/mcp`) and from claude.ai. Loki then shows `MCP authorize request` with the `client_id` each one sent (question 2). A client that doesn't send a CIMD URL gets the "must be an https:// URL" page.
 
 **Known limits**
 
-- The CIMD SSRF check resolves the host, then httpx resolves it again to connect. A DNS-rebinding race between the two isn't closed.
 - A write on a read-only connection makes the client re-authorize for `board:write`. That's spec step-up and worked with the SDK client, but it means a second trip through the picker. Asking for `board:write` up front avoids it.
 - `foundry_module` is in the mission JSON for players too (no UI shows it to them).
 
@@ -176,7 +176,7 @@ Code: `backend/app/modules/oauth/` (authorization server), `backend/app/modules/
 4. `/token` (code and refresh with rotation and reuse detection) and `/revoke`.
 5. Mount `MCPServer` with the verifier, `transport_security` and stateless mode; Caddy `.well-known` routing; read tools.
 6. Write tools, the admin re-check, and the forced-hidden rule.
-7. E2E: a scripted OAuth client (PKCE, CIMD from a local fixture URL) against the dev pod, then a real connect from Claude Code against a preview deploy.
+7. E2E: a scripted OAuth client (PKCE, CIMD from a local fixture URL) against the dev pod, then a real connect from Claude Code against staging or production, with MCP enabled and the Discord callback registered there. Not a PR preview: MCP is off on previews and they have no registered Discord redirect.
 
 ## Tests
 
