@@ -95,4 +95,9 @@ describe('Layout', () => {
     // Check that user was redirected
     expect(goto).toHaveBeenCalledWith('/login');
   });
+  test('footer links to privacy policy and terms', () => {
+    render(Layout, {});
+    expect(screen.getByRole('link', { name: 'Privacy Policy' })).toHaveAttribute('href', '/privacy');
+    expect(screen.getByRole('link', { name: 'Terms of Service' })).toHaveAttribute('href', '/terms');
+  });
 });
