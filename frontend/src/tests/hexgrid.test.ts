@@ -1,6 +1,7 @@
-import { render } from '@testing-library/svelte';
-import { describe, expect, test } from 'vitest';
+import { fireEvent, render } from '@testing-library/svelte';
+import { describe, expect, test, vi } from 'vitest';
 import HexGrid from '$lib/components/HexGrid.svelte';
+import { computeMapViewBox } from '$lib/utils/hexMath';
 
 describe('HexGrid base layers and cartography overlays', () => {
 	const sampleHexes = [
@@ -64,5 +65,58 @@ describe('HexGrid base layers and cartography overlays', () => {
 		// Segment (0,0)->(1,0) is visible (1 endpoint discovered); (1,0)->(2,0) is hidden
 		const routePaths = container.querySelectorAll('g.map-routes path');
 		expect(routePaths.length).toBe(2); // casing + core for 1 visible segment
+	});
+
+	test('computeMapViewBox fits hexes and layerBounds symmetrically', () => {
+		const box = computeMapViewBox(
+			[{ q: 0, r: 0 }, { q: 2, r: 0 }],
+			60,
+			{ min_x: -200, min_y: -150, max_x: 300, max_y: 150 },
+			16 / 9
+		);
+		expect(box.w).toBeGreaterThan(500);
+		expect(box.h).toBeGreaterThan(300);
+		expect(box.x).toBeLessThan(-200);
+		expect(box.y).toBeLessThan(-150);
+
+		const emptyBox = computeMapViewBox([], 60, null);
+		expect(emptyBox).toEqual({ x: -500, y: -300, w: 1000, h: 600 });
+	});
+
+	test('auto-fits viewBox, renders zoom/fit controls, and suppresses click after panning', async () => {
+		const { container, getByLabelText } = render(HexGrid, {
+			props: {
+				hexes: sampleHexes,
+				hexSize: 60
+			}
+		});
+
+		const svg = container.querySelector('svg') as SVGSVGElement;
+		expect(svg).not.toBeNull();
+		const vb = svg.getAttribute('viewBox') || '';
+		// Auto-fit should not stay at the old hardcoded -500 -500 2000 1200
+		expect(vb).not.toBe('-500 -500 2000 1200');
+
+		expect(getByLabelText('Zoom in')).toBeTruthy();
+		expect(getByLabelText('Zoom out')).toBeTruthy();
+		expect(getByLabelText('Fit map to view')).toBeTruthy();
+
+		const clickSpy = vi.fn();
+		const firstCell = container.querySelector('g.hex-cell') as SVGGElement;
+		expect(firstCell).not.toBeNull();
+		firstCell.addEventListener('click', clickSpy);
+
+		// Normal click reaches hex cell
+		await fireEvent.mouseDown(svg, { button: 0, clientX: 100, clientY: 100 });
+		await fireEvent.mouseUp(svg, { button: 0, clientX: 101, clientY: 101 });
+		await fireEvent.click(firstCell);
+		expect(clickSpy).toHaveBeenCalledTimes(1);
+
+		// Dragging > 5px suppresses the trailing click in capture phase
+		await fireEvent.mouseDown(svg, { button: 0, clientX: 100, clientY: 100 });
+		await fireEvent.mouseMove(svg, { clientX: 130, clientY: 120 });
+		await fireEvent.mouseUp(svg, { button: 0, clientX: 130, clientY: 120 });
+		await fireEvent.click(firstCell);
+		expect(clickSpy).toHaveBeenCalledTimes(1);
 	});
 });

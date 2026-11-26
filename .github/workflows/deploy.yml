@@ -268,6 +268,7 @@ jobs:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           ADMIN_DISCORD_IDS: ${{ secrets.ADMIN_DISCORD_IDS }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          GCS_TILE_BUCKET: ${{ vars.GCS_TILE_BUCKET }}
         run: |
           umask 077
           ENV_FILE=$(mktemp)
@@ -289,6 +290,8 @@ jobs:
               "DATABASE_URL": os.environ["DATABASE_URL"],
               "DISCORD_REDIRECT_URI": os.environ["DISCORD_REDIRECT_URI"],
               "FRONTEND_URL": f"https://dnd-frontend{os.environ.get('SERVICE_SUFFIX', '')}-placeholder.run.app",
+              "TILE_STORAGE_BACKEND": "gcs" if os.environ.get("GCS_TILE_BUCKET") else "local",
+              "GCS_TILE_BUCKET": os.environ.get("GCS_TILE_BUCKET", ""),
           }
           with open(sys.argv[1], "w", encoding="utf-8") as f:
               json.dump(payload, f)
@@ -341,6 +344,8 @@ jobs:
               "LLM_API_KEY": os.environ.get("LLM_API_KEY", ""),
               "DISCORD_REDIRECT_URI": os.environ["DISCORD_REDIRECT_URI"],
               "FRONTEND_URL": f"https://dnd-frontend{os.environ.get('SERVICE_SUFFIX', '')}-placeholder.run.app",
+              "TILE_STORAGE_BACKEND": "gcs" if os.environ.get("GCS_TILE_BUCKET") else "local",
+              "GCS_TILE_BUCKET": os.environ.get("GCS_TILE_BUCKET", ""),
           }
           with open(sys.argv[1], "w", encoding="utf-8") as f:
               json.dump(payload, f)
