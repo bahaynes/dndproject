@@ -2,16 +2,19 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## ⚠️ Auth is a Protected Area — Read Before Touching
+## ⚠️ Auth is a protected area: Read before touching
 
-Auth is intentionally simple. **Do not modify auth files unless the task explicitly requires it.**
+Auth is intentionally simple; keep it that way. Changing it is fine when the task needs it, including bug and security fixes. When you do:
+- Say in the PR which part of the contract below changes, and why.
+- Keep or extend the auth tests and the login e2e tests. Never weaken them to get a pass.
+- Prefer extending the existing pieces to adding parallel ones (a second token store, a second login flow). If you must add one, call it out in the PR.
 
-The full auth contract:
+The current auth contract:
 - `localStorage.accessToken` — the only token that matters. Always campaign-scoped.
 - `localStorage.pendingToken` + `pendingDiscordToken` — set by `/login/callback`, consumed by `/campaigns`. Nowhere else.
-- `frontend/src/lib/auth.ts` — one store, two methods: `login()` and `logout()`. Do not add methods.
-- `frontend/src/routes/+layout.svelte` — reads `accessToken`, calls `/api/auth/me`, done. Do not add token types.
-- Backend: `get_current_active_user` / `get_current_active_admin_user` in `dependencies.py`. Do not add new auth dependencies.
+- `frontend/src/lib/auth.ts` — one store, two methods: `login()` and `logout()`.
+- `frontend/src/routes/+layout.svelte` — reads `accessToken`, calls `/api/auth/me`, done.
+- Backend: `get_current_active_user` / `get_current_active_admin_user` in `dependencies.py`.
 
 The flow: Discord OAuth → `/login/callback` (stores tokens, redirects) → `/campaigns` (picks campaign, issues `accessToken`) → everywhere else.
 
