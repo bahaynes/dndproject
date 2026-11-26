@@ -59,7 +59,54 @@ class Settings(BaseSettings):
     LOCAL_TILE_DIR: str = "./data/map_layers"
     GCS_TILE_BUCKET: str = ""
 
+    # MCP server + its OAuth 2.1 authorization server (docs/plans/mcp-oauth.md)
+    # Public origin the MCP URL, issuer and Discord callback are built from.
+    PUBLIC_ORIGIN: str = "http://localhost:8000"
+    # Signs MCP access tokens. Separate from SECRET_KEY so frontend JWTs never validate at /api/mcp.
+    MCP_TOKEN_SECRET: str = ""
+    # Lifetimes. Ben's numbers to pick; these defaults are placeholders.
+    MCP_ACCESS_TOKEN_MINUTES: int = 60
+    MCP_REFRESH_TOKEN_DAYS: int = 30
+    MCP_AUTH_CODE_SECONDS: int = 300
+    MCP_PENDING_AUTH_SECONDS: int = 600
+    # Plan question 6: seconds an already-rotated refresh token may be replayed without
+    # revoking the whole grant (two instances refreshing at once). 0 = any reuse revokes.
+    MCP_REFRESH_REUSE_GRACE_SECONDS: int = 0
+    # Defaults to <PUBLIC_ORIGIN>/api/oauth/discord/callback; must be registered in the Discord portal.
+    MCP_DISCORD_REDIRECT_URI: str = ""
+    # Extra Host header values accepted at /api/mcp (comma-separated), e.g. the Cloud Run *.run.app host
+    # that Caddy sets. The PUBLIC_ORIGIN host and localhost are always allowed.
+    MCP_ALLOWED_HOSTS: str = ""
+    # Dev/test only: let client ID metadata documents live on http:// or private addresses.
+    MCP_CIMD_ALLOW_INSECURE: bool = False
+
     model_config = SettingsConfigDict(case_sensitive=True, env_file='.env', extra='ignore')
+
+    @property
+    def public_origin(self) -> str:
+        return self.PUBLIC_ORIGIN.rstrip("/")
+
+    @property
+    def mcp_resource_url(self) -> str:
+        return f"{self.public_origin}/api/mcp"
+
+    @property
+    def mcp_discord_redirect_uri(self) -> str:
+        return self.MCP_DISCORD_REDIRECT_URI or f"{self.public_origin}/api/oauth/discord/callback"
+
+    @property
+    def mcp_enabled(self) -> bool:
+        """Production needs MCP_TOKEN_SECRET; elsewhere a derived dev key stands in."""
+        return bool(self.MCP_TOKEN_SECRET) or self.APP_ENV != "production"
+
+    @property
+    def mcp_token_secret(self) -> str:
+        """The MCP signing key. Outside production an unset key falls back to a derived dev key."""
+        if self.MCP_TOKEN_SECRET:
+            return self.MCP_TOKEN_SECRET
+        if self.APP_ENV == "production":
+            raise RuntimeError("MCP is disabled: MCP_TOKEN_SECRET is unset")
+        return "mcp-dev-only:" + self.SECRET_KEY
 
     @model_validator(mode="after")
     def validate_and_log_startup_config(self) -> "Settings":
@@ -90,6 +137,19 @@ class Settings(BaseSettings):
             if self.ENABLE_DEV_TOKEN:
                 logger.critical("ENABLE_DEV_TOKEN cannot be enabled when APP_ENV=production.")
                 raise ValueError("ENABLE_DEV_TOKEN cannot be true when APP_ENV=production.")
+            if self.MCP_CIMD_ALLOW_INSECURE:
+                raise ValueError("MCP_CIMD_ALLOW_INSECURE cannot be true when APP_ENV=production.")
+            if self.MCP_TOKEN_SECRET:
+                # Set but weak is a mistake worth failing on; unset just leaves MCP off (mcp_enabled).
+                if len(self.MCP_TOKEN_SECRET.strip()) < 32 or self.MCP_TOKEN_SECRET == self.SECRET_KEY:
+                    logger.critical("MCP_TOKEN_SECRET must be >= 32 characters and differ from SECRET_KEY.")
+                    raise ValueError(
+                        "MCP_TOKEN_SECRET must be >= 32 characters and not equal to SECRET_KEY when APP_ENV=production."
+                    )
+                if not self.PUBLIC_ORIGIN.startswith("https://"):
+                    raise ValueError("PUBLIC_ORIGIN must be an https:// URL when MCP is enabled in production.")
+            else:
+                logger.warning("MCP_TOKEN_SECRET is unset: the MCP server and its OAuth endpoints are disabled.")
 
         # Insecure default secret key (non-production warning)
         if self.SECRET_KEY == _DEFAULT_SECRET_KEY:

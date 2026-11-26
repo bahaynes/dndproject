@@ -39,6 +39,7 @@ from .modules.factions import router as faction_router
 from .modules.debug import router as debug_router
 from .modules.ship import router as ship_router
 from .modules.ledger import router as ledger_router
+from .modules.oauth import router as oauth_router
 
 _settings = get_settings()
 
@@ -90,6 +91,9 @@ async def rate_limit_middleware(request: Request, call_next):
         limit = 0
         if path.startswith("/api/auth/"):
             bucket_name = "auth"
+            limit = _AUTH_RATE_LIMIT
+        elif path.startswith("/api/oauth/"):
+            bucket_name = "oauth"
             limit = _AUTH_RATE_LIMIT
         elif path.startswith("/api/maps/") and path.endswith("/bake-earth"):
             bucket_name = "bake_earth"
@@ -194,3 +198,5 @@ app.include_router(faction_router.router, prefix="/api/factions")
 app.include_router(debug_router.router, prefix="/api/debug")
 app.include_router(ship_router.router, prefix="/api/ship")
 app.include_router(ledger_router.router, prefix="/api/ledger")
+app.include_router(oauth_router.router, prefix="/api/oauth")
+app.include_router(oauth_router.well_known_router)
