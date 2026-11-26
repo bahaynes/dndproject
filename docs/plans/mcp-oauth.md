@@ -1,6 +1,6 @@
 # Plan: MCP server with OAuth
 
-Status: **draft, awaiting Ben's review.** Nothing here is built.
+Status: **draft; protected-auth section approved by Ben 2026-11-26.** Nothing here is built.
 
 ## Goal
 
@@ -25,7 +25,7 @@ Let Claude (Claude Code, and claude.ai as a connector) read and edit a campaign'
 - MCP tokens are a separate kind of token: their own signing key, `aud` set to the MCP URL, and their own lifetimes. Frontend JWTs are rejected at `/mcp`, and MCP tokens are rejected everywhere else.
 - **Shared code:** the guild-role check in `campaigns/router.py` `join_campaign` (bot token → member roles → `dm_role_id` / admin role names → `"admin"`) moves into a service function, which `/campaigns/join` and the MCP consent step both call. This is the only refactor of existing auth-adjacent code. It gets its own commit, and the existing tests must pass unchanged.
 
-**Ben must approve this section before any code is written.**
+*Approved by Ben, 2026-11-26.*
 
 ## How the spec maps onto this app
 
