@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<title>West Marches</title>
+<rect width="512" height="512" rx="96" fill="#111318"/>
+<polygon points="256.00,40.00 256.00,136.80 65.47,150.00" fill="#D4A853" stroke="#14120E" stroke-width="30.00" stroke-linejoin="round"/>
+<polygon points="256.00,40.00 446.53,150.00 256.00,136.80" fill="#C58F46" stroke="#14120E" stroke-width="30.00" stroke-linejoin="round"/>
+<polygon points="65.47,150.00 149.31,321.60 256.00,136.80" fill="#D4A853" stroke="#14120E" stroke-width="30.00" stroke-linejoin="round"/>
+<polygon points="65.47,370.00 65.47,150.00 149.31,321.60" fill="#C58F46" stroke="#14120E" stroke-width="30.00" stroke-linejoin="round"/>
+<polygon points="446.53,150.00 256.00,136.80 362.69,321.60" fill="#C58F46" stroke="#14120E" stroke-width="30.00" stroke-linejoin="round"/>
+<polygon points="446.53,150.00 446.53,370.00 362.69,321.60" fill="#8A6230" stroke="#14120E" stroke-width="30.00" stroke-linejoin="round"/>
+<polygon points="446.53,370.00 256.00,480.00 362.69,321.60" fill="#5E4222" stroke="#14120E" stroke-width="30.00" stroke-linejoin="round"/>
+<polygon points="256.00,480.00 149.31,321.60 362.69,321.60" fill="#8A6230" stroke="#14120E" stroke-width="30.00" stroke-linejoin="round"/>
+<polygon points="256.00,480.00 65.47,370.00 149.31,321.60" fill="#8A6230" stroke="#14120E" stroke-width="30.00" stroke-linejoin="round"/>
+<polygon points="256.00,136.80 362.69,321.60 149.31,321.60" fill="#E9C778" stroke="#14120E" stroke-width="30.00" stroke-linejoin="round"/>
+</svg>
