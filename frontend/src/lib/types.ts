@@ -127,6 +127,8 @@ export interface Mission {
     is_retired: boolean;
     is_discoverable: boolean;
     prerequisite_id?: number;
+    /** Foundry one-shot module that runs this mission, e.g. "oneshot-gilded-moth". Set via MCP. */
+    foundry_module?: string | null;
     rewards: MissionReward[];
     players: Character[];
 }
