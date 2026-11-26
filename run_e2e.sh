@@ -32,6 +32,16 @@ fi
 
 echo "       Pod is up."
 
+# ---- Dev login secret (the pod reads the same value from .env) --------------
+if [ -z "$DEV_LOGIN_SECRET" ] && [ -f "$PROJECT_DIR/.env" ]; then
+    DEV_LOGIN_SECRET=$(grep -E '^DEV_LOGIN_SECRET=' "$PROJECT_DIR/.env" | tail -n1 | cut -d= -f2- | tr -d '"'"'"'\r')
+fi
+if [ -z "$DEV_LOGIN_SECRET" ]; then
+    echo "ERROR: DEV_LOGIN_SECRET is not set and not found in $PROJECT_DIR/.env"
+    exit 1
+fi
+export DEV_LOGIN_SECRET
+
 # ---- Install dependencies if needed ----------------------------------------
 cd "$E2E_DIR"
 

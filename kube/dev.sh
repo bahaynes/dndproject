@@ -57,6 +57,13 @@ if [ -f "$PROJECT_DIR/.env" ]; then
     set +a
 fi
 
+# The dev pod enables dev login, which refuses to start without its secret
+if [ "${#DEV_LOGIN_SECRET}" -lt 32 ]; then
+    echo "ERROR: DEV_LOGIN_SECRET is missing or shorter than 32 characters."
+    echo "       Add one to $PROJECT_DIR/.env, e.g.: DEV_LOGIN_SECRET=\$(openssl rand -hex 32)"
+    exit 1
+fi
+
 # Set default DATABASE_URL for container if not set or if it points to local path
 if [ -z "$DATABASE_URL" ] || [[ "$DATABASE_URL" == *"./app.db"* ]]; then
     export DATABASE_URL="sqlite:////data/app.db"

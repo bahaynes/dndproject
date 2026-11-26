@@ -268,13 +268,29 @@ jobs:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           ADMIN_DISCORD_IDS: ${{ secrets.ADMIN_DISCORD_IDS }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          GH_DEV_LOGIN_SECRET: ${{ secrets.DEV_LOGIN_SECRET }}
         run: |
           umask 077
           ENV_FILE=$(mktemp)
           chmod 600 "$ENV_FILE"
           trap 'rm -f "$ENV_FILE"' EXIT
 
+          # Dev login: PR previews only, and only when its secret is available.
+          # Without the secret the preview still deploys, just with dev login off.
+          export DEPLOY_ENABLE_DEV_TOKEN="false"
+          export DEPLOY_DEV_LOGIN_SECRET=""
+
           if [ "$USE_GCP_SECRET_MANAGER" = "true" ]; then
+            DEV_LOGIN_SECRET_ARG=""
+            if [ "$EVENT_NAME" = "pull_request" ]; then
+              if gcloud secrets describe dnd-dev-login-secret --project="${{ env.PROJECT_ID }}" >/dev/null 2>&1; then
+                DEPLOY_ENABLE_DEV_TOKEN="true"
+                DEV_LOGIN_SECRET_ARG=",DEV_LOGIN_SECRET=dnd-dev-login-secret:latest"
+              else
+                echo "::warning::Secret dnd-dev-login-secret not found; dev login stays off on this preview."
+              fi
+            fi
+
             python3 - "$ENV_FILE" << 'PY_EOF'
           import json
           import os
@@ -283,7 +299,7 @@ jobs:
           payload = {
               "MODE": "prod",
               "APP_ENV": os.environ["APP_ENV"],
-              "ENABLE_DEV_TOKEN": "false",
+              "ENABLE_DEV_TOKEN": os.environ["DEPLOY_ENABLE_DEV_TOKEN"],
               "RATE_LIMIT_ENABLED": os.environ["RATE_LIMIT_ENABLED"],
               "PROXY_SHARED_SECRET": os.environ["PROXY_SHARED_SECRET"],
               "DATABASE_URL": os.environ["DATABASE_URL"],
@@ -298,6 +314,7 @@ jobs:
             if gcloud secrets describe dnd-llm-api-key --project="${{ env.PROJECT_ID }}" >/dev/null 2>&1; then
               SECRETS_ARG="${SECRETS_ARG},LLM_API_KEY=dnd-llm-api-key:latest"
             fi
+            SECRETS_ARG="${SECRETS_ARG}${DEV_LOGIN_SECRET_ARG}"
 
             gcloud run deploy dnd-backend${{ env.SERVICE_SUFFIX }} \
               --image ${{ env.BACKEND_IMAGE }} \
@@ -321,6 +338,16 @@ jobs:
             fi
             export EFFECTIVE_SECRET_KEY
 
+            if [ "$EVENT_NAME" = "pull_request" ]; then
+              if [ "${#GH_DEV_LOGIN_SECRET}" -ge 32 ]; then
+                echo "::add-mask::$GH_DEV_LOGIN_SECRET"
+                DEPLOY_ENABLE_DEV_TOKEN="true"
+                DEPLOY_DEV_LOGIN_SECRET="$GH_DEV_LOGIN_SECRET"
+              else
+                echo "::warning::DEV_LOGIN_SECRET is missing or shorter than 32 characters; dev login stays off on this preview."
+              fi
+            fi
+
             python3 - "$ENV_FILE" << 'PY_EOF'
           import json
           import os
@@ -329,9 +356,10 @@ jobs:
           payload = {
               "MODE": "prod",
               "APP_ENV": os.environ["APP_ENV"],
-              "ENABLE_DEV_TOKEN": "false",
+              "ENABLE_DEV_TOKEN": os.environ["DEPLOY_ENABLE_DEV_TOKEN"],
               "RATE_LIMIT_ENABLED": os.environ["RATE_LIMIT_ENABLED"],
               "SECRET_KEY": os.environ["EFFECTIVE_SECRET_KEY"],
+              "DEV_LOGIN_SECRET": os.environ["DEPLOY_DEV_LOGIN_SECRET"],
               "PROXY_SHARED_SECRET": os.environ["PROXY_SHARED_SECRET"],
               "DATABASE_URL": os.environ["DATABASE_URL"],
               "DISCORD_CLIENT_ID": os.environ["DISCORD_CLIENT_ID"],

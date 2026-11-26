@@ -8,6 +8,9 @@
 	let isDev = false;
 	let devLoading = false;
 	let devError = '';
+	// Held in memory only: sent as a header, never stored.
+	let devSecret = '';
+	let devRole: 'player' | 'admin' = 'player';
 
 	$: if ($auth.isAuthenticated && $auth.campaign) {
 		goto('/dashboard');
@@ -42,10 +45,14 @@
 
 			const tokenRes = await fetch(`${API_BASE_URL}/auth/dev-token`, {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+				headers: { 'Content-Type': 'application/json', 'X-Dev-Login-Secret': devSecret },
 				body: JSON.stringify(payload)
 			});
 
+			if (tokenRes.status === 404) {
+				devError = 'Wrong dev login secret.';
+				return;
+			}
 			if (!tokenRes.ok) {
 				const err = await tokenRes.json().catch(() => ({}));
 				devError = err.detail || `Dev login failed (${tokenRes.status}).`;
@@ -74,9 +81,11 @@
 </script>
 
 <div class="flex min-h-[calc(100vh-64px)] items-center justify-center bg-base-100">
-	<div class="mx-auto w-full max-w-5xl px-6 py-24 text-center xl:max-w-screen-xl 2xl:max-w-screen-2xl">
+	<div
+		class="mx-auto w-full max-w-5xl px-6 py-24 text-center xl:max-w-screen-xl 2xl:max-w-screen-2xl"
+	>
 		<h1
-			class="mb-8 font-[var(--font-cinzel)] text-6xl leading-tight font-bold text-primary md:text-8xl 2xl:text-9xl"
+			class="mb-8 text-6xl leading-tight font-[var(--font-cinzel)] font-bold text-primary md:text-8xl 2xl:text-9xl"
 		>
 			The Board<br />Awaits.
 		</h1>
@@ -92,7 +101,7 @@
 			<a
 				href="{API_BASE_URL}/auth/discord/login"
 				data-sveltekit-reload
-				class="btn btn-lg gap-3 px-14 font-bold text-white shadow-2xl"
+				class="btn gap-3 px-14 font-bold text-white shadow-2xl btn-lg"
 				style="background-color: #5865F2; border-color: #5865F2;"
 			>
 				<svg
@@ -107,7 +116,7 @@
 				</svg>
 				Login with Discord
 			</a>
-			<a href="/docs" class="btn btn-lg btn-outline">How It Works</a>
+			<a href="/docs" class="btn btn-outline btn-lg">How It Works</a>
 		</div>
 
 		{#if isDev}
@@ -116,28 +125,50 @@
 					Dev Login (No Discord Required)
 				</p>
 				{#if devError}
-					<div role="alert" class="alert alert-error mb-3 py-2 text-left text-sm">
+					<div role="alert" class="mb-3 alert py-2 text-left text-sm alert-error">
 						{devError}
 					</div>
 				{/if}
-				<div class="grid grid-cols-2 gap-3">
-					<button
-						type="button"
-						disabled={devLoading}
-						on:click={() => handleDevLogin('player')}
-						class="btn btn-outline btn-sm"
-					>
-						Dev Player
-					</button>
-					<button
-						type="button"
-						disabled={devLoading}
-						on:click={() => handleDevLogin('admin')}
-						class="btn btn-outline btn-secondary btn-sm"
-					>
-						Dev DM (Admin)
-					</button>
-				</div>
+				<!-- A real form with a password field, so the browser's password manager can save it -->
+				<form on:submit|preventDefault={() => handleDevLogin(devRole)}>
+					<input
+						type="text"
+						name="username"
+						autocomplete="username"
+						value="dev-login"
+						readonly
+						hidden
+					/>
+					<label class="mb-3 block text-left">
+						<span class="sr-only">Dev login secret</span>
+						<input
+							type="password"
+							name="password"
+							autocomplete="current-password"
+							placeholder="Dev login secret"
+							bind:value={devSecret}
+							class="input-bordered input input-sm w-full"
+						/>
+					</label>
+					<div class="grid grid-cols-2 gap-3">
+						<button
+							type="submit"
+							disabled={devLoading || !devSecret}
+							on:click={() => (devRole = 'player')}
+							class="btn btn-outline btn-sm"
+						>
+							Dev Player
+						</button>
+						<button
+							type="submit"
+							disabled={devLoading || !devSecret}
+							on:click={() => (devRole = 'admin')}
+							class="btn btn-outline btn-sm btn-secondary"
+						>
+							Dev DM (Admin)
+						</button>
+					</div>
+				</form>
 			</div>
 		{/if}
 	</div>

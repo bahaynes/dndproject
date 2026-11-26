@@ -70,13 +70,58 @@ describe('Login Page', () => {
 		});
 		vi.stubGlobal('fetch', fetchMock);
 
+		const setItem = vi.spyOn(Storage.prototype, 'setItem');
+
 		render(LoginPage);
 		const devPlayerBtn = await waitFor(() => screen.getByRole('button', { name: 'Dev Player' }));
+		expect(devPlayerBtn).toBeDisabled();
+
+		await fireEvent.input(screen.getByPlaceholderText('Dev login secret'), {
+			target: { value: 'the-dev-secret' }
+		});
+		expect(devPlayerBtn).not.toBeDisabled();
 		await fireEvent.click(devPlayerBtn);
 
 		await waitFor(() => {
 			expect(login).toHaveBeenCalledWith(mockUser, 'dev-jwt-123', mockUser.campaign);
 			expect(goto).toHaveBeenCalledWith('/dashboard');
 		});
+
+		const devTokenCall = fetchMock.mock.calls.find(([url]) =>
+			String(url).endsWith('/auth/dev-token')
+		);
+		expect(devTokenCall?.[1]?.headers).toMatchObject({ 'X-Dev-Login-Secret': 'the-dev-secret' });
+		for (const [, value] of setItem.mock.calls) {
+			expect(String(value)).not.toContain('the-dev-secret');
+		}
+	});
+
+	it('should show a wrong-secret message when dev-token returns 404', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn().mockImplementation((url: string) => {
+				if (url.endsWith('/auth/dev-status')) {
+					return Promise.resolve({ ok: true, json: async () => ({ dev_login_enabled: true }) });
+				}
+				if (url.endsWith('/auth/dev-token')) {
+					return Promise.resolve({
+						ok: false,
+						status: 404,
+						json: async () => ({ detail: 'Not found' })
+					});
+				}
+				return Promise.reject(new Error(`Unexpected fetch: ${url}`));
+			})
+		);
+
+		render(LoginPage);
+		const devAdminBtn = await waitFor(() => screen.getByRole('button', { name: 'Dev DM (Admin)' }));
+		await fireEvent.input(screen.getByPlaceholderText('Dev login secret'), {
+			target: { value: 'wrong' }
+		});
+		await fireEvent.click(devAdminBtn);
+
+		expect(await screen.findByText('Wrong dev login secret.')).toBeInTheDocument();
+		expect(login).not.toHaveBeenCalled();
 	});
 });

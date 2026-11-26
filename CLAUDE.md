@@ -63,7 +63,7 @@ cd frontend && pnpm test:ci               # Frontend only (non-interactive)
 ./run_e2e.sh tests/smoke.spec.ts         # Single file
 ```
 
-E2E tests live in `e2e/` and use Playwright against the running pod. Auth is handled via the dev-only `POST /api/auth/dev-token` endpoint (disabled when `APP_ENV=production`).
+E2E tests live in `e2e/` and use Playwright against the running pod. Auth is handled via the dev-only `POST /api/auth/dev-token` endpoint: it needs `ENABLE_DEV_TOKEN=true`, `APP_ENV` other than `production`, and an `X-Dev-Login-Secret` header matching `DEV_LOGIN_SECRET` (set it in `.env`; `run_e2e.sh` reads it from there). To run against a PR preview, set `BASE_URL` and `BACKEND_URL` to the preview and get the secret with `gcloud secrets versions access latest --secret=dnd-dev-login-secret`.
 
 First-time e2e setup:
 ```bash

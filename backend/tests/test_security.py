@@ -67,6 +67,34 @@ def test_production_settings_rejects_enable_dev_token():
         )
 
 
+_DEV_SECRET = "s" * 40
+
+
+def _settings_kwargs(**overrides):
+    base = dict(
+        SECRET_KEY="x" * 32,
+        DATABASE_URL="sqlite:///./test.db",
+        DISCORD_CLIENT_ID="cid",
+        DISCORD_CLIENT_SECRET="csec",
+    )
+    base.update(overrides)
+    return base
+
+
+@pytest.mark.parametrize("app_env", ["development", "preview"])
+@pytest.mark.parametrize("secret", ["", "too_short", " " * 40])
+def test_enable_dev_token_requires_strong_secret(app_env, secret):
+    with pytest.raises(ValueError, match="DEV_LOGIN_SECRET"):
+        Settings(**_settings_kwargs(APP_ENV=app_env, ENABLE_DEV_TOKEN=True, DEV_LOGIN_SECRET=secret))
+
+
+def test_production_rejects_enable_dev_token_even_with_secret():
+    with pytest.raises(ValueError, match="ENABLE_DEV_TOKEN"):
+        Settings(
+            **_settings_kwargs(APP_ENV="production", ENABLE_DEV_TOKEN=True, DEV_LOGIN_SECRET=_DEV_SECRET)
+        )
+
+
 def test_dev_token_disabled_by_default_and_gated_by_env(client, monkeypatch):
     get_settings.cache_clear()
     try:
@@ -74,20 +102,40 @@ def test_dev_token_disabled_by_default_and_gated_by_env(client, monkeypatch):
         assert r_status.status_code == 200
         assert r_status.json() == {"dev_login_enabled": False}
 
-        r_tok = client.post("/api/auth/dev-token", json={})
+        r_tok = client.post(
+            "/api/auth/dev-token", json={}, headers={"X-Dev-Login-Secret": _DEV_SECRET}
+        )
         assert r_tok.status_code == 404
 
         monkeypatch.setenv("ENABLE_DEV_TOKEN", "true")
         monkeypatch.setenv("APP_ENV", "development")
+        monkeypatch.setenv("DEV_LOGIN_SECRET", _DEV_SECRET)
         get_settings.cache_clear()
 
         assert client.get("/api/auth/dev-status").json() == {"dev_login_enabled": True}
-        r_ok = client.post("/api/auth/dev-token", json={"role": "player"})
+
+        # Missing and wrong secrets look exactly like a disabled endpoint
+        r_none = client.post("/api/auth/dev-token", json={"role": "player"})
+        assert r_none.status_code == 404
+        r_wrong = client.post(
+            "/api/auth/dev-token",
+            json={"role": "player"},
+            headers={"X-Dev-Login-Secret": "w" * 40},
+        )
+        assert r_wrong.status_code == 404
+        assert r_wrong.json() == r_tok.json()
+
+        r_ok = client.post(
+            "/api/auth/dev-token",
+            json={"role": "player"},
+            headers={"X-Dev-Login-Secret": _DEV_SECRET},
+        )
         assert r_ok.status_code == 200
         assert "access_token" in r_ok.json()
     finally:
         monkeypatch.delenv("ENABLE_DEV_TOKEN", raising=False)
         monkeypatch.delenv("APP_ENV", raising=False)
+        monkeypatch.delenv("DEV_LOGIN_SECRET", raising=False)
         get_settings.cache_clear()
 
 
