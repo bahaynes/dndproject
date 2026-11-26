@@ -152,10 +152,10 @@ Tools call the existing service functions, not the HTTP routes, so validation an
 
 ## Open questions for Ben
 
-1. **Token lifetimes.** Not set here. Proposal: make them settings, starting from a short access token (minutes to an hour) and a refresh token measured in days or weeks. Pick the numbers.
-2. **Which client registration Claude needs.** The spec now prefers CIMD and has deprecated DCR (`/register`). Test what current Claude Code and claude.ai actually send before deciding whether to build `/register`.
-3. **Discord redirect.** Add a second redirect URI in the Discord developer portal, or reuse `proxy-callback`?
-4. **Players.** Should non-admins be able to connect with `board:read` (for example, to ask Claude about their own sign-ups), or GMs only?
+1. **Token lifetimes.** *Decided (2026-11-26):* longer access tokens (revocation is already checked per request via the grant row). Lifetimes are settings; the numbers are still Ben's to pick.
+2. **Client registration.** *Decided (2026-11-26):* CIMD only. No `/register`. Clients that only do DCR are unsupported.
+3. **Discord redirect.** Ben leans towards reusing `proxy-callback`, so PR previews get a working MCP. Not final.
+4. **Players.** *Decided (2026-11-26):* GMs only. `board:read` for players can come later as an additive change.
 5. **Library vs hand-rolled.** The SDK's built-in authorization-server helper (`auth_server_provider=`) is discouraged for new servers. Use a maintained OAuth library for the grant and PKCE handling, or hand-write these few endpoints with tests? Proposal: check whether Authlib's server components fit FastAPI cleanly; if not, hand-write.
 
 ## References
