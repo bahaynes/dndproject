@@ -2,7 +2,7 @@
 
 Status: **draft; protected-auth section approved by Ben 2026-11-26; questions 1–5 decided; lifetime numbers and question 6 still open.** Nothing here is built.
 
-**Blocked on:** the privacy policy (#163) and terms of service (#164) pages. The MCP connector sends campaign data to whatever app a GM connects, and that has to be disclosed before it ships.
+**Unblocked (2026-11-26):** the privacy policy (#163) and terms of service (#164) pages shipped in #165. The MCP connector sends campaign data to whatever app a GM connects; `/privacy` now discloses this under "Connected apps".
 
 ## Goal
 
