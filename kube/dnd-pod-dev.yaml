@@ -26,6 +26,8 @@ spec:
           value: "development"
         - name: ENABLE_DEV_TOKEN
           value: "true"
+        - name: DEV_LOGIN_SECRET
+          value: "${DEV_LOGIN_SECRET}"
         - name: DISCORD_CLIENT_ID
           value: "${DISCORD_CLIENT_ID}"
         - name: DISCORD_CLIENT_SECRET
