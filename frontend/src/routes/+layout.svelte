@@ -97,6 +97,7 @@
 					href={$auth.isAuthenticated ? '/dashboard' : '/'}
 					class="flex items-center gap-2 whitespace-nowrap font-[var(--font-cinzel)] text-base font-semibold tracking-wider text-primary sm:text-lg"
 				>
+					<img src="/brand/favicon.svg" alt="" class="h-7 w-7" />
 					West Marches
 				</a>
 			</div>
