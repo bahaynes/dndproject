@@ -22,6 +22,7 @@ from .modules.maps import models as map_models
 from .modules.factions import models as faction_models
 from .modules.ship import models as ship_models
 from .modules.ledger import models as ledger_models
+from .modules.oauth import models as oauth_models
 
 # Import routers
 from .modules.auth import router as auth_router

@@ -46,6 +46,7 @@ class MissionCreate(MissionBase):
 class Mission(MissionBase):
     id: int
     campaign_id: int
+    foundry_module: Optional[str] = None
     rewards: List[MissionReward] = []
     players: List[CharacterInMission] = []
     class Config:
