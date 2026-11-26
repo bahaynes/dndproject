@@ -5,6 +5,8 @@ repo_url: https://github.com/bahaynes/dndproject
 repo_name: bahaynes/dndproject
 theme:
   name: material
+  logo: assets/brand/favicon.svg
+  favicon: assets/brand/favicon.svg
   features:
     - content.code.copy
     - content.code.annotate

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<title>West Marches</title>
+<rect width="512" height="512" rx="112" fill="#111318"/>
+<circle cx="270" cy="256" r="172" fill="#1F242D"/>
+<circle cx="270" cy="256" r="190.00" fill="none" stroke="#D4A853" stroke-width="11.00"/>
+<polygon points="248.70,82.50 270.00,41.30 291.30,82.50" fill="#D4A853" stroke="#111318" stroke-width="5.50" stroke-linejoin="round"/>
+<polygon points="443.50,234.70 484.70,256.00 443.50,277.30" fill="#D4A853" stroke="#111318" stroke-width="5.50" stroke-linejoin="round"/>
+<polygon points="291.30,429.50 270.00,470.70 248.70,429.50" fill="#D4A853" stroke="#111318" stroke-width="5.50" stroke-linejoin="round"/>
+<polygon points="97.35,283.34 23.00,256.00 97.35,228.66" fill="#E9C778" stroke="#111318" stroke-width="5.50" stroke-linejoin="round"/>
+<line x1="404.35" y1="121.65" x2="415.10" y2="110.90" stroke="#D4A853" stroke-width="11.00" stroke-linecap="round"/>
+<line x1="404.35" y1="390.35" x2="415.10" y2="401.10" stroke="#D4A853" stroke-width="11.00" stroke-linecap="round"/>
+<line x1="135.65" y1="390.35" x2="124.90" y2="401.10" stroke="#D4A853" stroke-width="11.00" stroke-linecap="round"/>
+<line x1="135.65" y1="121.65" x2="124.90" y2="110.90" stroke="#D4A853" stroke-width="11.00" stroke-linecap="round"/>
+<polygon points="270.00,108.00 270.00,173.12 141.83,182.00" fill="#D4A853" stroke="#14120E" stroke-width="7.00" stroke-linejoin="round"/>
+<polygon points="270.00,108.00 398.17,182.00 270.00,173.12" fill="#C58F46" stroke="#14120E" stroke-width="7.00" stroke-linejoin="round"/>
+<polygon points="141.83,182.00 198.22,297.44 270.00,173.12" fill="#D4A853" stroke="#14120E" stroke-width="7.00" stroke-linejoin="round"/>
+<polygon points="141.83,330.00 141.83,182.00 198.22,297.44" fill="#C58F46" stroke="#14120E" stroke-width="7.00" stroke-linejoin="round"/>
+<polygon points="398.17,182.00 270.00,173.12 341.78,297.44" fill="#C58F46" stroke="#14120E" stroke-width="7.00" stroke-linejoin="round"/>
+<polygon points="398.17,182.00 398.17,330.00 341.78,297.44" fill="#8A6230" stroke="#14120E" stroke-width="7.00" stroke-linejoin="round"/>
+<polygon points="398.17,330.00 270.00,404.00 341.78,297.44" fill="#5E4222" stroke="#14120E" stroke-width="7.00" stroke-linejoin="round"/>
+<polygon points="270.00,404.00 198.22,297.44 341.78,297.44" fill="#8A6230" stroke="#14120E" stroke-width="7.00" stroke-linejoin="round"/>
+<polygon points="270.00,404.00 141.83,330.00 198.22,297.44" fill="#8A6230" stroke="#14120E" stroke-width="7.00" stroke-linejoin="round"/>
+<polygon points="270.00,173.12 341.78,297.44 198.22,297.44" fill="#E9C778" stroke="#14120E" stroke-width="7.00" stroke-linejoin="round"/>
+</svg>
