@@ -269,6 +269,7 @@ jobs:
           ADMIN_DISCORD_IDS: ${{ secrets.ADMIN_DISCORD_IDS }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           GCS_TILE_BUCKET: ${{ vars.GCS_TILE_BUCKET }}
+          MCP_TOKEN_SECRET: ${{ secrets.MCP_TOKEN_SECRET }}
         run: |
           umask 077
           ENV_FILE=$(mktemp)
@@ -293,6 +294,10 @@ jobs:
               "TILE_STORAGE_BACKEND": "gcs" if os.environ.get("GCS_TILE_BUCKET") else "local",
               "GCS_TILE_BUCKET": os.environ.get("GCS_TILE_BUCKET", ""),
           }
+          if os.environ["APP_ENV"] == "production":
+              # MCP connector: stays off until MCP_TOKEN_SECRET is provided (docs/plans/mcp-oauth.md).
+              payload["PUBLIC_ORIGIN"] = "https://westmarches.bahaynes.com"
+              payload["MCP_ALLOWED_HOSTS"] = "*.run.app"
           with open(sys.argv[1], "w", encoding="utf-8") as f:
               json.dump(payload, f)
           PY_EOF
@@ -300,6 +305,9 @@ jobs:
             SECRETS_ARG="SECRET_KEY=dnd-secret-key:latest,DISCORD_CLIENT_ID=dnd-discord-client-id:latest,DISCORD_CLIENT_SECRET=dnd-discord-client-secret:latest,DISCORD_BOT_TOKEN=dnd-discord-bot-token:latest,ADMIN_DISCORD_IDS=dnd-admin-discord-ids:latest"
             if gcloud secrets describe dnd-llm-api-key --project="${{ env.PROJECT_ID }}" >/dev/null 2>&1; then
               SECRETS_ARG="${SECRETS_ARG},LLM_API_KEY=dnd-llm-api-key:latest"
+            fi
+            if [ "$APP_ENV" = "production" ] && gcloud secrets describe dnd-mcp-token-secret --project="${{ env.PROJECT_ID }}" >/dev/null 2>&1; then
+              SECRETS_ARG="${SECRETS_ARG},MCP_TOKEN_SECRET=dnd-mcp-token-secret:latest"
             fi
 
             gcloud run deploy dnd-backend${{ env.SERVICE_SUFFIX }} \
@@ -347,6 +355,12 @@ jobs:
               "TILE_STORAGE_BACKEND": "gcs" if os.environ.get("GCS_TILE_BUCKET") else "local",
               "GCS_TILE_BUCKET": os.environ.get("GCS_TILE_BUCKET", ""),
           }
+          if os.environ["APP_ENV"] == "production":
+              # MCP connector: stays off until MCP_TOKEN_SECRET is provided (docs/plans/mcp-oauth.md).
+              payload["PUBLIC_ORIGIN"] = "https://westmarches.bahaynes.com"
+              payload["MCP_ALLOWED_HOSTS"] = "*.run.app"
+              if os.environ.get("MCP_TOKEN_SECRET"):
+                  payload["MCP_TOKEN_SECRET"] = os.environ["MCP_TOKEN_SECRET"]
           with open(sys.argv[1], "w", encoding="utf-8") as f:
               json.dump(payload, f)
           PY_EOF
@@ -389,8 +403,8 @@ jobs:
                   -Server
               }
 
-              # API requests
-              @api path /api/*
+              # API requests (and OAuth metadata for the MCP connector)
+              @api path /api/* /.well-known/oauth-*
               handle @api {
                   reverse_proxy https://${BACKEND_HOST} {
                       header_up Host ${BACKEND_HOST}

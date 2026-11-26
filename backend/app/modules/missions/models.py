@@ -24,6 +24,9 @@ class Mission(Base):
     
     prerequisite_id = Column(Integer, ForeignKey("missions.id"), nullable=True)
 
+    # Foundry one-shot module that runs this mission (e.g. "oneshot-gilded-moth"); set via MCP
+    foundry_module = Column(String, nullable=True)
+
     # Scoping
     campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
     campaign = relationship("Campaign", back_populates="missions")

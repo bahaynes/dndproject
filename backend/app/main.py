@@ -1,3 +1,4 @@
+import contextlib
 import hmac
 import time
 import uuid
@@ -5,6 +6,7 @@ from collections import defaultdict, deque
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.routing import Route
 
 # Configure structured JSON logging before any other app imports so that
 # module-level startup code (e.g. Settings validation) uses the JSON formatter.
@@ -22,6 +24,7 @@ from .modules.maps import models as map_models
 from .modules.factions import models as faction_models
 from .modules.ship import models as ship_models
 from .modules.ledger import models as ledger_models
+from .modules.oauth import models as oauth_models
 
 # Import routers
 from .modules.auth import router as auth_router
@@ -38,10 +41,21 @@ from .modules.factions import router as faction_router
 from .modules.debug import router as debug_router
 from .modules.ship import router as ship_router
 from .modules.ledger import router as ledger_router
+from .modules.oauth import router as oauth_router
+from .modules.mcp import server as mcp_server
 
 _settings = get_settings()
 
+
+@contextlib.asynccontextmanager
+async def lifespan(_app: FastAPI):
+    # The MCP session manager must run for the app's lifetime; a mounted sub-app's lifespan never runs.
+    async with mcp_server.endpoint.run():
+        yield
+
+
 app = FastAPI(
+    lifespan=lifespan,
     docs_url=None if _settings.APP_ENV == "production" else "/docs",
     redoc_url=None if _settings.APP_ENV == "production" else "/redoc",
     openapi_url=None if _settings.APP_ENV == "production" else "/openapi.json",
@@ -89,6 +103,9 @@ async def rate_limit_middleware(request: Request, call_next):
         limit = 0
         if path.startswith("/api/auth/"):
             bucket_name = "auth"
+            limit = _AUTH_RATE_LIMIT
+        elif path.startswith("/api/oauth/"):
+            bucket_name = "oauth"
             limit = _AUTH_RATE_LIMIT
         elif path.startswith("/api/maps/") and path.endswith("/bake-earth"):
             bucket_name = "bake_earth"
@@ -193,3 +210,8 @@ app.include_router(faction_router.router, prefix="/api/factions")
 app.include_router(debug_router.router, prefix="/api/debug")
 app.include_router(ship_router.router, prefix="/api/ship")
 app.include_router(ledger_router.router, prefix="/api/ledger")
+app.include_router(oauth_router.router, prefix="/api/oauth")
+app.include_router(oauth_router.well_known_router)
+# MCP resource server (streamable HTTP, all methods). A plain Route, not a Mount, so /api/mcp
+# itself matches without a trailing-slash redirect.
+app.router.routes.append(Route("/api/mcp", endpoint=mcp_server.endpoint))

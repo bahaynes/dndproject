@@ -16,7 +16,8 @@
     }
 
     # API requests
-    @api path /api/*
+    # /.well-known/oauth-* is OAuth metadata for the MCP connector, served by the backend.
+    @api path /api/* /.well-known/oauth-*
     handle @api {
         reverse_proxy localhost:8000
     }

@@ -184,7 +184,8 @@
 	}
 
 	async function fetchMissions() {
-		missions = await api('GET', '/missions/');
+		// Hidden missions too: MCP drafts arrive hidden and a GM publishes them here.
+		missions = await api('GET', '/missions/?include_hidden=true');
 	}
 
 	async function fetchItems() {
@@ -293,11 +294,23 @@
 						<div class="mb-2 flex flex-wrap items-center gap-2">
 							<h3 class="text-base font-semibold text-base-content">{mission.name}</h3>
 							<span class="badge badge-sm badge-outline">{mission.status}</span>
+							{#if !mission.is_discoverable}
+								<span class="badge badge-sm badge-warning" title="Players can't see this mission yet"
+									>Hidden</span
+								>
+							{/if}
 							{#if mission.tier}
 								<span class="badge badge-ghost badge-sm">{mission.tier}</span>
 							{/if}
 							{#if mission.region}
 								<span class="text-xs text-base-content/60">{mission.region}</span>
+							{/if}
+							{#if mission.foundry_module}
+								<span
+									class="badge badge-ghost badge-sm font-mono"
+									title="Foundry one-shot module (linked via the MCP connector)"
+									>Foundry: {mission.foundry_module}</span
+								>
 							{/if}
 							{#if gp > 0}
 								<span class="rounded bg-primary/15 px-2 py-0.5 text-xs text-primary stat-num">{gp} GP</span>
