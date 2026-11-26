@@ -8,6 +8,9 @@
 	let isDev = false;
 	let devLoading = false;
 	let devError = '';
+	// Held in memory only: sent as a header, never stored.
+	let devSecret = '';
+	let devRole: 'player' | 'admin' = 'player';
 
 	$: if ($auth.isAuthenticated && $auth.campaign) {
 		goto('/dashboard');
@@ -42,10 +45,14 @@
 
 			const tokenRes = await fetch(`${API_BASE_URL}/auth/dev-token`, {
 				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
+				headers: { 'Content-Type': 'application/json', 'X-Dev-Login-Secret': devSecret },
 				body: JSON.stringify(payload)
 			});
 
+			if (tokenRes.status === 404) {
+				devError = 'Wrong dev login secret.';
+				return;
+			}
 			if (!tokenRes.ok) {
 				const err = await tokenRes.json().catch(() => ({}));
 				devError = err.detail || `Dev login failed (${tokenRes.status}).`;
@@ -120,24 +127,46 @@
 						{devError}
 					</div>
 				{/if}
-				<div class="grid grid-cols-2 gap-3">
-					<button
-						type="button"
-						disabled={devLoading}
-						on:click={() => handleDevLogin('player')}
-						class="btn btn-outline btn-sm"
-					>
-						Dev Player
-					</button>
-					<button
-						type="button"
-						disabled={devLoading}
-						on:click={() => handleDevLogin('admin')}
-						class="btn btn-outline btn-secondary btn-sm"
-					>
-						Dev DM (Admin)
-					</button>
-				</div>
+				<!-- A real form with a password field, so the browser's password manager can save it -->
+				<form on:submit|preventDefault={() => handleDevLogin(devRole)}>
+					<input
+						type="text"
+						name="username"
+						autocomplete="username"
+						value="dev-login"
+						readonly
+						hidden
+					/>
+					<label class="mb-3 block text-left">
+						<span class="sr-only">Dev login secret</span>
+						<input
+							type="password"
+							name="password"
+							autocomplete="current-password"
+							placeholder="Dev login secret"
+							bind:value={devSecret}
+							class="input input-bordered input-sm w-full"
+						/>
+					</label>
+					<div class="grid grid-cols-2 gap-3">
+						<button
+							type="submit"
+							disabled={devLoading || !devSecret}
+							on:click={() => (devRole = 'player')}
+							class="btn btn-outline btn-sm"
+						>
+							Dev Player
+						</button>
+						<button
+							type="submit"
+							disabled={devLoading || !devSecret}
+							on:click={() => (devRole = 'admin')}
+							class="btn btn-outline btn-secondary btn-sm"
+						>
+							Dev DM (Admin)
+						</button>
+					</div>
+				</form>
 			</div>
 		{/if}
 	</div>
